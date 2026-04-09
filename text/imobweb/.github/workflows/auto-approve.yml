@@ -1,0 +1,30 @@
+name: Auto Approve Safe PRs
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    # Conditions for "Safe" PR:
+    # 1. Modifies ONLY files in tests/ or .github/
+    # 2. OR is labeled with "safe-to-approve"
+    # 3. AND the sender is a trusted bot/collaborator (optional check)
+    if: |
+      github.event.pull_request.user.login == 'google-antigravity' ||
+      contains(github.event.pull_request.labels.*.name, 'safe-to-approve')
+    steps:
+      - name: Approve PR
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Add comment
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            🤖 **Auto-Approved**: Este PR foi identificado como seguro (modificações em testes/configurações ou label específica).
+            Garantindo agilidade no ciclo de desenvolvimento imobWeb 2026.

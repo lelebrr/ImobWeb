@@ -1,0 +1,25 @@
+{
+  "name": "ImobWeb Critical Dashboard",
+  "widgets": [
+    {
+      "type": "error_rate",
+      "title": "Taxa de Erro Global",
+      "threshold": 0.02
+    },
+    {
+      "type": "latency",
+      "title": "LCP P95 (Core Web Vitals)",
+      "threshold": 2500
+    },
+    {
+      "type": "custom_event",
+      "title": "WhatsApp Webhook Failures",
+      "query": "event.type:whatsapp_error"
+    },
+    {
+      "type": "transaction",
+      "title": "Stripe Checkout Success Rate",
+      "query": "transaction.name:checkout_success"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "alerts": [
+    {
+      "id": "high-error-rate",
+      "name": "Erro Global > 2% em 5min",
+      "condition": "error_rate > 0.02",
+      "channels": ["slack", "pagerduty"],
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "whatsapp-failure",
+      "name": "Falha no recebimento de Webhook WhatsApp",
+      "condition": "event.count(whatsapp_webhook_error) > 5",
+      "channels": ["slack"],
+      "severity": "HIGH"
+    },
+    {
+      "id": "high-churn-risk",
+      "name": "Alto índice de cancelamento Stripe",
+      "condition": "transaction.count(subscription_deleted) > 10",
+      "channels": ["email_finance"],
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "slow-api",
+      "name": "API Latency > 1s (P99)",
+      "condition": "latency.p99 > 1000",
+      "channels": ["slack"],
+      "severity": "LOW"
+    }
+  ]
+}
