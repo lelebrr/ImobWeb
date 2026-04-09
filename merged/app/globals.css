@@ -1,0 +1,543 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ============================================
+   * IA 1 + IA 4 - CORE VARIABLES
+   * ============================================ */
+  :root {
+    /* Backgrounds */
+    --background: 0 0% 100%;
+    --background-muted: 210 40% 98%;
+    
+    /* Foregrounds */
+    --foreground: 222.2 84% 4.9%;
+    --foreground-muted: 215.4 16.3% 46.9%;
+    
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Primary - Brand Colors */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --primary-dark: 221.2 83.2% 43.3%;
+    --primary-light: 221.2 83.2% 63.3%;
+    
+    /* Secondary */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    /* Muted */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Accent */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Border & Input */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    
+    /* Success */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    
+    /* Warning */
+    --warning: 37.7 92.1% 50.2%;
+    --warning-foreground: 37.7 92.1% 10.2%;
+    
+    /* Info */
+    --info: 199.4 89.4% 48.4%;
+    --info-foreground: 210 40% 98%;
+  }
+
+  /* ============================================
+   * IA 4 - DARK MODE VARIABLES
+   * ============================================ */
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --background-muted: 217.2 32.6% 12%;
+    
+    --foreground: 210 40% 98%;
+    --foreground-muted: 215 20.2% 65.1%;
+    
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-dark: 217.2 91.2% 49.8%;
+    --primary-light: 217.2 91.2% 69.8%;
+    
+    --secondary: 217.2 32.6% 12%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217.2 32.6% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 217.2 32.6% 12%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    
+    --success: 142.1 76.2% 56.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    
+    --warning: 37.7 92.1% 60.2%;
+    --warning-foreground: 37.7 92.1% 10.2%;
+    
+    --info: 199.4 89.4% 58.4%;
+    --info-foreground: 210 40% 98%;
+  }
+
+  /* ============================================
+   * IA 1 - BASE STYLES
+   * ============================================ */
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  /* ============================================
+   * IA 2 + IA 4 - TYPOGRAPHY
+   * ============================================ */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 { @apply text-display-4; }
+  h2 { @apply text-display-3; }
+  h3 { @apply text-heading-1; }
+  h4 { @apply text-heading-2; }
+  h5 { @apply text-heading-3; }
+  h6 { @apply text-heading-4; }
+  
+  p {
+    @apply text-body-base leading-relaxed;
+  }
+  
+  a {
+    @apply text-primary hover:text-primary/80 underline-offset-4 hover:underline transition-colors;
+  }
+  
+  code, pre {
+    @apply font-mono text-body-sm;
+  }
+
+  /* ============================================
+   * IA 3 - PWA SPECIFIC
+   * ============================================ */
+  /* Install prompt animation */
+  @keyframes pwaSlideIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Offline indicator */
+  @keyframes offlineSlide {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  /* Shimmer effect for loading */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* ============================================
+   * IA 4 - UTILITY CLASSES
+   * ============================================ */
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-brand;
+  }
+  
+  /* Focus ring */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  
+  /* Scrollbar styling */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* ============================================
+   * IA 2 - COMPONENT BASE STYLES
+   * ============================================ */
+  /* Button base */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  /* Input base */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  /* Card base */
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-soft;
+  }
+  
+  /* Badge base */
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  /* ============================================
+   * IA 1 - PROPERTY SPECIFIC
+   * ============================================ */
+  /* Property card */
+  .property-card {
+    @apply card group hover:shadow-card-hover hover:border-primary/50 transition-all duration-200;
+  }
+  
+  /* Property image aspect ratio */
+  .property-image {
+    @apply aspect-property-card object-cover rounded-t-lg;
+  }
+  
+  /* Property status badges */
+  .status-available { @apply bg-property-available/10 text-property-available border-property-available/20; }
+  .status-sold { @apply bg-property-sold/10 text-property-sold border-property-sold/20; }
+  .status-rented { @apply bg-property-rented/10 text-property-rented border-property-rented/20; }
+  .status-reserved { @apply bg-property-reserved/10 text-property-reserved border-property-reserved/20; }
+  .status-pending { @apply bg-property-pending/10 text-property-pending border-property-pending/20; }
+  .status-draft { @apply bg-property-draft/10 text-property-draft border-property-draft/20; }
+
+  /* Lead status */
+  .lead-new { @apply bg-lead-new/10 text-lead-new border-lead-new/20; }
+  .lead-contacted { @apply bg-lead-contacted/10 text-lead-contacted border-lead-contacted/20; }
+  .lead-interested { @apply bg-lead-interested/10 text-lead-interested border-lead-interested/20; }
+  .lead-converted { @apply bg-lead-converted/10 text-lead-converted border-lead-converted/20; }
+  .lead-lost { @apply bg-lead-lost/10 text-lead-lost border-lead-lost/20; }
+
+  /* ============================================
+   * IA 3 - PWA UTILITIES
+   * ============================================ */
+  /* Hide on web but show on PWA */
+  .pwa-only { display: none; }
+  .standalone .pwa-only { display: block; }
+  
+  /* Offline indicator */
+  .offline-indicator {
+    @apply fixed top-0 left-0 right-0 z-pwa-banner bg-error text-white py-2 px-4 text-center text-sm font-medium;
+    animation: offlineSlide 0.3s ease-in-out;
+  }
+  
+  /* Online indicator */
+  .online-indicator {
+    @apply fixed top-0 left-0 right-0 z-pwa-banner bg-success text-white py-2 px-4 text-center text-sm font-medium;
+    animation: offlineSlide 0.3s ease-in-out;
+  }
+
+  /* ============================================
+   * IA 4 - ACCESSIBILITY
+   * ============================================ */
+  /* Skip to content link */
+  .skip-to-content {
+    @apply absolute -top-10 left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md transition-all;
+  }
+  
+  .skip-to-content:focus {
+    @apply top-4;
+  }
+  
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    body {
+      background: white;
+      color: black;
+    }
+    
+    a[href]:after {
+      content: " (" attr(href) ")";
+    }
+  }
+}
+
+@layer components {
+  /* ============================================
+   * IA 2 - SHADCN UI COMPONENTS
+   * ============================================ */
+  .button {
+    @apply btn;
+  }
+  
+  .input-field {
+    @apply input;
+  }
+  
+  .card-component {
+    @apply card;
+  }
+
+  /* ============================================
+   * IA 4 - DESIGN SYSTEM COMPONENTS
+   * ============================================ */
+  /* Button variants */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
+  
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  /* Input variants */
+  .input-error {
+    @apply border-destructive focus-visible:ring-destructive;
+  }
+  
+  .input-success {
+    @apply border-success focus-visible:ring-success;
+  }
+
+  /* ============================================
+   * IA 1 - REAL ESTATE COMPONENTS
+   * ============================================ */
+  /* Property price tag */
+  .price-tag {
+    @apply text-2xl font-bold text-primary;
+  }
+  
+  .price-tag-rent {
+    @apply text-lg font-semibold text-success;
+  }
+  
+  /* Property features */
+  .feature-item {
+    @apply flex items-center gap-2 text-sm text-muted-foreground;
+  }
+  
+  /* Lead contact button */
+  .contact-whatsapp {
+    @apply bg-green-500 text-white hover:bg-green-600;
+  }
+  
+  .contact-phone {
+    @apply bg-primary text-white hover:bg-primary/90;
+  }
+
+  /* ============================================
+   * IA 3 - PWA COMPONENTS
+   * ============================================ */
+  /* Install prompt */
+  .install-prompt {
+    @apply fixed bottom-4 right-4 z-pwa-install bg-white rounded-xl shadow-soft-lg p-5 max-w-sm;
+    animation: pwaSlideIn 0.5s ease-out;
+  }
+  
+  /* PWA Install button */
+  .install-button {
+    @apply w-full flex items-center justify-center gap-2 bg-gradient-brand text-white px-4 py-3 rounded-lg font-semibold transition-transform hover:scale-[1.02];
+  }
+}
+
+@layer utilities {
+  /* ============================================
+   * IA 4 - UTILITY CLASSES
+   * ============================================ */
+  /* Gradient backgrounds */
+  .bg-grid {
+    background-image: 
+      linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .bg-dots {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  
+  /* Gradient text */
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-dark;
+  }
+  
+  /* Mask gradients */
+  .mask-fade-bottom {
+    mask-image: linear-gradient(to bottom, black 60%, transparent);
+  }
+  
+  .mask-fade-right {
+    mask-image: linear-gradient(to right, black 60%, transparent);
+  }
+  
+  /* Animation delays */
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+  
+  /* ============================================
+   * IA 3 - PWA UTILITIES
+   * ============================================ */
+  /* Touch callout */
+  .touch-callout-none {
+    -webkit-touch-callout: none;
+    touch-callout: none;
+  }
+  
+  /* PWA specific */
+  @supports (display: standalone) {
+    .pwa-display-standalone {
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: -webkit-flex;
+      display: flex;
+    }
+  }
+
+  /* ============================================
+   * IA 1 - PROPERTY UTILITIES
+   * ============================================ */
+  /* Hide elements on print */
+  .hide-on-print {
+    @media print {
+      display: none !important;
+    }
+  }
+  
+  /* Show only on print */
+  .show-on-print {
+    @media print {
+      display: block !important;
+    }
+  }
+
+  /* ============================================
+   * IA 4 - DEBUG UTILITIES (development only)
+   * ============================================ */
+  .debug-outline {
+    @apply outline outline-1 outline-red-500;
+  }
+  
+  .debug-bg {
+    @apply bg-red-500/10;
+  }
+}

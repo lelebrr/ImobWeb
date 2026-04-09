@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/manifest.json",
+  "name": "imobWeb",
+  "short_name": "imobWeb",
+  "description": "CRM imobiliário com IA avançada, notificações smart e PWA para corretores e proprietários",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0b5bd3",
+  "scope": "/",
+  "lang": "pt-BR",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Imóveis",
+      "short_name": "Imóveis",
+      "description": "Ver lista de imóveis",
+      "url": "/properties",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Leads",
+      "short_name": "Leads",
+      "description": "Ver novos leads",
+      "url": "/leads",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "IA Sugestão",
+      "short_name": "IA",
+      "description": "Usar assistente de IA",
+      "url": "/ai/suggest-price",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
