@@ -1,34 +1,57 @@
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse, type NextRequest } from 'next/server'
+import createI18nMiddleware from 'next-intl/middleware';
+import { locales, defaultLocale } from '@/lib/i18n/settings';
 import { UserRole } from '@/prisma/schema'
 
+// Middleware de Internacionalização
+const i18nMiddleware = createI18nMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'as-needed'
+});
+
 /**
- * Middleware para proteção de rotas e redirecionamentos
- * Implementa RBAC (Role-Based Access Control)
+ * Middleware para proteção de rotas, redirecionamentos e i18n
  */
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  // 1. Processar i18n primeiro para garantir o locale na URL
+  const i18nResponse = i18nMiddleware(request);
+  
+  // Se for apenas uma mudança de locale ou redirecionamento de locale, retornar
+  if (request.nextUrl.pathname.includes('/_next') || request.nextUrl.pathname.includes('/api')) {
+    // API e Static não precisam de i18n middleware prefixing geralmente
+  } else if (i18nResponse.headers.get('x-next-intl-locale')) {
+     // Apenas continua se não for um redirecionamento forçado do next-intl
+  }
+
+  const response = i18nResponse || NextResponse.next()
   const supabase = createMiddlewareClient({ req: request, res: response })
 
   // Obter sessão do usuário
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/register') ||
-    request.nextUrl.pathname.startsWith('/forgot-password') ||
-    request.nextUrl.pathname.startsWith('/reset-password')
+  const pathname = request.nextUrl.pathname;
+  
+  // Regex para remover o prefixo de locale da busca de rotas
+  const pathWithoutLocale = pathname.replace(/^\/(?:pt-BR|en-US|en-GB|es-ES|es-LA)/, '') || '/';
 
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/properties') ||
-    request.nextUrl.pathname.startsWith('/leads') ||
-    request.nextUrl.pathname.startsWith('/owners') ||
-    request.nextUrl.pathname.startsWith('/conversations') ||
-    request.nextUrl.pathname.startsWith('/campaigns') ||
-    request.nextUrl.pathname.startsWith('/analytics') ||
-    request.nextUrl.pathname.startsWith('/settings') ||
-    request.nextUrl.pathname.startsWith('/integrations') ||
-    request.nextUrl.pathname.startsWith('/billing') ||
-    request.nextUrl.pathname.startsWith('/api/')
+  const isAuthRoute = pathWithoutLocale.startsWith('/login') ||
+    pathWithoutLocale.startsWith('/register') ||
+    pathWithoutLocale.startsWith('/forgot-password') ||
+    pathWithoutLocale.startsWith('/reset-password')
+
+  const isDashboardRoute = pathWithoutLocale.startsWith('/dashboard') ||
+    pathWithoutLocale.startsWith('/properties') ||
+    pathWithoutLocale.startsWith('/leads') ||
+    pathWithoutLocale.startsWith('/owners') ||
+    pathWithoutLocale.startsWith('/conversations') ||
+    pathWithoutLocale.startsWith('/campaigns') ||
+    pathWithoutLocale.startsWith('/analytics') ||
+    pathWithoutLocale.startsWith('/settings') ||
+    pathWithoutLocale.startsWith('/integrations') ||
+    pathWithoutLocale.startsWith('/billing') ||
+    pathWithoutLocale.startsWith('/api/')
 
   // Proteger rotas de autenticação (redirecionar se já logado)
   if (isAuthRoute) {
@@ -39,14 +62,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // Proteger rotas do dashboard (redirecionar se não logado)
-  if (isDashboardRoute && !session) {
+  if (isDashboardRoute && !session && !pathWithoutLocale.startsWith('/api/i18n')) {
     const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+    redirectUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirecionar usuários não-admin para dashboard se tentarem acessar admin
-  if (request.nextUrl.pathname.startsWith('/admin') && session) {
+  if (pathWithoutLocale.startsWith('/admin') && session) {
     if (session.user.user_metadata?.role !== UserRole.ADMIN) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }

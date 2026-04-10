@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.viva-real.com/schemas/1.0/VRSync" xmlns="http://www.viva-real.com/schemas/1.0/VRSync" elementFormDefault="qualified">
+  <xs:element name="ListingDataFeed">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Header" minOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Provider" type="xs:string"/>
+              <xs:element name="Email" type="xs:string"/>
+              <xs:element name="PublishDate" type="xs:dateTime"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Listings" minOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Listing" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="ListingID" type="xs:string"/>
+                    <xs:element name="Title" type="xs:string"/>
+                    <xs:element name="TransactionType" type="xs:string"/>
+                    <xs:element name="Details" minOccurs="1">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Description" type="xs:string" minOccurs="0"/>
+                          <xs:element name="ListPrice" type="xs:decimal" minOccurs="0"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <!-- Mais campos do VRSync schema resumidos aqui -->
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

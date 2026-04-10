@@ -1,0 +1,1 @@
+export { WeeklyReportEmail } from './templates/weekly-report';
