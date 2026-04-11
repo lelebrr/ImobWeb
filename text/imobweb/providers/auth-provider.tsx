@@ -1,9 +1,9 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 import { User, Session } from '@supabase/supabase-js'
-import { UserRole } from '@/prisma/schema'
+import { UserRole } from '@prisma/client'
 
 /**
  * Contexto de Autenticação
@@ -31,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
     const [organizationId, setOrganizationId] = useState<string | null>(null)
 
-    const supabase = createClientComponentClient()
+    const [supabase] = useState(() => createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    ))
 
     /**
      * Atualizar sessão

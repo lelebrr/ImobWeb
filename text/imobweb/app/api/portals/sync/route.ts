@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { syncEngine } from '../../../lib/portals/sync-engine';
+import { syncEngine } from '@/lib/portals/sync-engine';
 
 /**
  * API para disparar a sincronização manual ou via CRON

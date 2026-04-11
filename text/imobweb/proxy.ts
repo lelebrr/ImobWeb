@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import createI18nMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from '@/lib/i18n/settings';
-import { UserRole } from '@/prisma/schema'
+import { UserRole } from '@prisma/client'
 
 // Middleware de Internacionalização
 const i18nMiddleware = createI18nMiddleware({

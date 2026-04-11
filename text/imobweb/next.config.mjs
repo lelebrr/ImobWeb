@@ -56,7 +56,7 @@ const nextConfig = {
     ];
   },
 
-  reactCompiler: true,
+  reactCompiler: false,
   // Otimizações de Compilação e Runtime para 2026
   experimental: {
     optimizePackageImports: [
@@ -72,10 +72,6 @@ const nextConfig = {
       allowedOrigins: ['imobweb.com', '*.imobweb.com'],
     },
   },
-
-  // Turbo configuration moved to root or handled differently in Next 16
-  // rules for svg can be handled via loader or custom webpack config if needed
-  // but let's try removing the unrecognized experimental.turbo first
 
 
   // State-of-the-Art Image Optimization

@@ -18,8 +18,8 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/components/design-system/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/design-system/tabs';
 import { HealthScoreCard } from '@/components/insights/HealthScoreCard';
 import { PriceRecommendationCard } from '@/components/insights/PriceRecommendationCard';
 

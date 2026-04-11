@@ -1,8 +1,8 @@
 import React from "react";
-import { ResponsiveSidebar } from "@/text/imobweb/components/navigation/ResponsiveSidebar";
-import { ResponsiveHeader } from "@/text/imobweb/components/navigation/ResponsiveHeader";
-import { BottomNavigation } from "@/text/imobweb/components/navigation/BottomNavigation";
-import { FluidContainer } from "@/text/imobweb/components/responsive/FluidContainer";
+import { ResponsiveSidebar } from "@/components/navigation/ResponsiveSidebar";
+import { ResponsiveHeader } from "@/components/navigation/ResponsiveHeader";
+import { BottomNavigation } from "@/components/navigation/BottomNavigation";
+import { FluidContainer } from "@/components/responsive/FluidContainer";
 
 export default function DashboardLayout({
   children,

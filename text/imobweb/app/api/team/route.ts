@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TeamManager } from '../../../lib/team/team-manager';
+import { TeamManager } from '@/lib/team/team-manager';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

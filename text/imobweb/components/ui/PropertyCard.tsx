@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@/text/imobweb/lib/responsive/tailwind-utils";
+import { cn } from "@/lib/responsive/tailwind-utils";
 import { MapPin, BedDouble, Bath, Square, MoveRight } from "lucide-react";
 
 export function PropertyCard({ className }: { className?: string }) {

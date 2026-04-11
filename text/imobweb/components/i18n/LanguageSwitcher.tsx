@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'; // Assuming standard shadcn path
 import { Button } from '@/components/ui/button';
-import { Globe, Checks } from 'lucide-react';
+import { Globe, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { locales, localeLabels, Locale } from '@/lib/i18n/settings';
 
@@ -82,7 +82,7 @@ export function LanguageSwitcher() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                 >
-                  <Checks className="h-4 w-4 text-primary" />
+                  <Check className="h-4 w-4 text-primary" />
                 </motion.div>
               )}
             </DropdownMenuItem>

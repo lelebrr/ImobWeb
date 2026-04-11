@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { AccountingManager } from "../../../lib/integrations/accounting-manager";
+import { AccountingManager } from "@/lib/integrations/accounting-manager";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

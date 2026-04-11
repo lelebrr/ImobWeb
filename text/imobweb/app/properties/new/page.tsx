@@ -28,7 +28,7 @@ import { Badge } from '@/components/design-system/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/design-system/radio-group'
 import { Textarea } from '@/components/design-system/textarea'
 import { useAI } from '@/providers'
-import { PropertyType, BusinessType } from '@/prisma/schema'
+import { PropertyType, BusinessType } from '@prisma/client'
 
 /**
  * Página de Cadastro de Imóvel com IA

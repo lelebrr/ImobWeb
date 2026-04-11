@@ -1,0 +1,1172 @@
+// ============================================
+// SCHEMA PRISMA - CRM IMOBILIÁRIO IMOBWEB
+// ============================================
+// Arquitetura multi-tenant com organização (imobiliária)
+// Suporte a integrações com portais de imóveis
+// Sistema de conversas WhatsApp com IA
+// Gestão completa de leads e proprietários
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+/// Status geral de entidades
+enum EntityStatus {
+  ATIVO // Entidade ativa no sistema
+  INATIVO // Entidade desativada
+  ARQUIVADO // Entidade arquivada (não mais em uso)
+}
+
+/// Status de imóvel
+enum PropertyStatus {
+  DISPONIVEL // Imóvel disponível para venda/locação
+  VENDIDO // Imóvel vendido
+  ALUGADO // Imóvel alugado
+  RESERVADO // Imóvel reservado
+  DESATUALIZADO // Imóvel com dados desatualizados
+  SUSPENSO // Imóvel suspenso por pendências
+  RASCUNHO // Imóvel em rascunho (não publicado)
+}
+
+/// Tipo de imóvel
+enum PropertyType {
+  APARTAMENTO // Apartamento
+  CASA // Casa
+  TERRENO // Terreno
+  COMERCIAL // Imóvel comercial
+  COMERCIAL_LOJA // Loja comercial
+  COMERCIAL_GARAGEM // Garagem comercial
+  COMERCIAL_LOTE // Lote comercial
+  COMERCIAL_OUTRO // Outro comercial
+  SITIO // Sítio
+  CHACARA // Chácara
+  FAZENDA // Fazenda
+  CONDOMINIO // Condomínio fechado
+  GARAGEM // Garagem
+  CABINE // Cabine
+  QUADRA // Quadra
+  TERRENO_RESIDENCIAL // Terreno residencial
+  SITIO_RESIDENCIAL // Sítio residencial
+  CHACARA_RESIDENCIAL // Chácara residencial
+  OUTRO // Outro tipo
+}
+
+/// Tipo de negócio
+enum BusinessType {
+  VENDA // Venda
+  LOCAÇÃO // Locação
+  VENDA_LOCACAO // Venda e locação
+}
+
+/// Situação do imóvel
+enum PropertySituation {
+  NOVO // Imóvel novo
+  SEM_NOVO // Imóvel usado
+  NA_MAO // Imóvel na mão
+  EM_CONSTRUCAO // Em construção
+  TERMINADO // Terminado
+}
+
+/// Situação do proprietário
+enum OwnerSituation {
+  DISPONIVEL // Disponível para contato
+  OCULTO // Oculto no sistema
+  INATIVO // Inativo
+  VENDIDO // Já vendeu
+  ALUGADO // Já alugou
+}
+
+/// Status do lead
+enum LeadStatus {
+  NOVO // Lead novo
+  CONTATADO // Já foi contatado
+  INTERESSADO // Mostrou interesse
+  AGUARDANDO // Aguardando resposta
+  PERDIDO // Lead perdido
+  CONVERTIDO // Lead convertido (comprador/locador)
+  ARQUIVADO // Lead arquivado
+}
+
+/// Status da conversa
+enum ConversationStatus {
+  ATIVA // Conversa ativa
+  INATIVA // Conversa inativa
+  RESOLVIDA // Conversa resolvida
+  ENCERRADA // Conversa encerrada
+}
+
+/// Status do anúncio
+enum AnnouncementStatus {
+  RASCUNHO // Anúncio em rascunho
+  PUBLICADO // Anúncio publicado
+  ATIVO // Anúncio ativo
+  INATIVO // Anúncio inativo
+  SUSPENSO // Anúncio suspenso
+  EXPIRADO // Anúncio expirado
+  RENOVADO // Anúncio renovado
+}
+
+/// Status do pacote
+enum PackageStatus {
+  ATIVO // Pacote ativo
+  INATIVO // Pacote inativo
+  EXPIRADO // Pacote expirado
+  CANCELADO // Pacote cancelado
+}
+
+/// Tipo de plano
+enum PackageType {
+  BASICO // Plano básico
+  DESTAQUE // Plano destaque
+  PREMIUM // Plano premium
+  CORPORATIVO // Plano corporativo
+  CUSTOMIZADO // Plano customizado
+}
+
+/// Status da integração com portal
+enum PortalIntegrationStatus {
+  ATIVO // Integração ativa
+  INATIVO // Integração inativa
+  SUSPENSO // Integração suspensa
+  ERRO // Erro na integração
+}
+
+/// Tipo de portal
+enum PortalType {
+  VIVAREAL // Vivareal
+  OLX // OLX
+  ZAP // Zap Imóveis
+  IMOVEISCOM // Imóveis.com
+  OUTRO // Outro portal
+}
+
+/// Tipo de usuário
+enum UserRole {
+  ADMIN // Administrador do sistema
+  GERENTE // Gerente da imobiliária
+  CORRETOR // Corretor de imóveis
+  ASSISTENTE // Assistente administrativo
+}
+
+/// Tipo de notificação
+enum NotificationType {
+  INFO // Informação geral
+  WARNING // Aviso importante
+  ERROR // Erro do sistema
+  SUCCESS // Sucesso operacional
+  LEAD // Notificação de lead
+  PROPERTY // Notificação de imóvel
+  PAYMENT // Notificação de pagamento
+  SYSTEM // Notificação do sistema
+}
+
+/// Tipo de método de pagamento
+enum PaymentMethod {
+  CREDIT_CARD // Cartão de crédito
+  DEBIT_CARD // Cartão de débito
+  BOLETO // Boleto bancário
+  PIX // PIX
+  TRANSFER // Transferência bancária
+  CASH // Dinheiro
+}
+
+/// Direção da mensagem WhatsApp
+enum MessageDirection {
+  INCOMING // Mensagem recebida
+  OUTGOING // Mensagem enviada
+}
+
+/// Fonte do lead
+enum LeadSource {
+  WEBSITE // Site da imobiliária
+  PORTAL // Portal de imóveis
+  INDICATION // Indicação
+  REFERRAL // Indicação de cliente
+  SOCIAL // Rede social
+  PHONE // Telefone direto
+  WALK_IN // Cliente que chegou na loja
+  OTHER // Outra fonte
+}
+
+// ============================================
+// MODELOS PRINCIPAIS
+// ============================================
+
+/// Modelo de Usuários do Sistema (Corretores, Gerentes, Admin)
+model User {
+  id             String       @id @default(cuid())
+  name           String // Nome completo do usuário
+  email          String       @unique // Email único para login
+  phone          String? // Telefone de contato
+  whatsapp       String? // WhatsApp para contato profissional
+  password       String // Senha criptografada
+  role           UserRole // Papel do usuário no sistema
+  status         EntityStatus @default(ATIVO) // Status do usuário
+  lastLogin      DateTime? // Último login do usuário
+  avatar         String? // URL do avatar do usuário
+  bio            String? // Biografia ou descrição do usuário
+  department     String? // Departamento ou área de atuação
+  specialization String? // Especialização do usuário
+  createdAt      DateTime     @default(now()) // Data de criação
+  updatedAt      DateTime     @updatedAt // Data de atualização
+
+  // Relacionamentos
+  organizationId String // Chave estrangeira para multi-tenant
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos com entidades principais
+  properties    Property[] // Imóveis criados/gerenciados pelo usuário
+  leads         Lead[] // Leads atribuídos ao usuário
+  conversations Conversation[] // Conversas do usuário
+  notifications Notification[] // Notificações do usuário
+  assignedLeads Lead[]         @relation("AssignedLeads") // Leads atribuídos explicitamente
+
+  // Comentários
+  /// Usuário do sistema com diferentes níveis de permissão
+  /// Suporta multi-tenant através da organização
+  propertyVersions PropertyVersion[]
+
+  // Índices
+  @@index([organizationId])
+  @@index([email])
+  @@index([phone])
+  @@index([whatsapp])
+}
+
+/// Modelo de Organizações (Multi-tenant - Imobiliárias)
+model Organization {
+  id            String       @id @default(cuid())
+  name          String // Nome da imobiliária
+  cnpj          String?      @unique // CNPJ único
+  phone         String? // Telefone principal
+  email         String?      @unique // Email corporativo
+  website       String? // Website da imobiliária
+  logo          String? // URL do logo da empresa
+  address       String? // Endereço completo
+  neighborhood  String? // Bairro
+  city          String? // Cidade
+  state         String? // Estado
+  cep           String? // CEP
+  country       String?      @default("Brasil") // País
+  status        EntityStatus @default(ATIVO) // Status da organização
+  planType      PackageType? // Tipo de plano atual
+  maxUsers      Int? // Limite de usuários
+  maxProperties Int? // Limite de imóveis
+  maxLeads      Int? // Limite de leads
+  features      Json? // Recursos disponíveis no plano
+  settings      Json? // Configurações personalizadas
+  createdAt     DateTime     @default(now()) // Data de criação
+  updatedAt     DateTime     @updatedAt // Data de atualização
+
+  // Relacionamentos
+  users         User[] // Usuários da organização
+  properties    Property[] // Imóveis da organização
+  leads         Lead[] // Leads da organização
+  subscriptions Subscription[] // Assinaturas da organização
+
+  // Comentários
+  /// Organização principal para suporte multi-tenant
+  /// Cada organização representa uma imobiliária diferente
+
+  // Índices
+  @@index([cnpj])
+  @@index([email])
+  @@index([city])
+}
+
+/// Modelo de Imóveis (com +80 campos detalhados)
+model Property {
+  id               String             @id @default(cuid())
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  title            String // Título do imóvel
+  description      String? // Descrição detalhada do imóvel
+  code             String? // Código interno do imóvel
+  status           PropertyStatus     @default(RASCUNHO) // Status do imóvel
+  type             PropertyType // Tipo do imóvel
+  businessType     BusinessType // Tipo de negócio (venda/locação)
+  situation        PropertySituation? // Situação do imóvel
+  price            Decimal? // Preço do imóvel
+  priceRent        Decimal? // Preço do aluguel
+  priceCondominium Decimal? // Valor do condomínio
+  priceIptu        Decimal? // Valor do IPTU
+  priceTax         Decimal? // Valor de taxas
+  currency         String?            @default("BRL") // Moeda
+
+  // Medidas e dimensões
+  area             Float? // Área total (m²)
+  areaPrivate      Float? // Área privativa (m²)
+  areaCommon       Float? // Área comum (m²)
+  areaUseful       Float? // Área útil (m²)
+  areaTotal        Float? // Área total (m²)
+  areaLand         Float? // Área do terreno (m²)
+  areaConstruction Float? // Área de construção (m²)
+
+  // Quartos e banheiros
+  bedrooms         Int? // Número de quartos
+  bedroomsSuites   Int? // Número de suítes
+  bathrooms        Int? // Número de banheiros
+  bathroomsSocial  Int? // Número de banheiros sociais
+  bathroomsService Int? // Número de banheiros de serviço
+
+  // Vagas e garagens
+  garages          Int? // Número de vagas na garagem
+  garagesCovered   Int? // Vagas cobertas
+  garagesOpen      Int? // Vagas abertas
+  garagesDependent Int? // Vagas para dependentes
+
+  // Andares
+  totalFloors  Int? // Total de andares
+  currentFloor Int? // Andar atual
+  hasElevator  Boolean? @default(false) // Tem elevador
+  hasConcierge Boolean? @default(false) // Tem porteiro
+
+  // Características do imóvel
+  hasPool             Boolean? @default(false) // Tem piscina
+  hasGarden           Boolean? @default(false) // Tem jardim
+  hasBarbecue         Boolean? @default(false) // Tem churrasqueira
+  hasPlayground       Boolean? @default(false) // Tem playground
+  hasSecurity         Boolean? @default(false) // Tem segurança
+  hasAlarm            Boolean? @default(false) // Tem alarme
+  hasInternet         Boolean? @default(false) // Tem internet
+  hasCableTV          Boolean? @default(false) // Tem TV a cabo
+  hasGas              Boolean? @default(false) // Tem gás
+  hasWater            Boolean? @default(false) // Tem água
+  hasElectricity      Boolean? @default(false) // Tem energia elétrica
+  hasSewerage         Boolean? @default(false) // Tem esgoto
+  hasPhone            Boolean? @default(false) // Tem telefone
+  hasIntercom         Boolean? @default(false) // Tem interfone
+  hasParking          Boolean? @default(false) // Tem estacionamento
+  hasCoveredParking   Boolean? @default(false) // Tem estacionamento coberto
+  hasOpenParking      Boolean? @default(false) // Tem estacionamento aberto
+  hasDependent        Boolean? @default(false) // Tem dependência
+  hasServiceArea      Boolean? @default(false) // Tem área de serviço
+  hasKitchen          Boolean? @default(false) // Tem cozinha
+  hasBalcony          Boolean? @default(false) // Tem varanda
+  hasTerrace          Boolean? @default(false) // Tem terraço
+  hasGourmetArea      Boolean? @default(false) // Tem área gourmet
+  hasHomeOffice       Boolean? @default(false) // Tem home office
+  hasStorageRoom      Boolean? @default(false) // Tem despensa
+  hasLaundry          Boolean? @default(false) // Tem lavanderia
+  hasServiceEntrance  Boolean? @default(false) // Tem entrada de serviço
+  hasWheelchairAccess Boolean? @default(false) // Tem acessibilidade
+  hasFireplace        Boolean? @default(false) // Tem lareira
+  hasAirConditioning  Boolean? @default(false) // Tem ar condicionado
+  hasHeating          Boolean? @default(false) // Tem aquecimento
+  hasSolarHeating     Boolean? @default(false) // Tem aquecedor solar
+
+  // Infraestrutura
+  hasWaterTank           Boolean? @default(false) // Tanque d'água
+  hasWell                Boolean? @default(false) // Poço
+  hasArtesianWell        Boolean? @default(false) // Poço artesiano
+  hasSepticTank          Boolean? @default(false) // Fossa séptica
+  hasRainwaterHarvesting Boolean? @default(false) // Captação de água da chuva
+  hasSolarPanels         Boolean? @default(false) // Painéis solares
+  hasWindTurbine         Boolean? @default(false) // Turbina eólica
+  hasPhotovoltaic        Boolean? @default(false) // Fotovoltaico
+  hasGeothermal          Boolean? @default(false) // Geotérmico
+  hasBiomass             Boolean? @default(false) // Biomassa
+  hasCogeneration        Boolean? @default(false) // Cogeração
+  hasMicrogrid           Boolean? @default(false) // Microgrid
+  hasSmartHome           Boolean? @default(false) // Casa inteligente
+  hasHomeAutomation      Boolean? @default(false) // Automação residencial
+
+  // Segurança
+  hasSecurityCameras  Boolean? @default(false) // Câmeras de segurança
+  hasAccessControl    Boolean? @default(false) // Controle de acesso
+  hasBiometricAccess  Boolean? @default(false) // Acesso biométrico
+  hasVideoIntercom    Boolean? @default(false) // Interfone com vídeo
+  hasGateControl      Boolean? @default(false) // Controle de portão
+  hasFence            Boolean? @default(false) // Cerca
+  hasWall             Boolean? @default(false) // Muro
+  hasGate             Boolean? @default(false) // Portão
+  hasSecurityGuard    Boolean? @default(false) // Segurança 24h
+  hasSecurityDog      Boolean? @default(false) // Cão de guarda
+  hasSecurityLighting Boolean? @default(false) // Iluminação de segurança
+  hasAlarmSystem      Boolean? @default(false) // Sistema de alarme
+
+  // Segurança contra incêndio
+  hasSmokeDetector          Boolean? @default(false) // Detector de fumaça
+  hasCarbonMonoxideDetector Boolean? @default(false) // Detector de monóxido de carbono
+  hasFireExtinguisher       Boolean? @default(false) // Extintor de incêndio
+  hasFirstAidKit            Boolean? @default(false) // Kit de primeiros socorros
+  hasEmergencyExit          Boolean? @default(false) // Saída de emergência
+  hasFireAlarm              Boolean? @default(false) // Alarme de incêndio
+  hasFireSprinkler          Boolean? @default(false) // Sprinkler
+  hasFireHydrant            Boolean? @default(false) // Hidrante
+  hasFireLadder             Boolean? @default(false) // Escada de incêndio
+  hasFireHose               Boolean? @default(false) // Mangueira incêndio
+  hasFireExtinguisher2      Boolean? @default(false) // Extintor adicional
+  hasFireBlanket            Boolean? @default(false) // Cobertor incêndio
+
+  // Localização
+  address      String? // Endereço completo
+  neighborhood String? // Bairro
+  city         String? // Cidade
+  state        String? // Estado
+  cep          String? // CEP
+  latitude     Float? // Latitude
+  longitude    Float? // Longitude
+  location     Json? // Dados de localização detalhados
+
+  // Detalhes adicionais
+  yearBuilt         Int? // Ano de construção
+  renovationYear    Int? // Ano de reforma
+  furnished         Boolean? @default(false) // Mobiliado
+  semiFurnished     Boolean? @default(false) // Semi mobiliado
+  unfurnished       Boolean? @default(false) // Não mobiliado
+  newConstruction   Boolean? @default(false) // Construção nova
+  underConstruction Boolean? @default(false) // Em construção
+  toBeBuilt         Boolean? @default(false) // A ser construído
+
+  // Visitação e disponibilidade
+  availableForVisit   Boolean? @default(true) // Disponível para visita
+  visitSchedule       Json? // Horário de visita
+  requiresAppointment Boolean? @default(false) // Requer agendamento
+  visitInstructions   String? // Instruções para visita
+
+  // Documentos e legal
+  registration     String? // Matrícula do imóvel
+  registrationDate DateTime? // Data da matrícula
+  notary           String? // Cartório
+  registry         String? // Registro
+  condoName        String? // Nome do condomínio
+  condoRegistry    String? // Registro do condomínio
+
+  // Valores adicionais
+  iptuValue     Decimal? // Valor do IPTU
+  condoFee      Decimal? // Taxa de condomínio
+  iptuExemption Boolean? @default(false) // Isenção de IPTU
+  taxExemption  Boolean? @default(false) // Isenção de taxas
+
+  // Observações e informações
+  observations String? // Observações gerais
+  restrictions String? // Restrições do imóvel
+  privileges   String? // Privilégios do imóvel
+  warnings     String? // Avisos importantes
+
+  // Metadados
+  views     Int? @default(0) // Número de visualizações
+  favorites Int? @default(0) // Número de favoritos
+  shares    Int? @default(0) // Número de compartilhamentos
+  clicks    Int? @default(0) // Número de cliques
+
+  // Status e datas
+  publishedAt DateTime? // Data de publicação
+  expiresAt   DateTime? // Data de expiração
+  featured    Boolean?  @default(false) // Imóvel em destaque
+  priority    Int?      @default(0) // Prioridade de destaque
+
+  // Relacionamentos multi-tenant
+  organizationId String // Chave estrangeira para multi-tenant
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos principais
+  ownerId String? // Proprietário do imóvel
+  owner   Owner?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  // Relacionamentos secundários
+  photos        PropertyPhoto[] // Fotos do imóvel
+  versions      PropertyVersion[] // Histórico de alterações
+  leads         Lead[] // Leads relacionados ao imóvel
+  announcements Announcement[] // Anúncios do imóvel
+  features      PropertyFeature[] // Características do imóvel
+
+  // Comentários
+  /// Modelo principal de imóveis com +80 campos detalhados
+  /// Suporta todos os tipos de imóveis e situações
+  /// Sistema de versionamento para histórico de alterações
+  /// Integração com portais de imóveis
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  @@unique([code])
+  // Índices
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([businessType])
+  @@index([city])
+  @@index([neighborhood])
+  @@index([price])
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([code])
+}
+
+/// Modelo de Fotos de Imóveis
+model PropertyPhoto {
+  id         String   @id @default(cuid())
+  propertyId String // ID do imóvel
+  url        String // URL da imagem
+  caption    String? // Legenda da foto
+  order      Int      @default(0) // Ordem de exibição
+  isPrimary  Boolean  @default(false) // É a foto principal
+  altText    String? // Texto alternativo para acessibilidade
+  width      Int? // Largura da imagem
+  height     Int? // Altura da imagem
+  size       Int? // Tamanho em bytes
+  format     String? // Formato da imagem (jpg, png, etc.)
+  metadata   Json? // Metadados adicionais da imagem
+  createdAt  DateTime @default(now()) // Data de criação
+  updatedAt  DateTime @updatedAt // Data de atualização
+
+  // Relacionamentos
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Fotos dos imóveis com suporte a metadados
+  /// Sistema de ordenação e foto principal
+  /// Metadados para otimização de performance
+
+  // Índices
+  @@index([propertyId])
+  @@index([isPrimary])
+  @@index([order])
+}
+
+/// Modelo de Histórico de Alterações de Imóveis
+model PropertyVersion {
+  id         String   @id @default(cuid())
+  propertyId String // ID do imóvel
+  field      String // Campo alterado
+  oldValue   String? // Valor antigo
+  newValue   String? // Valor novo
+  changedBy  String // ID do usuário que alterou
+  reason     String? // Motivo da alteração
+  createdAt  DateTime @default(now()) // Data da alteração
+
+  // Relacionamentos
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [changedBy], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Histórico completo de alterações nos imóveis
+  /// Auditoria de todas as modificações
+  /// Rastreabilidade de responsáveis
+
+  // Índices
+  @@index([propertyId])
+  @@index([field])
+  @@index([createdAt])
+  @@index([changedBy])
+}
+
+/// Modelo de Proprietários
+model Owner {
+  id            String         @id @default(cuid())
+  name          String // Nome completo do proprietário
+  document      String? // CPF/CNPJ do proprietário
+  phone         String? // Telefone de contato
+  email         String? // Email de contato
+  whatsapp      String? // WhatsApp para contato
+  status        EntityStatus   @default(ATIVO) // Status do proprietário
+  situation     OwnerSituation @default(DISPONIVEL) // Situação do proprietário
+  birthDate     DateTime? // Data de nascimento
+  gender        String? // Gênero
+  maritalStatus String? // Estado civil
+  profession    String? // Profissão
+  income        Decimal? // Renda mensal
+  creditScore   Int? // Score de crédito
+
+  // Endereço
+  address      String? // Endereço completo
+  neighborhood String? // Bairro
+  city         String? // Cidade
+  state        String? // Estado
+  cep          String? // CEP
+
+  // Informações profissionais
+  company   String? // Empresa onde trabalha
+  position  String? // Cargo na empresa
+  workPhone String? // Telefone comercial
+  workEmail String? // Email corporativo
+
+  // Preferências
+  contactPreference String? @default("whatsapp") // Preferência de contato
+  contactHours      Json? // Horários preferenciais para contato
+  language          String? @default("pt-BR") // Idioma preferido
+
+  // Metadados
+  notes        String? // Observações sobre o proprietário
+  tags         Json? // Tags para categorização
+  customFields Json? // Campos personalizados
+  lastContact  DateTime? // Último contato
+  nextContact  DateTime? // Próximo contato agendado
+
+  // Relacionamentos
+  properties Property[] // Imóveis do proprietário
+
+  // Comentários
+  /// Proprietários de imóveis com suporte a WhatsApp
+  /// Sistema de categorização e tags
+  /// Histórico de contato e preferências
+
+  @@unique([document])
+  // Índices
+  @@index([phone])
+  @@index([email])
+  @@index([whatsapp])
+  @@index([document])
+}
+
+/// Modelo de Leads (Potenciais clientes)
+model Lead {
+  id           String        @id @default(cuid())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  name         String // Nome completo do lead
+  document     String? // CPF/CNPJ do lead
+  email        String? // Email do lead
+  phone        String? // Telefone do lead
+  whatsapp     String? // WhatsApp do lead
+  status       LeadStatus    @default(NOVO) // Status do lead
+  source       LeadSource    @default(WALK_IN) // Fonte do lead
+  budget       Decimal? // Orçamento do lead
+  budgetRent   Decimal? // Orçamento de aluguel
+  propertyType PropertyType? // Tipo de imóvel desejado
+  businessType BusinessType? // Tipo de negócio desejado
+  bedrooms     Int? // Número de quartos desejado
+  bathrooms    Int? // Número de banheiros desejado
+  maxPrice     Decimal? // Preço máximo desejado
+  maxRent      Decimal? // Aluguel máximo desejado
+  minArea      Float? // Área mínima desejada
+  maxArea      Float? // Área máxima desejada
+  neighborhood String? // Bairro preferido
+  city         String? // Cidade preferida
+  state        String? // Estado preferido
+
+  // Informações adicionais
+  company     String? // Empresa do lead
+  position    String? // Cargo do lead
+  profession  String? // Profissão do lead
+  income      Decimal? // Renda do lead
+  creditScore Int? // Score de crédito
+
+  // Metadados
+  notes         String? // Observações sobre o lead
+  tags          Json? // Tags para categorização
+  customFields  Json? // Campos personalizados
+  sourceDetails Json? // Detalhes da fonte do lead
+  referralCode  String? // Código de indicação
+
+  // Relacionamentos
+  organizationId String // Chave estrangeira para multi-tenant
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  propertyId String? // Imóvel de interesse
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  assignedToId String? // Usuário responsável pelo lead
+  assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  conversations Conversation[] // Conversas do lead
+  campaigns     WhatsAppCampaign[] // Campanhas do lead
+
+  // Comentários
+  /// Leads potenciais com sistema de atribuição
+  /// Suporte a múltiplos canais de contato
+  /// Integração com WhatsApp e campanhas
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  // Índices
+  @@index([organizationId])
+  @@index([status])
+  @@index([source])
+  @@index([propertyType])
+  @@index([businessType])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([whatsapp])
+  @@index([email])
+}
+
+/// Modelo de Conversas WhatsApp
+model Conversation {
+  id          String             @id @default(cuid())
+  leadId      String // ID do lead
+  message     String // Conteúdo da mensagem
+  direction   MessageDirection // Direção da mensagem
+  status      ConversationStatus @default(ATIVA) // Status da conversa
+  messageType String?            @default("text") // Tipo de mensagem
+  mediaUrl    String? // URL de mídia (imagem, áudio, etc.)
+  mediaType   String? // Tipo de mídia
+  metadata    Json? // Metadados adicionais
+  readAt      DateTime? // Data de leitura
+  deliveredAt DateTime? // Data de entrega
+  createdAt   DateTime           @default(now()) // Data de criação
+  updatedAt   DateTime           @updatedAt // Data de atualização
+
+  // Relacionamentos
+  lead   Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId String? // Usuário responsável pela conversa
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Comentários
+  /// Sistema de conversas WhatsApp com IA
+  /// Histórico completo de interações
+  /// Suporte a mensagens de texto e mídia
+
+  // Índices
+  @@index([leadId])
+  @@index([direction])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+/// Modelo de Anúncios por Portal
+model Announcement {
+  id          String             @id @default(cuid())
+  propertyId  String // ID do imóvel
+  portalId    String // ID da integração do portal
+  title       String // Título do anúncio
+  description String? // Descrição do anúncio
+  url         String? // URL do anúncio no portal
+  externalId  String? // ID externo do anúncio
+  status      AnnouncementStatus @default(RASCUNHO) // Status do anúncio
+  portalType  PortalType // Tipo de portal
+  publishedAt DateTime? // Data de publicação
+  expiresAt   DateTime? // Data de expiração
+  views       Int?               @default(0) // Visualizações
+  clicks      Int?               @default(0) // Cliques
+  likes       Int?               @default(0) // Curtidas
+  shares      Int?               @default(0) // Compartilhamentos
+  price       Decimal? // Preço no portal
+  currency    String?            @default("BRL") // Moeda
+  lastSync    DateTime? // Última sincronização
+  syncErrors  Json? // Erros de sincronização
+  metadata    Json? // Metadados adicionais
+  createdAt   DateTime           @default(now()) // Data de criação
+  updatedAt   DateTime           @updatedAt // Data de atualização
+
+  // Relacionamentos
+  property          Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  portalIntegration PortalIntegration @relation(fields: [portalId], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Integração com portais de imóveis
+  /// Sincronização automática de dados
+  /// Métricas de desempenho dos anúncios
+
+  @@unique([externalId, portalId])
+  // Índices
+  @@index([propertyId])
+  @@index([portalId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([portalType])
+  @@index([externalId])
+}
+
+/// Modelo de Pacotes (Planos)
+model Package {
+  id          String        @id @default(cuid())
+  name        String // Nome do pacote
+  description String? // Descrição do pacote
+  type        PackageType // Tipo de pacote
+  price       Decimal // Preço do pacote
+  duration    Int // Duração em dias
+  features    Json? // Recursos do pacote
+  limits      Json? // Limites do pacote
+  status      PackageStatus @default(ATIVO) // Status do pacote
+  isPopular   Boolean       @default(false) // É pacote popular
+  isDefault   Boolean       @default(false) // É pacote padrão
+  trialDays   Int? // Dias de teste gratuitos
+  setupFee    Decimal? // Taxa de setup
+  currency    String        @default("BRL") // Moeda
+  metadata    Json? // Metadados adicionais
+  createdAt   DateTime      @default(now()) // Data de criação
+  updatedAt   DateTime      @updatedAt // Data de atualização
+
+  // Relacionamentos
+  subscriptions Subscription[] // Assinaturas do pacote
+
+  // Comentários
+  /// Pacotes de assinatura da plataforma
+  /// Diferentes níveis de serviço
+  /// Sistema de limites e recursos
+
+  // Índices
+  @@index([type])
+  @@index([status])
+  @@index([price])
+  @@index([createdAt])
+}
+
+/// Modelo de Integrações com Portais
+model PortalIntegration {
+  id         String                  @id @default(cuid())
+  name       String // Nome da integração
+  type       PortalType // Tipo de portal
+  apiKey     String? // API key da integração
+  apiSecret  String? // API secret da integração
+  baseUrl    String? // URL base da API
+  authType   String?                 @default("api_key") // Tipo de autenticação
+  authData   Json? // Dados de autenticação
+  status     PortalIntegrationStatus @default(ATIVO) // Status da integração
+  lastSync   DateTime? // Última sincronização
+  syncCount  Int?                    @default(0) // Contador de sincronizações
+  errorCount Int?                    @default(0) // Contador de erros
+  metadata   Json? // Metadados adicionais
+  settings   Json? // Configurações personalizadas
+  createdAt  DateTime                @default(now()) // Data de criação
+  updatedAt  DateTime                @updatedAt // Data de atualização
+
+  // Relacionamentos
+  announcements Announcement[] // Anúncios da integração
+
+  // Comentários
+  /// Integrações com portais de imóveis externos
+  /// Suporte a múltiplos portais
+  /// Sistema de sincronização automática
+
+  @@unique([apiKey, type])
+  // Índices
+  @@index([type])
+  @@index([status])
+  @@index([lastSync])
+}
+
+/// Modelo de Campanhas WhatsApp
+model WhatsAppCampaign {
+  id             String    @id @default(cuid())
+  name           String // Nome da campanha
+  message        String // Mensagem da campanha
+  targetAudience Json? // Público alvo da campanha
+  status         String    @default("draft") // Status da campanha
+  scheduledAt    DateTime? // Data agendada
+  sentAt         DateTime? // Data de envio
+  totalSent      Int       @default(0) // Total enviado
+  totalDelivered Int       @default(0) // Total entregue
+  totalRead      Int       @default(0) // Total lido
+  totalReplied   Int       @default(0) // Total respondido
+  totalClicked   Int       @default(0) // Total clicado
+  errorCount     Int       @default(0) // Contador de erros
+  metadata       Json? // Metadados adicionais
+  createdAt      DateTime  @default(now()) // Data de criação
+  updatedAt      DateTime  @updatedAt // Data de atualização
+
+  // Relacionamentos
+  leads Lead[] // Leads da campanha
+
+  // Comentários
+  /// Sistema de campanhas WhatsApp em massa
+  /// Agendamento e métricas de envio
+  /// Segmentação de público alvo
+
+  // Índices
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([sentAt])
+  @@index([createdAt])
+}
+
+/// Modelo de Assinaturas
+model Subscription {
+  id                 String        @id @default(cuid())
+  organizationId     String // ID da organização
+  packageId          String // ID do pacote
+  status             PackageStatus @default(ATIVO) // Status da assinatura
+  startDate          DateTime // Data de início
+  endDate            DateTime? // Data de término
+  nextBillingDate    DateTime? // Próxima data de cobrança
+  billingCycle       String?       @default("monthly") // Ciclo de cobrança
+  trialEndsAt        DateTime? // Fim do período de teste
+  canceledAt         DateTime? // Data de cancelamento
+  pausedAt           DateTime? // Data de pausa
+  resumedAt          DateTime? // Data de retomada
+  currentPeriodStart DateTime? // Início do período atual
+  currentPeriodEnd   DateTime? // Fim do período atual
+  pausedReason       String? // Motivo da pausa
+  cancellationReason String? // Motivo do cancelamento
+  metadata           Json? // Metadados adicionais
+  createdAt          DateTime      @default(now()) // Data de criação
+  updatedAt          DateTime      @updatedAt // Data de atualização
+
+  // Relacionamentos
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  package      Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  payments     PaymentHistory[] // Histórico de pagamentos
+
+  // Comentários
+  /// Sistema de assinaturas da plataforma
+  /// Suporte a ciclos de cobrança
+  /// Histórico de pagamentos e status
+
+  // Índices
+  @@index([organizationId])
+  @@index([packageId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([nextBillingDate])
+}
+
+/// Modelo de Histórico de Pagamentos
+model PaymentHistory {
+  id             String        @id @default(cuid())
+  subscriptionId String // ID da assinatura
+  amount         Decimal // Valor do pagamento
+  paymentMethod  PaymentMethod // Método de pagamento
+  status         String        @default("pending") // Status do pagamento
+  transactionId  String? // ID da transação
+  invoiceId      String? // ID da fatura
+  description    String? // Descrição do pagamento
+  metadata       Json? // Metadados adicionais
+  processedAt    DateTime? // Data de processamento
+  createdAt      DateTime      @default(now()) // Data de criação
+  updatedAt      DateTime      @updatedAt // Data de atualização
+
+  // Relacionamentos
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Histórico completo de pagamentos
+  /// Suporte a múltiplos métodos de pagamento
+  /// Rastreabilidade de transações
+
+  // Índices
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([transactionId])
+  @@index([createdAt])
+}
+
+/// Modelo de Notificações
+model Notification {
+  id        String           @id @default(cuid())
+  title     String // Título da notificação
+  message   String // Mensagem da notificação
+  type      NotificationType // Tipo de notificação
+  status    String           @default("unread") // Status da notificação
+  userId    String // ID do usuário
+  metadata  Json? // Metadados adicionais
+  readAt    DateTime? // Data de leitura
+  createdAt DateTime         @default(now()) // Data de criação
+  updatedAt DateTime         @updatedAt // Data de atualização
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Sistema de notificações do plataforma
+  /// Diferentes tipos de notificações
+  /// Sistema de leitura e status
+
+  // Índices
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([readAt])
+}
+
+/// Modelo de Características Personalizadas de Imóveis
+model PropertyFeature {
+  id         String   @id @default(cuid())
+  propertyId String // ID do imóvel
+  name       String // Nome da característica
+  value      String // Valor da característica
+  category   String? // Categoria da característica
+  order      Int      @default(0) // Ordem de exibição
+  isActive   Boolean  @default(true) // Está ativa
+  createdAt  DateTime @default(now()) // Data de criação
+  updatedAt  DateTime @updatedAt // Data de atualização
+
+  // Relacionamentos
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Comentários
+  /// Características personalizadas de imóveis
+  /// Sistema de categorização e ordenação
+  /// Extensibilidade do sistema de características
+
+  // Índices
+  @@index([propertyId])
+  @@index([category])
+  @@index([name])
+  @@index([order])
+}
+
+// ============================================
+// IA 4 - AUDIT LOG (SEGURANÇA ENTERPRISE)
+// ============================================
+
+/// Tipo de ação auditada
+enum AuditAction {
+  CREATE // Criação de registro
+  UPDATE // Atualização de registro
+  DELETE // Exclusão de registro
+  READ // Leitura de registro
+  LOGIN // Login de usuário
+  LOGOUT // Logout de usuário
+  EXPORT // Exportação de dados
+  IMPORT // Importação de dados
+  APPROVE // Aprovação
+  REJECT // Rejeição
+  SEND // Envio de mensagem
+  RECEIVE // Recebimento de mensagem
+}
+
+/// Entidade auditada
+enum AuditEntity {
+  USER // Usuário
+  ORGANIZATION // Organização
+  PROPERTY // Imóvel
+  LEAD // Lead
+  OWNER // Proprietário
+  CONVERSATION // Conversa
+  ANNOUNCEMENT // Anúncio
+  PACKAGE // Pacote
+  SUBSCRIPTION // Assinatura
+  PAYMENT // Pagamento
+  NOTIFICATION // Notificação
+}
+
+/// Nível de risco da ação
+enum AuditRiskLevel {
+  LOW // Baixo risco
+  MEDIUM // Médio risco
+  HIGH // Alto risco
+  CRITICAL // Risco crítico
+}
+
+/// Modelo de Auditoria (AuditLog)
+model AuditLog {
+  id String @id @default(cuid())
+
+  // Identificação da ação
+  action   AuditAction // Tipo de ação realizada
+  entity   AuditEntity // Entidade afetada
+  entityId String // ID do registro afetado
+
+  // Dados da ação
+  changes     Json? // Alterações realizadas (antes/depois)
+  metadata    Json? // Metadados adicionais
+  description String? // Descrição da ação
+
+  // Contexto de segurança
+  ipAddress String? // Endereço IP do usuário
+  userAgent String? // User Agent do navegador
+  sessionId String? // ID da sessão
+
+  // Classificação de risco
+  riskLevel   AuditRiskLevel @default(LOW)
+  containsPII Boolean        @default(false) // Contém dados pessoais
+  isSensitive Boolean        @default(false) // Contém dados sensíveis
+
+  // Relacionamentos
+  userId         String? // Usuário que realizou a ação
+  organizationId String? // Organização relacionada
+
+  // Timestamps
+  timestamp DateTime @default(now()) // Quando ocorreu
+  createdAt DateTime @default(now())
+
+  // Comentários
+  /// Log de auditoria para conformidade LGPD e segurança
+  /// Armazena todas as ações realizadas no sistema
+  /// Suporta consulta por usuário, entidade, data e risco
+
+  // Índices para performance
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([riskLevel])
+  @@index([ipAddress])
+  @@index([sessionId])
+  // Índices compostos para auditoria
+  @@index([organizationId, action, timestamp])
+  @@index([entity, timestamp])
+}
+
+// ============================================
+// POLÍTICAS DE RLS (ROW LEVEL SECURITY)
+// ============================================
+
+// Configurações de RLS para suporte multi-tenant
+// Estas políticas devem ser aplicadas no banco de dados PostgreSQL
+
+// Política para Organization: Acessar apenas dados da organização do usuário
+// CREATE POLICY "Organization is tenant" ON Organization
+//   FOR ALL TO authenticated
+//   USING (organization_id = auth.jwt()->>'organizationId');
+
+// Política para User: Acessar apenas usuários da mesma organização
+// CREATE POLICY "User is tenant" ON User
+//   FOR ALL TO authenticated
+//   USING (organization_id = auth.jwt()->>'organizationId');
+
+// Política para Property: Acessar apenas imóveis da organização
+// CREATE POLICY "Property is tenant" ON Property
+//   FOR ALL TO authenticated
+//   USING (organization_id = auth.jwt()->>'organizationId');
+
+// Política para Lead: Acessar apenas leads da organização
+// CREATE POLICY "Lead is tenant" ON Lead
+//   FOR ALL TO authenticated
+//   USING (organization_id = auth.jwt()->>'organizationId');
+
+// Política para Notification: Acessar apenas notificações do usuário
+// CREATE POLICY "Notification is user" ON Notification
+//   FOR ALL TO authenticated
+//   USING (user_id = auth.jwt()->>'userId');
+
+// Política de permissões baseadas no papel do usuário
+// CREATE POLICY "User can access own data" ON User
+//   FOR SELECT TO authenticated
+//   USING (id = auth.jwt()->>'userId' OR role = 'ADMIN');
+
+// ============================================
+// ÍNDICES ADICIONAIS PARA PERFORMANCE
+// ============================================
+
+// Índices compostos para consultas complexas
+// CREATE INDEX idx_property_status_city ON Property(status, city);
+// CREATE INDEX idx_lead_status_assigned ON Lead(status, assigned_to_id);
+// CREATE INDEX idx_conversation_lead_status ON Conversation(lead_id, status);
+// CREATE INDEX idx_announcement_portal_status ON Announcement(portal_type, status);
+// CREATE INDEX idx_subscription_org_status ON Subscription(organization_id, status);
+
+// Índices para busca textual
+// CREATE INDEX idx_property_search ON Property USING gin(to_tsvector('portuguese', title || ' ' || description));
+// CREATE INDEX idx_owner_search ON Owner USING gin(to_tsvector('portuguese', name));
+
+// Índices para datas
+// CREATE INDEX idx_property_dates ON Property(created_at, published_at, expires_at);
+// CREATE INDEX idx_lead_dates ON Lead(created_at, last_contact, next_contact);
+// CREATE INDEX idx_subscription_dates ON Subscription(start_date, end_date, next_billing_date);
+
+// ============================================
+// TRIGGERS E FUNÇÕES
+// ============================================
+
+// Trigger para auditoria de alterações
+//   source,
+//   COUNT(*) as total,
+//   COUNT(*) FILTER (WHERE status = 'NOVO') as new_count,
+//   COUNT(*) FILTER (WHERE status = 'CONTATADO') as contacted_count,
+//   COUNT(*) FILTER (WHERE status = 'INTERESSADO') as interested_count,
+//   COUNT(*) FILTER (WHERE status = 'CONVERTIDO') as converted_count,
+//   NOW() as last_updated
+// FROM Lead
+// GROUP BY organization_id, status, source;
+
+// Índice para a view materializada
+// CREATE INDEX idx_property_metrics_org ON PropertyMetrics(organization_id);
+// CREATE INDEX idx_lead_metrics_org ON LeadMetrics(organization_id);

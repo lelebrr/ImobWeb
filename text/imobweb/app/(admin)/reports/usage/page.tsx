@@ -21,7 +21,7 @@ import {
   ChevronRight,
   TrendingUp
 } from 'lucide-react';
-import { cn } from '../../../../lib/utils';
+import { cn } from '@/lib/utils';
 
 const USAGE_DATA = [
   { day: 'Seg', whatsapp: 1200, syncs: 450, ai: 85 },

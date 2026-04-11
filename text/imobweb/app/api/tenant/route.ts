@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantManager } from '../../lib/tenant/tenant-manager';
+import { TenantManager } from '@/lib/tenant/tenant-manager';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useResponsive } from "@/text/imobweb/hooks/use-responsive";
-import { cn } from "@/text/imobweb/lib/responsive/tailwind-utils";
+import { useResponsive } from "@/hooks/use-responsive";
+import { cn } from "@/lib/responsive/tailwind-utils";
 import { X } from "lucide-react";
 
 interface AdaptiveModalProps {

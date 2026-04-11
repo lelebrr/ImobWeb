@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FranchiseManager } from '../../../lib/franchise/franchise-manager';
+import { FranchiseManager } from '@/lib/franchise/franchise-manager';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import { useResponsive } from "@/text/imobweb/hooks/use-responsive";
+import { useResponsive } from "@/hooks/use-responsive";
 import { Home, Search, Building2, Settings, Users } from "lucide-react";
-import { cn } from "@/text/imobweb/lib/responsive/tailwind-utils";
+import { cn } from "@/lib/responsive/tailwind-utils";
 
 export function BottomNavigation() {
   const { isMobile, isClient } = useResponsive();

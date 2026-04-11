@@ -22,7 +22,7 @@ export function AnalyticsFilters({
   const [expandedFilter, setExpandedFilter] = useState<string | null>(null);
 
   const activeFilterCount = Object.keys(activeFilters).filter(
-    key => activeFilters[key] && (Array.isArray(activeFilters[key]) ? (activeFilters[key] as string[]).length > 0 : true))
+    key => activeFilters[key] && (Array.isArray(activeFilters[key]) ? (activeFilters[key] as string[]).length > 0 : true)
   ).length;
 
   const handleFilterClick = (filterId: string) => {
@@ -161,19 +161,19 @@ export function AnalyticsFilters({
                   {renderFilterOptions(filter)}
                 </div>
               </div>
-            );
-          }
-        })}
+            )}
+          </div>
+        );
+      })}
 
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={onReset} className="text-gray-500">
-            <X className="mr-1 h-4 w-4" />
-            Limpar filtros
-          </Button>
-        )}
-      </div>
-    );
-  }
+      {activeFilterCount > 0 && (
+        <Button variant="ghost" size="sm" onClick={onReset} className="text-gray-500">
+          <X className="mr-1 h-4 w-4" />
+          Limpar filtros
+        </Button>
+      )}
+    </div>
+  );
 }
 
 interface DateRangePickerProps {

@@ -21,8 +21,8 @@ import {
   X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import FlowPreview from "../../../components/whatsapp/FlowPreview";
-import { sendPriceAdjustmentFlow, sendPhotoRequestFlow } from "../../../lib/whatsapp/advanced-flows";
+import FlowPreview from "@/components/whatsapp/FlowPreview";
+import { sendPriceAdjustmentFlow, sendPhotoRequestFlow } from "@/lib/whatsapp/advanced-flows";
 import { cn } from "@/lib/utils";
 
 export default function DirectChatPage({ params }: { params: { chatId: string } }) {

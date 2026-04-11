@@ -25,8 +25,8 @@ import {
   Filter,
   Calendar
 } from 'lucide-react';
-import { ReportEngine, ReportDataset } from '../../../../lib/admin-reports/report-engine';
-import { cn } from '../../../../lib/utils';
+import { ReportEngine, ReportDataset } from '@/lib/admin-reports/report-engine';
+import { cn } from '@/lib/utils';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6'];
 

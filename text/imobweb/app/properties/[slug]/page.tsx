@@ -1,6 +1,6 @@
 import React from 'react';
-import { PropertyGallery } from '../../../components/image/PropertyGallery';
-import { Property } from '../../../types/property';
+import { PropertyGallery } from '@/components/image/PropertyGallery';
+import { Property } from '@/types/property';
 import { 
   Bed, 
   Bath, 
@@ -14,7 +14,7 @@ import {
   Share2,
   Printer
 } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Mock data for a single property
 const PROPERTY: Property = {

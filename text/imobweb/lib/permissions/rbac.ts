@@ -7,7 +7,7 @@ import {
   Role,
   ROLE_PERMISSIONS,
   Condition,
-} from '../types/permissions';
+} from '@/types/permissions';
 
 export class RBACService {
   private static userPermissions: Map<string, UserPermissions> = new Map();

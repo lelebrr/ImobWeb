@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AddonStore } from "../../../lib/marketplace/addon-store";
+import { AddonStore } from "@/lib/marketplace/addon-store";
 
 /**
  * API DE INSTALAÇÃO DE ADD-ONS - imobWeb 2026

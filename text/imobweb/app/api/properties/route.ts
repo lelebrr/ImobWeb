@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { PropertyGenerator } from '../../../lib/ai/property-generator';
+import { PropertyGenerator } from '@/lib/ai/property-generator';
 
 /**
  * PROPERTY API - IMOBWEB 2026

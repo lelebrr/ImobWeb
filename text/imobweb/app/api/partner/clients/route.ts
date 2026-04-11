@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OnboardingService } from "../../../lib/reseller/onboarding-service";
+import { OnboardingService } from "@/lib/reseller/onboarding-service";
 
 /**
  * API DE GESTÃO DE CLIENTES DO PARCEIRO - imobWeb 2026

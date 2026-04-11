@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageSquare, User, Search, Filter, Phone, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SwipeableItem } from "../../components/mobile/Gestures";
+import { Gestures } from "@/components/mobile/Gestures";
 
 const mockChats = [
   { id: "1", name: "José Silva", lastMsg: "Podemos confirmar a visita?", time: "10:30", unread: 2, type: "OWNER" },

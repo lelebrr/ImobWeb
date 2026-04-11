@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@/text/imobweb/lib/utils"; // Assumindo utils do shadcn
+import { cn } from "@/lib/utils"; // Assumindo utils do shadcn
 
 interface FluidContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   as?: React.ElementType;

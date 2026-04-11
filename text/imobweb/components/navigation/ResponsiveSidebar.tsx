@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { cn } from "@/text/imobweb/lib/responsive/tailwind-utils";
+import { cn } from "@/lib/responsive/tailwind-utils";
 import { Menu, X, Home, Users, Settings, Building, MapPin } from "lucide-react";
-import { useResponsive } from "@/text/imobweb/hooks/use-responsive";
+import { useResponsive } from "@/hooks/use-responsive";
 
 export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) {
   const { isMobile, isTablet, isClient } = useResponsive();

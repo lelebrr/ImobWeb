@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OnboardingService } from "../../../lib/reseller/onboarding-service";
-import { getTenantHierarchy } from "../../../lib/tenant/tenant-manager";
+import { OnboardingService } from "@/lib/reseller/onboarding-service";
+import { getTenantHierarchy } from "@/lib/tenant/tenant-manager";
 
 /**
  * API DE GESTÃO DE SUB-CONTAS - imobWeb

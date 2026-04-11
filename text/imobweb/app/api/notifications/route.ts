@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CreateNotificationSchema, Notification } from '../../lib/notifications/types';
-import { NotificationService } from '../../lib/notifications/service';
+import { CreateNotificationSchema, Notification } from '@/lib/notifications/types';
+import { NotificationService } from '@/lib/notifications/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

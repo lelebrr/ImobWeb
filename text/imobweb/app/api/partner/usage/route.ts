@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LimitEnforcer } from "../../../lib/reseller/limit-enforcer";
+import { LimitEnforcer } from "@/lib/reseller/limit-enforcer";
 
 /**
  * API DE TELEMETRIA DE CONSUMO E LIMITES - imobWeb 2026

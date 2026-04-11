@@ -176,7 +176,6 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </div>
-        </div>
 
           {/* Main Content */ }
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -523,9 +522,9 @@ export default function DashboardPage() {
                         </div>
                         <Progress value={100} className="h-2" />
                     </div>
+                </div>
             </CardContent>
         </Card>
-    </div>
 
     {/* Recent Properties & Leads */ }
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

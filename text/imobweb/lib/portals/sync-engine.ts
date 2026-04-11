@@ -163,6 +163,8 @@ export class SyncEngine {
     });
 
     return results;
+  }
+
   /**
    * Executa a rotina de manutenção automática
    */
