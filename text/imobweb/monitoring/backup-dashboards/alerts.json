@@ -1,0 +1,45 @@
+{
+  "name": "Backup & Resilience Monitoring",
+  "version": "2026.1",
+  "alerts": [
+    {
+      "id": "BACKUP_FAILURE",
+      "metric": "backup_execution_status",
+      "threshold": 0,
+      "comparison": "==",
+      "severity": "CRITICAL",
+      "description": "Disparado quando um job de backup falha.",
+      "channels": ["WHATSAPP_SRE", "EMAIL", "PUSH"]
+    },
+    {
+      "id": "HIGH_LATENCY_RESTORE",
+      "metric": "restore_duration_ms",
+      "threshold": 300000,
+      "comparison": ">",
+      "severity": "WARNING",
+      "description": "Alerta se a restauração demorar mais de 5 minutos."
+    },
+    {
+      "id": "LOW_DISK_VAULT",
+      "metric": "storage_vault_usage_percent",
+      "threshold": 85,
+      "comparison": ">",
+      "severity": "WARNING",
+      "description": "Alerta quando o cofre de backups está quase cheio."
+    },
+    {
+      "id": "DATABASE_INACCESSIBLE",
+      "metric": "health_check_supabase_status",
+      "threshold": 0,
+      "comparison": "==",
+      "severity": "CRITICAL",
+      "description": "Failover Manager detectou banco de dados offline."
+    }
+  ],
+  "retention_policy": {
+    "daily_count": 30,
+    "weekly_count": 12,
+    "monthly_count": 12,
+    "yearly_count": 1
+  }
+}

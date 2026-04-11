@@ -3,8 +3,9 @@
 import * as XLSX from 'xlsx';
 import * as csvParser from 'csv-parser';
 import { Readable } from 'stream';
-import { validateCep, validateCpfCnpj, validatePhone, validateEmail } from '../fiscal-rules';
-import { PropertyData, ImportError, ImportResult } from '../types/migration';
+import { validateCep, validateCpfCnpj, validatePhone, validateEmail } from '../../fiscal-rules';
+import { PropertyData, ImportError, ImportResult } from '../../types/migration';
+import { Buffer } from 'buffer';
 
 /**
  * Processador principal de importação de arquivos CSV e Excel
@@ -72,7 +73,7 @@ export class CSVImporter {
             return {
                 data: [],
                 errors: [{ message: 'Arquivo vazio ou sem dados', row: 0, type: 'validation' }],
-                metadata: { totalRows: 0, ...options.onProgress?.({ processed: 0, total: 0, errors: 0 }) }
+                metadata: { totalRows: 0, processedRows: 0, validRows: 0, invalidRows: 0, duplicateRows: 0 }
             };
         }
 
@@ -89,7 +90,7 @@ export class CSVImporter {
         // Processar linhas em chunks para performance
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
-            if (!row || row.length === 0) continue;
+            if (!row || !Array.isArray(row) || row.length === 0) continue;
 
             const processedRow: PropertyData = {};
 
@@ -120,8 +121,8 @@ export class CSVImporter {
             };
 
             // Mapear campos
-            headers.forEach((header, index) => {
-                const mappedField = mapping[header?.toLowerCase()];
+            (headers as string[]).forEach((header: string, index: number) => {
+                const mappedField = mapping[header.toLowerCase()];
                 if (mappedField) {
                     processedRow[mappedField] = row[index] || '';
                 }
@@ -233,18 +234,20 @@ export class CSVImporter {
             }
         }
 
-        result.data = processedData;
-        result.errors = errors;
-        result.warnings = warnings;
-        result.metadata = {
-            totalRows: data.length - 1,
-            processedRows,
-            validRows,
-            invalidRows,
-            duplicateRows
+        const finalResult: ImportResult = {
+            data: processedData,
+            errors,
+            warnings,
+            metadata: {
+                totalRows: data.length - 1,
+                processedRows,
+                validRows,
+                invalidRows,
+                duplicateRows
+            }
         };
 
-        return result;
+        return finalResult;
     }
 
     /**
@@ -273,14 +276,14 @@ export class CSVImporter {
 
             stream.pipe(parser);
 
-            parser.on('data', (row) => {
+            parser.on('data', (row: Record<string, string>) => {
                 result.metadata.processedRows++;
 
                 // Processar cada linha
                 const processedRow: PropertyData = {};
                 const headers = result.data.length === 0 ? Object.keys(row) : result.data[0];
 
-                headers.forEach((header, index) => {
+                headers.forEach((header: string, index: number) => {
                     const mappedField = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
                     processedRow[mappedField] = row[header] || '';
                 });
@@ -384,7 +387,7 @@ export class CSVImporter {
                 });
             });
 
-            parser.on('error', (error) => {
+            parser.on('error', (error: Error) => {
                 result.errors.push({
                     message: `Erro ao processar CSV: ${error.message}`,
                     row: 0,
@@ -405,7 +408,7 @@ export class CSVImporter {
 
                 // Mapear colunas
                 const headers = rows[0].split(',');
-                headers.forEach((header, index) => {
+                headers.forEach((header: string, index: number) => {
                     const mappedField = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
                     processedRow[mappedField] = parts[index] || '';
                 });

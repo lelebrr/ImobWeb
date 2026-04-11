@@ -1,0 +1,29 @@
+name: Automated Backup & Health Check
+
+on:
+  schedule:
+    # Executa todos os dias às 23:00 UTC
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    # Permite execução manual via interface do GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger imobWeb Backup Engine
+        run: |
+          curl -X POST "https://imobweb.com.br/api/backup/run" \
+          -H "Authorization: Bearer ${{ secrets.BACKUP_CRON_SECRET }}" \
+          -H "Content-Type: application/json"
+          
+      - name: Verify Health Status
+        run: |
+          curl -X GET "https://imobweb.com.br/api/ha/health" \
+          -H "Authorization: Bearer ${{ secrets.HEALTH_CHECK_SECRET }}"
+          
+      - name: Notification on Failure
+        if: failure()
+        run: |
+          # Aqui poderíamos disparar uma notificação via PagerDuty ou WhatsApp de emergência
+          echo "Crítico: Falha ao orquestrar backup automatizado!"
