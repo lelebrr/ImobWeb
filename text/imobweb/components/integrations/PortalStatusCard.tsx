@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../design-system/card';
 import { Button } from '../design-system/button';
-import { Badge } from '@radix-ui/react-badge'; // Fallback if internal Badge not found
+import { Badge } from '../design-system/badge';
 import { Activity, CheckCircle2, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SyncStatus } from '../../types/portals';

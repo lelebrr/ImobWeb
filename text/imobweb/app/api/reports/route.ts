@@ -8,7 +8,7 @@ const createReportSchema = z.object({
   name: z.string().min(1),
   type: z.enum(['monthly', 'weekly', 'custom']),
   sections: z.array(z.string()),
-  filters: z.record(z.unknown()).optional(),
+  filters: z.record(z.string(), z.unknown()).optional(),
   format: z.enum(['pdf', 'excel', 'email']).optional()
 });
 
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error processing report action:', error);
     return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });

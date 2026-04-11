@@ -28,9 +28,8 @@ describe('chat-agent', () => {
         message: 'Olá!',
       });
 
-      expect(result.message).toContain('Bom dia') || 
-             expect(result.message).toContain('Boa tarde') || 
-             expect(result.message).toContain('Boa noite');
+      const greetings = ['Bom dia', 'Boa tarde', 'Boa noite'];
+      expect(greetings.some(g => result.message.includes(g))).toBe(true);
       expect(result.suggestions).toBeTruthy();
     });
 
@@ -69,7 +68,7 @@ describe('chat-agent', () => {
   });
 
   describe('containsPriceIntent', () => {
-    it('should detect price keywords', () {
+    it('should detect price keywords', () => {
       expect(containsPriceIntent('quanto custa')).toBe(true);
       expect(containsPriceIntent('qual o valor')).toBe(true);
       expect(containsPriceIntent('preço justo')).toBe(true);

@@ -34,6 +34,7 @@ export const ResourceTypeSchema = z.enum([
   'notification',
   'audit_log',
   'document',
+  '*',
 ]);
 
 export type ResourceType = z.infer<typeof ResourceTypeSchema>;
@@ -213,6 +214,7 @@ export const RESOURCE_LABELS: Record<ResourceType, string> = {
   notification: 'Notificações',
   audit_log: 'Auditoria',
   document: 'Documentos',
+  '*': 'Acesso Total',
 };
 
 export const ACTION_LABELS: Record<PermissionAction, string> = {

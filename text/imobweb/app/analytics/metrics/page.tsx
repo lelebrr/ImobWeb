@@ -12,7 +12,7 @@ interface DashboardMetricsProps {
   refreshInterval?: number;
 }
 
-export function AnalyticsDashboard({ dateRange, refreshInterval = 300000 }: DashboardMetricsProps) {
+function AnalyticsDashboard({ dateRange, refreshInterval = 300000 }: DashboardMetricsProps) {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
 

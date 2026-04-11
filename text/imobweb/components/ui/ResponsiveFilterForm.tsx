@@ -4,12 +4,13 @@ import { Search, MapPin, DollarSign, Home, SlidersHorizontal } from "lucide-reac
 
 export function ResponsiveFilterForm({ className }: { className?: string }) {
   return (
-    {/* 
-      Container Queries magic! 
-      Usamos '@container' aqui. Todos os elementos filhos vão olhar para o T-A-M-A-N-H-O DESTE COMPONENTE,
-      não o tamanho do navegador. Assim o form pode viver solto ou numa sidebar e ele nao vai quebrar.
-    */}
-    <form className={cn("@container w-full bg-card rounded-2xl border shadow-sm p-4", className)}>
+    <>
+      {/* 
+        Container Queries magic! 
+        Usamos '@container' aqui. Todos os elementos filhos vão olhar para o T-A-M-A-N-H-O DESTE COMPONENTE,
+        não o tamanho do navegador. Assim o form pode viver solto ou numa sidebar e ele nao vai quebrar.
+      */}
+      <form className={cn("@container w-full bg-card rounded-2xl border shadow-sm p-4", className)}>
       
       {/* Layout Base: Coluna Unica. Assim que o painel atingir 672px (@2xl), vira 4 colunas */}
       <div className="grid grid-cols-1 @2xl:grid-cols-5 gap-3 items-end">
@@ -60,5 +61,6 @@ export function ResponsiveFilterForm({ className }: { className?: string }) {
         </div>
       </div>
     </form>
+    </>
   );
 }

@@ -15,7 +15,7 @@ test.describe('PWA Installation', () => {
     });
 
     if (!isSupported) {
-      test.skip('Browser does not support PWA installation');
+      test.skip(true, 'Browser does not support PWA installation');
     }
 
     await page.waitForTimeout(3000);

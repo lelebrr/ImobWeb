@@ -32,7 +32,12 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Glassmorphism Variables */
+    --glass-background: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   }
 
   .dark {
@@ -63,6 +68,11 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Glassmorphism Variables Dark */
+    --glass-background: rgba(9, 9, 11, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 }
 
@@ -82,6 +92,7 @@
 
   body {
     @apply bg-background text-foreground antialiased overflow-x-hidden min-h-screen text-fluid-base;
+    font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
     /* Reduz Cumulative Layout Shift */
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
@@ -137,5 +148,33 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Premium Utilities */
+  .glass {
+    background: var(--glass-background);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-600 to-indigo-600;
+  }
+
+  .bg-dashboard-gradient {
+    background: radial-gradient(circle at top right, rgba(var(--primary), 0.05), transparent),
+                radial-gradient(circle at bottom left, rgba(var(--primary), 0.05), transparent);
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%);
+    filter: blur(60px);
+    z-index: -1;
+    pointer-events: none;
   }
 }

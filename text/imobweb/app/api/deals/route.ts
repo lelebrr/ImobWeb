@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error processing deal action:', error);
     return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });
@@ -122,7 +122,12 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const updates = updateDealSchema.parse(body);
 
-    const deal = dealPipeline.updateDeal(dealId, updates);
+    const dealUpdates = {
+      ...updates,
+      expectedCloseDate: updates.expectedCloseDate ? new Date(updates.expectedCloseDate) : undefined
+    };
+
+    const deal = dealPipeline.updateDeal(dealId, dealUpdates);
     
     if (!deal) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
@@ -131,7 +136,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, deal });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error updating deal:', error);
     return NextResponse.json({ error: 'Failed to update deal' }, { status: 500 });

@@ -29,7 +29,7 @@ describe('price-suggester', () => {
       });
 
       expect(result.suggestedPrice).toBeGreaterThan(0);
-      expect(result.factors).toHaveLengthGreaterThan(3);
+      expect(result.factors.length).toBeGreaterThan(3);
     });
 
     it('should apply age multiplier correctly', () => {

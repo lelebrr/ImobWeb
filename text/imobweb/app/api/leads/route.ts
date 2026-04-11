@@ -21,11 +21,11 @@ const updateLeadSchema = z.object({
 });
 
 const MOCK_LEADS = [
-  { id: '1', name: 'Maria Santos', email: 'maria@email.com', phone: '11988887777', source: 'zap', status: 'new', propertyId: '1', createdAt: '2026-04-09T10:00:00Z' },
-  { id: '2', name: 'João Silva', email: 'joao@email.com', phone: '11977776666', source: 'viva', status: 'contacted', propertyId: '2', createdAt: '2026-04-08T14:30:00Z' },
-  { id: '3', name: 'Ana Costa', email: 'ana@email.com', phone: '11966665555', source: 'olx', status: 'qualified', propertyId: '1', createdAt: '2026-04-07T09:15:00Z' },
-  { id: '4', name: 'Pedro Lima', email: 'pedro@email.com', phone: '11955554444', source: 'referral', status: 'visiting', propertyId: '3', createdAt: '2026-04-06T16:45:00Z' },
-  { id: '5', name: 'Carlos Oliveira', email: 'carlos@email.com', phone: '11944443333', source: 'website', status: 'proposal', propertyId: '4', createdAt: '2026-04-05T11:20:00Z' }
+  { id: '1', name: 'Maria Santos', email: 'maria@email.com', phone: '11988887777', source: 'zap', status: 'new', propertyId: '1', createdAt: '2026-04-09T10:00:00Z', assignedTo: 'user-001' },
+  { id: '2', name: 'João Silva', email: 'joao@email.com', phone: '11977776666', source: 'viva', status: 'contacted', propertyId: '2', createdAt: '2026-04-08T14:30:00Z', assignedTo: 'user-002' },
+  { id: '3', name: 'Ana Costa', email: 'ana@email.com', phone: '11966665555', source: 'olx', status: 'qualified', propertyId: '1', createdAt: '2026-04-07T09:15:00Z', assignedTo: 'user-001' },
+  { id: '4', name: 'Pedro Lima', email: 'pedro@email.com', phone: '11955554444', source: 'referral', status: 'visiting', propertyId: '3', createdAt: '2026-04-06T16:45:00Z', assignedTo: 'user-003' },
+  { id: '5', name: 'Carlos Oliveira', email: 'carlos@email.com', phone: '11944443333', source: 'website', status: 'proposal', propertyId: '4', createdAt: '2026-04-05T11:20:00Z', assignedTo: 'user-001' }
 ];
 
 export async function GET(request: NextRequest) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error processing lead action:', error);
     return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });
@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, leadId, updates });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error updating lead:', error);
     return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });

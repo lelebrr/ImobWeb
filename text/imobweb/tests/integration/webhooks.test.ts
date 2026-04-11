@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleStripeEvents } from '../../lib/billing/webhooks';
-import { db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { trackBillingEvent } from '@/lib/analytics/events';
 
 // Mock dependencies
-vi.mock('@/lib/db', () => ({
-  db: {
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
     organization: {
       update: vi.fn(),
     },

@@ -12,7 +12,7 @@ const createContractSchema = z.object({
     type: z.enum(['apartment', 'house', 'commercial', 'land', 'industrial']),
     city: z.string(),
     state: z.string(),
-    zipCode: z.string().optional(),
+    zipCode: z.string(),
     area: z.number().optional(),
     bedrooms: z.number().optional(),
     bathrooms: z.number().optional(),
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -136,7 +136,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
     }
     console.error('Error updating contract:', error);
     return NextResponse.json({ error: 'Failed to update contract' }, { status: 500 });
@@ -226,6 +226,7 @@ function getMockContracts() {
         type: 'commercial' as const,
         city: 'São Paulo',
         state: 'SP',
+        zipCode: '01414-001',
         area: 50,
         value: 5000
       },

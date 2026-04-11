@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     }
 
     // 2. Aplicar Rate Limit Específico da API Key
-    const { success } = await checkRateLimit(organization.id, "public-api");
+    const { success } = await checkRateLimit(organization.id, "api");
     if (!success) {
       return NextResponse.json({ error: "Limite de requisições excedido" }, { status: 429 });
     }
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         price: true,
         city: true,
         status: true,
-        images: true,
+        photos: true,
       }
     });
 

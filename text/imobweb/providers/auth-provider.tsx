@@ -17,6 +17,8 @@ interface AuthContextType {
     organizationId: string | null
     isAuthenticated: boolean
     refreshSession: () => Promise<void>
+    signIn: (credentials: { email: string; password: string }) => Promise<void>
+    signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -80,6 +82,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const role = (user?.user_metadata?.role as UserRole) || null
 
+    /**
+     * Fazer login
+     */
+    const signIn = async ({ email, password }: any) => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        })
+        if (error) throw error
+    }
+
+    /**
+     * Fazer logout
+     */
+    const signOut = async () => {
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+    }
+
     return (
         <AuthContext.Provider
             value={{
@@ -90,6 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 organizationId,
                 isAuthenticated: !!user,
                 refreshSession,
+                signIn,
+                signOut,
             }}
         >
             {children}

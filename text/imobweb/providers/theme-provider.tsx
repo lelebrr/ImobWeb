@@ -1,14 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { ThemeProvider as NextThemesProvider } from 'next-themes'
-import { type ThemeProviderProps } from 'next-themes/dist/types'
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'next-themes'
 
 /**
  * Provider de Tema
  * Gerencia o tema claro/escuro da aplicação
  */
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+export function ThemeProvider({ children, ...props }: any) {
     return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
 
@@ -16,9 +15,5 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
  * Hook para acessar o tema atual
  */
 export function useTheme() {
-    const context = React.useContext(NextThemesProvider)
-    if (context === undefined) {
-        throw new Error('useTheme deve ser usado dentro de um ThemeProvider')
-    }
-    return context
+    return useNextTheme()
 }

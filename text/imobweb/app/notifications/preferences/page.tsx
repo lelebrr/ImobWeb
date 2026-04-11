@@ -59,7 +59,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   }
 };
 
-export function NotificationPreferencesCenter({ userId, onSave }: NotificationPreferencesProps) {
+function NotificationPreferencesCenter({ userId, onSave }: NotificationPreferencesProps) {
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);

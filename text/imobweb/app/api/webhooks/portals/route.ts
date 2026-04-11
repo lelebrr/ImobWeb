@@ -11,7 +11,11 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
+
+    // 0. Identificar Organização (Baseline: primeira da lista ou fallback)
+    const org = await prisma.organization.findFirst();
+    if (!org) throw new Error('Organization not found');
+
     // 1. Parsear o lead de acordo com o portal (ex: OLX Group)
     const leadData = portalParser.parseOLXLead(body);
 

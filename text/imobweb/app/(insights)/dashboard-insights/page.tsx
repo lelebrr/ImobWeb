@@ -11,8 +11,11 @@ import {
   Zap,
   Activity,
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  DollarSign
 } from 'lucide-react';
+import { Button } from '@/components/design-system/button';
+import { Badge } from '@/components/design-system/badge';
 import { 
   Card, 
   CardContent, 
@@ -22,6 +25,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/design-system/tabs';
 import { HealthScoreCard } from '@/components/insights/HealthScoreCard';
 import { PriceRecommendationCard } from '@/components/insights/PriceRecommendationCard';
+import { PredictiveTimeline } from '@/components/insights/PredictiveTimeline';
+import { ChurnAlertCard } from '@/components/insights/ChurnAlertCard';
 
 /**
  * Página principal de Insights e IA Preditiva.

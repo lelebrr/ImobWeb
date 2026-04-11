@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { publicApiRouter } from "@/lib/public-api/router";
-import { createTRPCContext } from "@/server/api/trpc"; // Mockando contexto se necessário
 
 /**
  * REST Fallback para a API Pública do imobWeb
@@ -18,16 +17,15 @@ export async function GET(
 
   try {
     // Roteamento REST manual para os comandos do tRPC
+    const caller = publicApiRouter.createCaller({});
+
     if (routeString === "properties") {
       const orgId = searchParams.get("orgId");
       if (!orgId) return NextResponse.json({ error: "orgId is required" }, { status: 400 });
 
-      // @ts-ignore - Chamada interna ao caller do tRPC
-      const data = await publicApiRouter.getProperties({
-        rawInput: { orgId, limit: Number(searchParams.get("limit")) || 20 },
-        path: "getProperties",
-        type: "query",
-        ctx: {}, // Contexto vazio para API Pública
+      const data = await caller.getProperties({
+        orgId,
+        limit: Number(searchParams.get("limit")) || 20 
       });
 
       return NextResponse.json(data);
@@ -35,13 +33,7 @@ export async function GET(
 
     if (routeString.startsWith("properties/")) {
       const id = routeString.split("/")[1];
-      // @ts-ignore
-      const data = await publicApiRouter.getPropertyDetails({
-        rawInput: { propertyId: id },
-        path: "getPropertyDetails",
-        type: "query",
-        ctx: {},
-      });
+      const data = await caller.getPropertyDetails({ propertyId: id });
       return NextResponse.json(data);
     }
 
@@ -60,15 +52,11 @@ export async function POST(
   const routeString = route?.join("/") || "";
 
   try {
+    const caller = publicApiRouter.createCaller({});
+    
     if (routeString === "leads") {
       const body = await req.json();
-      // @ts-ignore
-      const data = await publicApiRouter.captureLead({
-        rawInput: body,
-        path: "captureLead",
-        type: "mutation",
-        ctx: {},
-      });
+      const data = await caller.captureLead(body);
       return NextResponse.json(data, { status: 201 });
     }
 

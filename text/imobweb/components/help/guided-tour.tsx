@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Joyride, { Step } from "react-joyride";
+import { Joyride, type Step } from "react-joyride";
 import { useTheme } from "next-themes";
 
 /**
@@ -58,16 +58,13 @@ export function GuidedTour() {
       steps={steps}
       continuous
       scrollToFirstStep
-      showProgress
-      showSkipButton
-      callback={handleJoyrideCallback}
-      styles={{
-        options: {
-          primaryColor: theme === "dark" ? "#60a5fa" : "#2563eb",
-          backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
-          textColor: theme === "dark" ? "#f8fafc" : "#1e293b",
-          arrowColor: theme === "dark" ? "#1e293b" : "#ffffff",
-        },
+      onEvent={handleJoyrideCallback}
+      options={{
+        showProgress: true,
+        primaryColor: theme === "dark" ? "#60a5fa" : "#2563eb",
+        backgroundColor: theme === "dark" ? "#1e293b" : "#ffffff",
+        textColor: theme === "dark" ? "#f8fafc" : "#1e293b",
+        arrowColor: theme === "dark" ? "#1e293b" : "#ffffff",
       }}
       locale={{
         back: "Voltar",

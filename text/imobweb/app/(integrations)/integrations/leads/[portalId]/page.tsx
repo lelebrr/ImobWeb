@@ -1,18 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { Settings, Zap, Eye, MessageCircle, TrendingUp, Clock, RefreshCw, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/design-system/card';
 import { Button } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import type { PortalId } from '@/types/portals';
 
-interface PortalLeadsProps {
-  portalId: PortalId;
-  onConfigure?: (portalId: PortalId) => void;
+interface PageProps {
+  params: Promise<{ portalId: PortalId }>;
 }
 
-const MOCK_PORTAL_STATS = {
+const MOCK_PORTAL_STATS: Record<string, any> = {
   zap: { leads: 234, views: 12500, contacts: 456, conversion: 8.5 },
   viva: { leads: 189, views: 9800, contacts: 345, conversion: 7.2 },
   olx: { leads: 156, views: 8200, contacts: 234, conversion: 5.8 },
@@ -20,7 +19,8 @@ const MOCK_PORTAL_STATS = {
   chaves: { leads: 45, views: 2800, contacts: 67, conversion: 3.2 }
 };
 
-export default function PortalLeadsDashboard({ portalId, onConfigure }: PortalLeadsProps) {
+export default function PortalLeadsDashboard({ params }: PageProps) {
+  const { portalId } = use(params);
   const stats = MOCK_PORTAL_STATS[portalId] || { leads: 0, views: 0, contacts: 0, conversion: 0 };
   const [refreshing, setRefreshing] = useState(false);
 
@@ -36,7 +36,8 @@ export default function PortalLeadsDashboard({ portalId, onConfigure }: PortalLe
     imovelweb: 'ImovelWeb',
     chaves: 'Chaves na Mão',
     meta: 'Meta Catalog',
-    vrsync: 'VRSync'
+    vrsync: 'VRSync',
+    custom: 'Custom Portal'
   };
 
   return (
@@ -51,7 +52,7 @@ export default function PortalLeadsDashboard({ portalId, onConfigure }: PortalLe
             <RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} />
             Atualizar
           </Button>
-          <Button variant="outline" size="sm" onClick={() => onConfigure?.(portalId)}>
+          <Button variant="outline" size="sm">
             <Settings className="mr-2 h-4 w-4" />
             Configurar
           </Button>

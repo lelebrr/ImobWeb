@@ -40,8 +40,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: roles });
     }
 
-    if (checkRole && checkAccess) {
-      const hasAccess = await can(checkAccess.split(':')[0] as PermissionAction, checkAccess.split(':')[1] as ResourceType);
+    if (userId && checkAccess) {
+      const [action, resource] = checkAccess.split(':');
+      const hasAccess = await can(userId, action as PermissionAction, resource as ResourceType);
       return NextResponse.json({ success: true, hasAccess });
     }
 

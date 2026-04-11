@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Sparkles
 } from 'lucide-react';
-import { ADMIN_MENU_CONFIG, MenuItem } from '../../../lib/admin-menu/menu-config';
+import { ADMIN_MENU_CONFIG, type MenuItem } from '../../../lib/admin-menu/menu-config';
 import { cn } from '../../../lib/utils';
 
 /**
@@ -93,7 +93,7 @@ export const AdminSidebar: React.FC = () => {
       {/* --- MENU LIST --- */}
       <div className="flex-1 overflow-y-auto px-4 space-y-2 no-scrollbar">
         {ADMIN_MENU_CONFIG.map((item) => (
-          <MenuItem 
+          <SidebarItem 
             key={item.id} 
             item={item} 
             isCollapsed={isCollapsed} 
@@ -125,7 +125,7 @@ export const AdminSidebar: React.FC = () => {
   );
 };
 
-interface MenuItemProps {
+interface SidebarItemProps {
   item: MenuItem;
   isCollapsed: boolean;
   pathname: string;
@@ -133,7 +133,7 @@ interface MenuItemProps {
   toggle: () => void;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ item, isCollapsed, pathname, isOpen, toggle }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ item, isCollapsed, pathname, isOpen, toggle }) => {
   const Icon = item.icon;
   const isActive = pathname === item.href || item.children?.some(c => pathname === c.href);
   const hasChildren = item.children && item.children.length > 0;

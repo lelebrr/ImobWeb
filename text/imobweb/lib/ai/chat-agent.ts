@@ -123,7 +123,7 @@ export async function processChat(input: ChatInput): Promise<ChatResponse> {
   return generateGeneralResponse(message, context);
 }
 
-function containsPriceIntent(message: string): boolean {
+export function containsPriceIntent(message: string): boolean {
   const keywords = [
     'preço', 'valor', 'quanto custa', 'quanto vale', 'valorizar',
     'sugerir preço', 'estimar', 'vender', 'alugar por quanto',
@@ -132,7 +132,7 @@ function containsPriceIntent(message: string): boolean {
   return keywords.some(kw => message.includes(kw));
 }
 
-function containsDescriptionIntent(message: string): boolean {
+export function containsDescriptionIntent(message: string): boolean {
   const keywords = [
     'descrição', 'anunciar', 'publicar', 'texto', 'criar descrição',
     'gerar descrição', 'escrever', 'redigir', 'anúncio',
@@ -140,7 +140,7 @@ function containsDescriptionIntent(message: string): boolean {
   return keywords.some(kw => message.includes(kw));
 }
 
-function containsVisitIntent(message: string): boolean {
+export function containsVisitIntent(message: string): boolean {
   const keywords = [
     'visitar', 'agendar', 'marcar', 'horário', 'dia', 'tour',
     'conhecer', 'ver', 'mostrar', 'apartamento', 'casa',
@@ -148,7 +148,7 @@ function containsVisitIntent(message: string): boolean {
   return keywords.some(kw => message.includes(kw));
 }
 
-function containsLeadIntent(message: string): boolean {
+export function containsLeadIntent(message: string): boolean {
   const keywords = [
     'lead', 'cliente', 'interessado', 'contato', 'prospect',
     'novo cliente', 'potencial', 'qualificar', 'captação',

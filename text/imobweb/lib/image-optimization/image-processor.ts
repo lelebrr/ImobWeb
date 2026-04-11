@@ -46,7 +46,7 @@ export class ImageProcessor {
     // Convert to requested format
     switch (format) {
       case 'avif':
-        pipeline = pipeline.avif({ quality, effort });
+        pipeline = pipeline.avif({ quality, effort: effort as any });
         break;
       case 'webp':
         pipeline = pipeline.webp({ quality, effort });

@@ -1,4 +1,18 @@
 export type PortalType = 'ZAP' | 'VIVAREAL' | 'OLX' | 'IMOVELWEB' | 'CHAVES_NA_MAO' | 'VRSYNC' | 'CUSTOM';
+export type PortalId = 'zap' | 'viva' | 'olx' | 'imovelweb' | 'chaves' | 'meta' | 'vrsync' | 'custom';
+
+export interface LeadFromPortal {
+  id: string;
+  portalId: PortalId;
+  propertyExternalId?: string;
+  propertyId?: string;
+  name: string;
+  email?: string;
+  phone: string;
+  message?: string;
+  source: string;
+  receivedAt: Date | string;
+}
 
 export type SyncStatus = 'PENDING' | 'SYNCING' | 'SUCCESS' | 'ERROR' | 'CONFLICT';
 

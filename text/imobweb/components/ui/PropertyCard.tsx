@@ -1,66 +1,106 @@
 import React from "react";
 import { cn } from "@/lib/responsive/tailwind-utils";
-import { MapPin, BedDouble, Bath, Square, MoveRight } from "lucide-react";
+import { MapPin, BedDouble, Bath, Square, MoveRight, Heart } from "lucide-react";
+import { Badge } from "@/components/design-system/badge";
 
-export function PropertyCard({ className }: { className?: string }) {
+interface PropertyCardProps {
+  property: {
+    id: string;
+    title: string;
+    description: string;
+    price: {
+      amount: number;
+      currency: string;
+    };
+    address: {
+      neighborhood: string;
+      city: string;
+    };
+    metrics: {
+      totalArea: number;
+      bedrooms: number;
+      bathrooms: number;
+      parkingSpaces: number;
+    };
+    media: Array<{ url: string }>;
+    status: 'ACTIVE' | 'SOLD' | 'RENTED';
+    usage: 'FOR_SALE' | 'FOR_RENT';
+    typeId: string;
+  };
+  className?: string;
+}
+
+export function PropertyCard({ property, className }: PropertyCardProps) {
+  const formattedPrice = new Intl.NumberFormat('pt-BR', {
+    style: 'decimal',
+    minimumFractionDigits: 0
+  }).format(property.price.amount);
+
   return (
-    // Transformamos este card num componente monitorado por @container
     <div className={cn("@container w-full group cursor-pointer", className)}>
-      
-      {/* Quando o container atingir tamanho médio (@lg ou 32rem), a imagem fica de lado (flex-row) */}
-      <div className="bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col @lg:flex-row h-full">
+      <div className="glass border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full bg-white/5">
          
-         {/* Container da Imagem: Aspect-ratio 4/3 e muda pra cobertura inteira na horizontal */}
-         <div className="relative w-full @lg:w-[45%] shrink-0 aspect-[4/3] @lg:aspect-auto overflow-hidden bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+         {/* Imagem com Overlay Gradiente */}
+         <div className="relative w-full shrink-0 aspect-[16/10] overflow-hidden bg-muted">
             <img 
-               src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-               alt="Exemplo Imovel" 
-               className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-700 ease-out"
+               src={property.media[0]?.url || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000"} 
+               alt={property.title} 
+               className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-1000 ease-out"
             />
-            {/* Pills flutuantes responsivos */}
-            <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-sm">
-               REVENDA EXCLUSIVA
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            {/* Badges Premium */}
+            <div className="absolute top-3 left-3 flex flex-col gap-2">
+              <div className="bg-primary/90 backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-full shadow-sm tracking-widest uppercase italic">
+                 {property.typeId}
+              </div>
             </div>
+
+            <button className="absolute top-3 right-3 p-2 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-red-500 transition-colors">
+              <Heart className="w-4 h-4" />
+            </button>
          </div>
 
-         {/* Informações detalhadas */}
-         <div className="flex flex-col flex-1 p-4 @md:p-5 @lg:px-6">
-            <h3 className="font-extrabold text-lg @md:text-xl leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
-               Residência Contemporânea com Piscina de Borda Infinita e Área Gourmet
-            </h3>
+         {/* Conteúdo */}
+         <div className="flex flex-col flex-1 p-5">
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                 {property.title}
+              </h3>
+            </div>
             
-            <p className="flex items-center text-muted-foreground text-sm mb-4">
-               <MapPin className="w-4 h-4 mr-1 shrink-0" />
-               <span className="truncate">Jardim Europa, São Paulo - SP</span>
+            <p className="flex items-center text-muted-foreground text-xs mb-4">
+               <MapPin className="w-3.5 h-3.5 mr-1.5 shrink-0 text-primary" />
+               <span className="truncate">{property.address.neighborhood}, {property.address.city}</span>
             </p>
 
-            {/* Atributos do Imóvel quebram perfeitamente sem vazar */}
-            <div className="flex flex-wrap items-center gap-4 gap-y-2 text-sm text-muted-foreground mt-auto mb-5 border-t border-b py-3">
-               <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded" title="Quartos">
-                  <BedDouble className="w-4 h-4 text-foreground/70" /> <span className="font-medium text-foreground">4 Suítes</span>
+            {/* Atributos com design limpo */}
+            <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground mt-auto mb-6 border-y border-border/50 py-3">
+               <div className="flex items-center gap-1.5 bg-secondary/30 px-2 py-1 rounded-lg border border-border/50">
+                  <BedDouble className="w-3 h-3" /> <span className="font-bold text-foreground">{property.metrics.bedrooms} Qts</span>
                </div>
-               <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded" title="Banheiros">
-                  <Bath className="w-4 h-4 text-foreground/70" /> <span className="font-medium text-foreground">6 WCs</span>
+               <div className="flex items-center gap-1.5 bg-secondary/30 px-2 py-1 rounded-lg border border-border/50">
+                  <Bath className="w-3 h-3" /> <span className="font-bold text-foreground">{property.metrics.bathrooms} WCs</span>
                </div>
-               <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded" title="Área Total">
-                  <Square className="w-4 h-4 text-foreground/70" /> <span className="font-medium text-foreground">450 m²</span>
+               <div className="flex items-center gap-1.5 bg-secondary/30 px-2 py-1 rounded-lg border border-border/50">
+                  <Square className="w-3 h-3" /> <span className="font-bold text-foreground">{property.metrics.totalArea} m²</span>
                </div>
             </div>
 
-            {/* Preço e Call to Action Baseado em Tamanho do Container */}
-            <div className="flex items-end justify-between gap-4 mt-auto">
-               <div className="shrink-0">
-                  <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Venda</p>
-                  <p className="text-xl @md:text-2xl font-black text-foreground tracking-tighter">
-                     <span className="text-muted-foreground font-medium text-sm mr-1">R$</span>4.850.000
+            {/* Footer com Preço Gradient */}
+            <div className="flex items-center justify-between gap-4">
+               <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">
+                    {property.usage === 'FOR_SALE' ? 'Venda' : 'Aluguel'}
+                  </span>
+                  <p className="text-xl font-black tracking-tighter">
+                    <span className="text-sm font-medium mr-1 text-muted-foreground">{property.price.currency === 'BRL' ? 'R$' : '$'}</span>
+                    <span className="text-gradient">{formattedPrice}</span>
                   </p>
                </div>
                
-               {/* Transição apenas da Seta na label ao hover */}
-               <button className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline">
-                  Ver Fotos
-                  <MoveRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+               <button className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-primary/20">
+                  <MoveRight className="w-5 h-5" />
                </button>
             </div>
          </div>

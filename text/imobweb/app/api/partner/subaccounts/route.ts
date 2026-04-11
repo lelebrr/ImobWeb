@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
     // Provisiona uma nova instância imobiliária
     const result = await OnboardingService.provisionSubAccount({
       partnerId: data.partnerId,
-      imobiliariaName: data.name,
+      organizationName: data.name,
+      subDomain: data.subDomain || `${data.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') || Date.now()}`,
       adminEmail: data.email,
-      planId: data.planId || 'starter',
-      customLimits: data.limits
+      planTier: (data.planId || 'starter') as 'starter' | 'pro' | 'enterprise'
     });
 
     return NextResponse.json(result);

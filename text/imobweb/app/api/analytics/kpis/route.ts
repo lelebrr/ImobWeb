@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { kpiId, filters, dimensions } = z.object({
       kpiId: z.string(),
-      filters: z.record(z.unknown()).optional(),
+      filters: z.record(z.string(), z.unknown()).optional(),
       dimensions: z.array(z.string()).optional()
     }).parse(body);
 
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 });
     }
     console.error('Error calculating KPI:', error);
     return NextResponse.json({ error: 'Failed to calculate KPI' }, { status: 500 });

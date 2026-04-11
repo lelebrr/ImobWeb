@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { POST } from '../../app/api/billing/checkout.ts'; // Adjust path if needed
+import { POST } from '../../app/api/billing/checkout/route'; // Adjust path if needed
 import { createCheckoutSession } from '@/lib/billing/stripe';
 import { trackBillingEvent } from '@/lib/analytics/events';
 import { NextRequest } from 'next/server';

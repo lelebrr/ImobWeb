@@ -26,24 +26,26 @@ export async function POST(req: NextRequest) {
     const org = await prisma.organization.findFirst();
     if (!org) throw new Error('Organization not found');
 
+    const type = (data.type as unknown) as PortalType;
+    const status = (data.enabled ? 'ATIVO' : 'INATIVO') as PortalIntegrationStatus;
+
     const portal = await prisma.portalIntegration.upsert({
       where: { 
         apiKey_type: { 
           apiKey: data.apiKey || 'TEMP_KEY', 
-          type: data.type as PortalType 
+          type 
         } 
       },
       update: {
         name: data.name,
-        enabled: data.enabled,
         settings: data.settings,
-        status: data.enabled ? 'ATIVO' : 'INATIVO'
+        status: status
       },
       create: {
         name: data.name,
-        type: data.type as PortalType,
+        type: type,
         apiKey: data.apiKey || 'TEMP_KEY',
-        status: 'ATIVO',
+        status: 'ATIVO' as PortalIntegrationStatus,
         settings: data.settings || {},
       }
     });

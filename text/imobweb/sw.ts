@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   if (request.method !== 'GET') return;
 
   if (url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/')) {
-    event.respondWithhandleApiRequest(request));
+    event.respondWith(handleApiRequest(request));
     return;
   }
 
@@ -118,7 +118,7 @@ self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
   const data = event.data.json();
-  const options: NotificationOptions = {
+  const options: any = {
     body: data.body || 'Nova notificação',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
@@ -138,7 +138,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.waitUntil(self.clients.openWindow(url));
 });
 
-self.addEventListener('message', (event: MessageEvent) => {
+self.addEventListener('message', (event: any) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

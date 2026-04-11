@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { PresentationFeatureAvailability } from '../../types/presentation';
-import { Layers, MapPin, Navigation, Info, DollarSign, Sunlight, Glasses } from 'lucide-react';
+import { Layers, MapPin, Navigation, Info, DollarSign, Sun, Glasses } from 'lucide-react';
 // import { motion, AnimatePresence } from 'framer-motion'; 
 // Assumindo uso puro de framer-motion ou classes Tailwind. Aqui focamos nas classes de animação e layoyut v4.
 
@@ -70,7 +70,7 @@ export function AdvancedPropertyMap({ lat, lng, features }: AdvancedPropertyMapP
           className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-2xl transition-all duration-300 font-medium text-sm
             ${activeLayer === 'energy' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
         >
-          <Sunlight className="w-4 h-4" />
+          <Sun className="w-4 h-4" />
           <span className="hidden md:block">Energy Efficiency</span>
         </button>
 

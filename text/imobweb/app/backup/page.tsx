@@ -7,8 +7,11 @@ import {
   Download, 
   RotateCcw, 
   MoreVertical,
-  Table as TableIcon
+  Table as TableIcon,
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react'
+import { cn } from "@/lib/utils"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { 

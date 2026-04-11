@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const tenantId = req.nextUrl.searchParams.get("tenantId");
   if (!tenantId) return NextResponse.json({ error: "Tenant ID required" }, { status: 400 });
 
-  const addons = await AddonStore.getAvailableAddons(tenantId);
+  const addons = await AddonStore.getCatalog(tenantId);
   return NextResponse.json(addons);
 }
 

@@ -51,6 +51,7 @@ describe('RBAC System', () => {
       id: 'owner_only',
       name: 'Owner',
       isSystem: false,
+      isCustom: true,
       level: 'user',
       permissions: [
         {

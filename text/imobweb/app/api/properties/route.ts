@@ -24,7 +24,7 @@ const propertySchema = z.object({
     zipCode: z.string(),
   }),
   media: z.array(z.any()), // Simplified for validation
-  metrics: z.record(z.any()),
+  metrics: z.record(z.string(), z.any()),
 });
 
 export async function GET(req: Request) {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
