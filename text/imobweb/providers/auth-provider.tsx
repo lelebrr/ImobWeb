@@ -33,10 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
     const [organizationId, setOrganizationId] = useState<string | null>(null)
 
-    const [supabase] = useState(() => createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ))
+    const [supabase] = useState(() => {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+        return createBrowserClient(url, key)
+    })
 
     /**
      * Atualizar sessão

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PortalType, PortalIntegrationStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -21,9 +21,9 @@ async function main() {
   const portalData = [
     {
       name: 'Zap Imóveis',
-      type: 'ZAP',
+      type: PortalType.ZAP,
       apiKey: 'zap-key-123',
-      status: 'ATIVO',
+      status: PortalIntegrationStatus.ATIVO,
       settings: {
         feedUrl: 'https://imobweb.com.br/api/portals/feed/zap',
         syncFrequency: '2min'
@@ -31,9 +31,9 @@ async function main() {
     },
     {
       name: 'Viva Real',
-      type: 'VIVAREAL',
+      type: PortalType.VIVAREAL,
       apiKey: 'viva-key-456',
-      status: 'ATIVO',
+      status: PortalIntegrationStatus.ATIVO,
       settings: {
         highlights: 10,
         superHighlights: 2
@@ -41,9 +41,9 @@ async function main() {
     },
     {
       name: 'OLX',
-      type: 'OLX',
+      type: PortalType.OLX,
       apiKey: 'olx-key-789',
-      status: 'ERRO',
+      status: PortalIntegrationStatus.ERRO,
       settings: {
         error: 'Token expirado'
       }
@@ -52,13 +52,21 @@ async function main() {
 
   for (const data of portalData) {
     await prisma.portalIntegration.upsert({
-      where: { apiKey_type: { apiKey: data.apiKey, type: data.type as any } },
+      where: { apiKey_type: { apiKey: data.apiKey, type: data.type } },
       update: {
-        ...data,
+        name: data.name,
+        apiKey: data.apiKey,
+        type: data.type,
+        status: data.status,
+        settings: data.settings as any,
         organizationId: org.id
       },
       create: {
-        ...data,
+        name: data.name,
+        apiKey: data.apiKey,
+        type: data.type,
+        status: data.status,
+        settings: data.settings as any,
         organizationId: org.id
       }
     });

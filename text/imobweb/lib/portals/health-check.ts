@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { XMLBuilder } from 'xmlbuilder2/lib/interfaces';
 
 const prisma = new PrismaClient();
 
@@ -54,20 +53,21 @@ export class PortalHealthService {
         await prisma.auditLog.create({
           data: {
             action: 'UPDATE',
-            entity: 'ANNOUNCEMENT',
+            entityType: 'ANNOUNCEMENT',
             entityId: portalId,
             description: `Feed Health Alert: ${results.errors[0]}`,
             riskLevel: 'HIGH',
-            metadata: { errors: results.errors }
+            metadata: JSON.stringify({ errors: results.errors })
           }
         });
       }
 
       return results;
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[HealthService] Failed to validate feed:', err);
-      return { ...results, isValid: false, errors: [err.message] };
+      return { ...results, isValid: false, errors: [message] };
     }
   }
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { backupEngine } from '@/lib/backup/backup-engine'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Endpoint para Trigger de Backup Manual ou via CRON externo
  * Segurança: Requer autenticação de sistema (Service Role)

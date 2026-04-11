@@ -18,12 +18,12 @@ export async function GET() {
     const data = await exportUserData(session.user.id);
     
     await auditLog({
-      action: "lgpd.data_export",
+      action: "EXPORT",
       entityType: "USER",
       entityId: session.user.id,
       organizationId: session.user.organizationId || "system",
       userId: session.user.id,
-      metadata: { reason: "User request via Dashboard" }
+      metadata: { reason: "User request via Dashboard", lgpdAction: "data_export" }
     });
 
     return new NextResponse(data, {
@@ -52,12 +52,12 @@ export async function DELETE(request: Request) {
     await deleteUserAccount(session.user.id);
 
     await auditLog({
-      action: "lgpd.right_to_be_forgotten",
+      action: "DELETE",
       entityType: "USER",
       entityId: session.user.id,
       organizationId: session.user.organizationId || "system",
       userId: session.user.id,
-      metadata: { status: "Anonimized" }
+      metadata: { status: "Anonimized", lgpdAction: "right_to_be_forgotten" }
     });
 
     return NextResponse.json({ message: "Sua conta foi anonimizada e desativada conforme LGPD." });

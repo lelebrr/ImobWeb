@@ -45,7 +45,7 @@ export class PropertyVersioning {
       orderBy: { createdAt: 'desc' }
     })
 
-    return history.map(h => ({
+    return history.map((h: any) => ({
       price: (h.snapshot as any).price,
       date: h.createdAt,
       changedBy: h.changedBy

@@ -195,6 +195,12 @@ export class TeamManager {
     const member = members.find(m => m.id === memberId);
     if (member) {
       member.performance = {
+        propertiesCreated: 0,
+        propertiesUpdated: 0,
+        leadsGenerated: 0,
+        leadsConverted: 0,
+        revenue: 0,
+        score: 0,
         ...member.performance,
         ...performance,
       };

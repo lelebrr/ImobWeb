@@ -1,4 +1,6 @@
 import { useTranslations } from 'next-intl';
+
+export const dynamic = 'force-dynamic';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { I18nPreferencesForm } from '@/components/i18n/preferences-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

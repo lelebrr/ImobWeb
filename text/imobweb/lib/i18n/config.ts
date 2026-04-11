@@ -1,11 +1,12 @@
-import { getRequestConfig } from 'next-intl/server';
+import { setRequestLocale, getRequestConfig } from 'next-intl/server';
 import { locales, defaultLocale } from './settings';
 
 /**
- * Configuração central para o next-intl em Next.js 16.
- * Gerencia o carregamento dinâmico de dicionários e fallbacks.
+ * Configuração central para o next-intl em Next.js 15+
+ * Gerencia o carregamento dinâmico de dicionários e fallbacks com suporte a ISR/Static.
  */
 export default getRequestConfig(async ({ locale }) => {
+  // Em Next.js 15+, o locale é passado diretamente como parâmetro
   // Validação de segurança para o locale
   const activeLocale = locales.includes(locale as any) ? locale : defaultLocale;
 

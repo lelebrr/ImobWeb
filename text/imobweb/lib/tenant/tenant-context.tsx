@@ -1,9 +1,19 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { TenantContext as TenantContextType, Tenant } from '@/lib/tenant/tenant-manager';
+import { Tenant } from '@/lib/tenant/tenant-manager';
 
-const TenantContext = createContext<TenantContextType | null>(null);
+interface ClientTenantContext {
+  tenantId: string | null;
+  tenant: Tenant | null;
+  loading: boolean;
+  switchTenant: (newTenantId: string) => Promise<void>;
+  isMatrix: boolean;
+  isFranchise: boolean;
+  isBranch: boolean;
+}
+
+const TenantContext = createContext<ClientTenantContext | null>(null);
 
 export function TenantProvider({ 
   children, 
@@ -43,7 +53,7 @@ export function TenantProvider({
     setTenantId(newTenantId);
   };
 
-  const value: TenantContextType = {
+  const value: ClientTenantContext = {
     tenantId,
     tenant,
     loading,

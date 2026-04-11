@@ -14,19 +14,25 @@ interface BackupConfig {
 }
 
 export class BackupEngine {
-  private supabaseAdmin
+  private supabaseAdmin: any
   private config: BackupConfig
 
   constructor(config: Partial<BackupConfig> = {}) {
-    this.supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
     this.config = {
       retentionDays: config.retentionDays || 30,
       includeStorage: config.includeStorage ?? true,
       offsiteStorage: config.offsiteStorage ?? true,
     }
+  }
+
+  private get supabase() {
+    if (!this.supabaseAdmin) {
+      this.supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+    }
+    return this.supabaseAdmin
   }
 
   /**
@@ -60,7 +66,7 @@ export class BackupEngine {
         version: '1.0.0'
       }
 
-      await this.supabaseAdmin.storage
+      await this.supabase.storage
         .from('backups_vault')
         .upload(backupPath, JSON.stringify(manifest), {
           contentType: 'application/json',
@@ -111,7 +117,7 @@ export class BackupEngine {
     const data = JSON.stringify(snapshotContent)
     const path = `database_dumps/db_${Date.now()}.json`
     
-    const { error } = await this.supabaseAdmin.storage
+    const { error } = await this.supabase.storage
       .from('backups_vault')
       .upload(path, data, { upsert: true })
 
@@ -135,7 +141,7 @@ export class BackupEngine {
    * Aplica a política de retenção definida
    */
   async enforceRetentionPolicy() {
-    const { data: files, error } = await this.supabaseAdmin.storage
+    const { data: files, error } = await this.supabase.storage
       .from('backups_vault')
       .list('backups/')
 
@@ -150,7 +156,7 @@ export class BackupEngine {
       const fileDate = new Date(file.created_at)
       if (fileDate < expiryDate) {
         console.info(`[Backup] Removendo backup expirado: ${file.name}`)
-        await this.supabaseAdmin.storage
+        await this.supabase.storage
           .from('backups_vault')
           .remove([`backups/${file.name}`])
       }

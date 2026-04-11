@@ -20,7 +20,7 @@ export const TenantSchema = z.object({
     maxUsers: z.number().default(10),
     maxProperties: z.number().default(100),
     maxLeads: z.number().default(500),
-    availableFeatures: z.record(z.boolean()).optional(),
+    availableFeatures: z.record(z.string(), z.boolean()).optional(),
     customBranding: z.boolean().default(false),
     apiAccess: z.boolean().default(false),
     whitelabel: z.boolean().default(false),
@@ -50,7 +50,7 @@ export const TenantSchema = z.object({
     endDate: z.number().optional(),
   }).optional(),
   
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -136,7 +136,7 @@ export class TenantManager {
     
     return {
       ...tenant,
-      children: await Promise.all(children.map(c => this.getHierarchy(c.id))),
+      children: (await Promise.all(children.map(c => this.getHierarchy(c.id)))).filter((h): h is TenantHierarchy => h !== null),
       teams: [],
       users: userCount,
     };
@@ -202,8 +202,8 @@ export class TenantManager {
       };
     }
     
-    const limits = tenant.limits || { users: 10, properties: 100, leads: 500 };
-    const usage = tenant.usage || { users: 0, properties: 0, leads: 0 };
+    const limits = tenant.limits || { users: 10, properties: 100, leads: 500, storage: 10737418240, apiCalls: 10000 };
+    const usage = tenant.usage || { users: 0, properties: 0, leads: 0, storage: 0, apiCalls: 0 };
     
     const exceededLimits: string[] = [];
     
@@ -277,6 +277,11 @@ export class TenantManager {
     
     await this.update(tenantId, {
       usage: {
+        users: 0,
+        properties: 0,
+        leads: 0,
+        storage: 0,
+        apiCalls: 0,
         ...tenant.usage,
         [resource]: current + amount,
       },

@@ -56,7 +56,7 @@ const nextConfig = {
     ];
   },
 
-  reactCompiler: false,
+
   // Otimizações de Compilação e Runtime para 2026
   experimental: {
     optimizePackageImports: [
@@ -71,6 +71,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
       allowedOrigins: ['imobweb.com', '*.imobweb.com'],
     },
+    reactCompiler: false,
   },
 
 

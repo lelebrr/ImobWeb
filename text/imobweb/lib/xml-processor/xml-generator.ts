@@ -36,7 +36,7 @@ export class XmlGenerator {
       if (property.description) detail.ele('Description').txt(property.description);
       if (property.price) detail.ele('ListPrice', { currency: 'BRL' }).txt(property.price.toString());
       if (property.priceRent) detail.ele('RentalPrice', { currency: 'BRL' }).txt(property.priceRent.toString());
-      if (property.area) detail.ele('LivingArea', { unit: 'square meters' }).txt(property.area.toString());
+      if (property.areaPrivate) detail.ele('LivingArea', { unit: 'square meters' }).txt(property.areaPrivate.toString());
       if (property.bedrooms) detail.ele('Bedrooms').txt(property.bedrooms.toString());
       if (property.bathrooms) detail.ele('Bathrooms').txt(property.bathrooms.toString());
       if (property.garages) detail.ele('Garage', { type: 'Parking Space' }).txt(property.garages.toString());

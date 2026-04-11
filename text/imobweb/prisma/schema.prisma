@@ -252,38 +252,40 @@ model User {
 
 /// Modelo de Organizações (Multi-tenant - Imobiliárias)
 model Organization {
-  id            String       @id @default(cuid())
-  name          String // Nome da imobiliária
-  cnpj          String?      @unique // CNPJ único
-  phone         String? // Telefone principal
-  email         String?      @unique // Email corporativo
-  website       String? // Website da imobiliária
-  logo          String? // URL do logo da empresa
-  address       String? // Endereço completo
-  neighborhood  String? // Bairro
-  city          String? // Cidade
-  state         String? // Estado
-  cep           String? // CEP
-  country       String?      @default("Brasil") // País
-  status        EntityStatus @default(ATIVO) // Status da organização
-  planType      PackageType? // Tipo de plano atual
-  maxUsers      Int? // Limite de usuários
-  maxProperties Int? // Limite de imóveis
-  maxLeads      Int? // Limite de leads
-  features      Json? // Recursos disponíveis no plano
-  settings      Json? // Configurações personalizadas
-  subDomain     String?      @unique // Subdomínio exclusivo da imobiliária
-  createdAt     DateTime     @default(now()) // Data de criação
-  updatedAt     DateTime     @updatedAt // Data de atualização
+  id             String       @id @default(cuid())
+  name           String // Nome da imobiliária
+  cnpj           String?      @unique // CNPJ único
+  phone          String? // Telefone principal
+  email          String?      @unique // Email corporativo
+  website        String? // Website da imobiliária
+  logo           String? // URL do logo da empresa
+  address        String? // Endereço completo
+  neighborhood   String? // Bairro
+  city           String? // Cidade
+  state          String? // Estado
+  cep            String? // CEP
+  country        String?      @default("Brasil") // País
+  status         EntityStatus @default(ATIVO) // Status da organização
+  planType       PackageType? // Tipo de plano atual
+  maxUsers       Int? // Limite de usuários
+  maxProperties  Int? // Limite de imóveis
+  maxLeads       Int? // Limite de leads
+  features       Json? // Recursos disponíveis no plano
+  settings       Json? // Configurações personalizadas
+  primaryColor   String? // Cor primária da marca (White Label)
+  secondaryColor String? // Cor secundária da marca (White Label)
+  subDomain      String?      @unique // Subdomínio exclusivo da imobiliária
+  createdAt      DateTime     @default(now()) // Data de criação
+  updatedAt      DateTime     @updatedAt // Data de atualização
 
   // Relacionamentos
-  users         User[] // Usuários da organização
-  properties    Property[] // Imóveis da organização
-  leads         Lead[] // Leads da organização
-  subscriptions Subscription[] // Assinaturas da organização
-  apiKeys       ApiKey[] // Chaves de API da organização
-  auditLogs     AuditLog[]
-  contracts     Contract[] // Contratos da organização
+  users              User[] // Usuários da organização
+  properties         Property[] // Imóveis da organização
+  leads              Lead[] // Leads da organização
+  subscriptions      Subscription[] // Assinaturas da organização
+  apiKeys            ApiKey[] // Chaves de API da organização
+  auditLogs          AuditLog[]
+  contracts          Contract[] // Contratos da organização
   portalIntegrations PortalIntegration[] // Integrações com portais
 
   // Comentários
@@ -343,68 +345,68 @@ model Property {
   hasConcierge Boolean @default(false) // Tem porteiro
 
   // Características do imóvel
-  hasPool             Boolean  @default(false) // Tem piscina
-  hasGarden           Boolean  @default(false) // Tem jardim
-  hasBarbecue         Boolean  @default(false) // Tem churrasqueira
-  hasPlayground       Boolean  @default(false) // Tem playground
-  hasSecurity         Boolean  @default(false) // Tem segurança
-  hasAlarm            Boolean  @default(false) // Tem alarme
-  hasInternet         Boolean  @default(false) // Tem internet
-  hasCableTV          Boolean  @default(false) // Tem TV a cabo
-  hasGas              Boolean  @default(false) // Tem gás
-  hasWater            Boolean  @default(false) // Tem água
-  hasElectricity      Boolean  @default(false) // Tem energia elétrica
-  hasSewerage         Boolean  @default(false) // Tem esgoto
-  hasPhone            Boolean  @default(false) // Tem telefone
-  hasIntercom         Boolean  @default(false) // Tem interfone
-  hasParking          Boolean  @default(false) // Tem estacionamento
-  hasCoveredParking   Boolean  @default(false) // Tem estacionamento coberto
-  hasOpenParking      Boolean  @default(false) // Tem estacionamento aberto
-  hasDependent        Boolean  @default(false) // Tem dependência
-  hasServiceArea      Boolean  @default(false) // Tem área de serviço
-  hasKitchen          Boolean  @default(false) // Tem cozinha
-  hasBalcony          Boolean  @default(false) // Tem varanda
-  hasTerrace          Boolean  @default(false) // Tem terraço
-  hasGourmetArea      Boolean  @default(false) // Tem área gourmet
-  hasHomeOffice       Boolean  @default(false) // Tem home office
-  hasStorageRoom      Boolean  @default(false) // Tem despensa
-  hasLaundry          Boolean  @default(false) // Tem lavanderia
-  hasServiceEntrance  Boolean  @default(false) // Tem entrada de serviço
-  hasWheelchairAccess Boolean  @default(false) // Tem acessibilidade
-  hasFireplace        Boolean  @default(false) // Tem lareira
-  hasAirConditioning  Boolean  @default(false) // Tem ar condicionado
-  hasHeating          Boolean  @default(false) // Tem aquecimento
-  hasSolarHeating     Boolean  @default(false) // Tem aquecedor solar
+  hasPool             Boolean @default(false) // Tem piscina
+  hasGarden           Boolean @default(false) // Tem jardim
+  hasBarbecue         Boolean @default(false) // Tem churrasqueira
+  hasPlayground       Boolean @default(false) // Tem playground
+  hasSecurity         Boolean @default(false) // Tem segurança
+  hasAlarm            Boolean @default(false) // Tem alarme
+  hasInternet         Boolean @default(false) // Tem internet
+  hasCableTV          Boolean @default(false) // Tem TV a cabo
+  hasGas              Boolean @default(false) // Tem gás
+  hasWater            Boolean @default(false) // Tem água
+  hasElectricity      Boolean @default(false) // Tem energia elétrica
+  hasSewerage         Boolean @default(false) // Tem esgoto
+  hasPhone            Boolean @default(false) // Tem telefone
+  hasIntercom         Boolean @default(false) // Tem interfone
+  hasParking          Boolean @default(false) // Tem estacionamento
+  hasCoveredParking   Boolean @default(false) // Tem estacionamento coberto
+  hasOpenParking      Boolean @default(false) // Tem estacionamento aberto
+  hasDependent        Boolean @default(false) // Tem dependência
+  hasServiceArea      Boolean @default(false) // Tem área de serviço
+  hasKitchen          Boolean @default(false) // Tem cozinha
+  hasBalcony          Boolean @default(false) // Tem varanda
+  hasTerrace          Boolean @default(false) // Tem terraço
+  hasGourmetArea      Boolean @default(false) // Tem área gourmet
+  hasHomeOffice       Boolean @default(false) // Tem home office
+  hasStorageRoom      Boolean @default(false) // Tem despensa
+  hasLaundry          Boolean @default(false) // Tem lavanderia
+  hasServiceEntrance  Boolean @default(false) // Tem entrada de serviço
+  hasWheelchairAccess Boolean @default(false) // Tem acessibilidade
+  hasFireplace        Boolean @default(false) // Tem lareira
+  hasAirConditioning  Boolean @default(false) // Tem ar condicionado
+  hasHeating          Boolean @default(false) // Tem aquecimento
+  hasSolarHeating     Boolean @default(false) // Tem aquecedor solar
 
   // Infraestrutura
-  hasWaterTank           Boolean  @default(false) // Tanque d'água
-  hasWell                Boolean  @default(false) // Poço
-  hasArtesianWell        Boolean  @default(false) // Poço artesiano
-  hasSepticTank          Boolean  @default(false) // Fossa séptica
-  hasRainwaterHarvesting Boolean  @default(false) // Captação de água da chuva
-  hasSolarPanels         Boolean  @default(false) // Painéis solares
-  hasWindTurbine         Boolean  @default(false) // Turbina eólica
-  hasPhotovoltaic        Boolean  @default(false) // Fotovoltaico
-  hasGeothermal          Boolean  @default(false) // Geotérmico
-  hasBiomass             Boolean  @default(false) // Biomassa
-  hasCogeneration        Boolean  @default(false) // Cogeração
-  hasMicrogrid           Boolean  @default(false) // Microgrid
-  hasSmartHome           Boolean  @default(false) // Casa inteligente
-  hasHomeAutomation      Boolean  @default(false) // Automação residencial
+  hasWaterTank           Boolean @default(false) // Tanque d'água
+  hasWell                Boolean @default(false) // Poço
+  hasArtesianWell        Boolean @default(false) // Poço artesiano
+  hasSepticTank          Boolean @default(false) // Fossa séptica
+  hasRainwaterHarvesting Boolean @default(false) // Captação de água da chuva
+  hasSolarPanels         Boolean @default(false) // Painéis solares
+  hasWindTurbine         Boolean @default(false) // Turbina eólica
+  hasPhotovoltaic        Boolean @default(false) // Fotovoltaico
+  hasGeothermal          Boolean @default(false) // Geotérmico
+  hasBiomass             Boolean @default(false) // Biomassa
+  hasCogeneration        Boolean @default(false) // Cogeração
+  hasMicrogrid           Boolean @default(false) // Microgrid
+  hasSmartHome           Boolean @default(false) // Casa inteligente
+  hasHomeAutomation      Boolean @default(false) // Automação residencial
 
   // Segurança
-  hasSecurityCameras  Boolean  @default(false) // Câmeras de segurança
-  hasAccessControl    Boolean  @default(false) // Controle de acesso
-  hasBiometricAccess  Boolean  @default(false) // Acesso biométrico
-  hasVideoIntercom    Boolean  @default(false) // Interfone com vídeo
-  hasGateControl      Boolean  @default(false) // Controle de portão
-  hasFence            Boolean  @default(false) // Cerca
-  hasWall             Boolean  @default(false) // Muro
-  hasGate             Boolean  @default(false) // Portão
-  hasSecurityGuard    Boolean  @default(false) // Segurança 24h
-  hasSecurityDog      Boolean  @default(false) // Cão de guarda
-  hasSecurityLighting Boolean  @default(false) // Iluminação de segurança
-  hasAlarmSystem      Boolean  @default(false) // Sistema de alarme
+  hasSecurityCameras  Boolean @default(false) // Câmeras de segurança
+  hasAccessControl    Boolean @default(false) // Controle de acesso
+  hasBiometricAccess  Boolean @default(false) // Acesso biométrico
+  hasVideoIntercom    Boolean @default(false) // Interfone com vídeo
+  hasGateControl      Boolean @default(false) // Controle de portão
+  hasFence            Boolean @default(false) // Cerca
+  hasWall             Boolean @default(false) // Muro
+  hasGate             Boolean @default(false) // Portão
+  hasSecurityGuard    Boolean @default(false) // Segurança 24h
+  hasSecurityDog      Boolean @default(false) // Cão de guarda
+  hasSecurityLighting Boolean @default(false) // Iluminação de segurança
+  hasAlarmSystem      Boolean @default(false) // Sistema de alarme
 
   // Segurança contra incêndio
   hasSmokeDetector          Boolean? @default(false) // Detector de fumaça
@@ -432,17 +434,17 @@ model Property {
   // Detalhes adicionais
   yearBuilt         Int? // Ano de construção
   renovationYear    Int? // Ano de reforma
-  furnished         Boolean  @default(false) // Mobiliado
-  semiFurnished     Boolean  @default(false) // Semi mobiliado
-  unfurnished       Boolean  @default(false) // Não mobiliado
-  newConstruction   Boolean  @default(false) // Construção nova
-  underConstruction Boolean  @default(false) // Em construção
-  toBeBuilt         Boolean  @default(false) // A ser construído
+  furnished         Boolean @default(false) // Mobiliado
+  semiFurnished     Boolean @default(false) // Semi mobiliado
+  unfurnished       Boolean @default(false) // Não mobiliado
+  newConstruction   Boolean @default(false) // Construção nova
+  underConstruction Boolean @default(false) // Em construção
+  toBeBuilt         Boolean @default(false) // A ser construído
 
   // Visitação e disponibilidade
-  availableForVisit   Boolean  @default(true) // Disponível para visita
+  availableForVisit   Boolean @default(true) // Disponível para visita
   visitSchedule       Json? // Horário de visita
-  requiresAppointment Boolean  @default(false) // Requer agendamento
+  requiresAppointment Boolean @default(false) // Requer agendamento
   visitInstructions   String? // Instruções para visita
 
   // Documentos e legal
@@ -456,8 +458,8 @@ model Property {
   // Valores adicionais
   iptuValue     Decimal? // Valor do IPTU
   condoFee      Decimal? // Taxa de condomínio
-  iptuExemption Boolean @default(false) // Isenção de IPTU
-  taxExemption  Boolean @default(false) // Isenção de taxas
+  iptuExemption Boolean  @default(false) // Isenção de IPTU
+  taxExemption  Boolean  @default(false) // Isenção de taxas
 
   // Observações e informações
   observations String? // Observações gerais
@@ -474,7 +476,7 @@ model Property {
   // Status e datas
   publishedAt DateTime? // Data de publicação
   expiresAt   DateTime? // Data de expiração
-  featured    Boolean  @default(false) // Imóvel em destaque
+  featured    Boolean   @default(false) // Imóvel em destaque
   priority    Int?      @default(0) // Prioridade de destaque
 
   // Relacionamentos multi-tenant
@@ -498,8 +500,9 @@ model Property {
   /// Suporta todos os tipos de imóveis e situações
   /// Sistema de versionamento para histórico de alterações
   /// Integração com portais de imóveis
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  user            User?             @relation(fields: [userId], references: [id])
+  userId          String?
+  PropertyHistory PropertyHistory[]
 
   @@unique([code])
   // Índices
@@ -706,8 +709,8 @@ model Lead {
 /// Modelo de Conversas WhatsApp
 model Conversation {
   id          String             @id @default(cuid())
-  leadId     String // ID do lead
-  externalId String? @unique // ID da mensagem no WhatsApp
+  leadId      String // ID do lead
+  externalId  String?            @unique // ID da mensagem no WhatsApp
   message     String // Conteúdo da mensagem
   direction   MessageDirection // Direção da mensagem
   status      ConversationStatus @default(ATIVA) // Status da conversa
@@ -819,15 +822,15 @@ model Package {
 
 /// Modelo de Chaves de API para Integrações Externas
 model ApiKey {
-  id             String       @id @default(cuid())
-  keyHash        String       @unique // Hash SHA-256 da chave
-  name           String // Nome descritivo da chave
-  preview        String // Primeiros/últimos caracteres para exibição
-  enabled        Boolean      @default(true) // Se a chave está ativa
-  scopes         Json         @default("[]") // Escopos de acesso
-  lastUsedAt     DateTime? // Último uso da chave
-  createdAt      DateTime     @default(now()) // Data de criação
-  updatedAt      DateTime     @updatedAt // Data de atualização
+  id         String    @id @default(cuid())
+  keyHash    String    @unique // Hash SHA-256 da chave
+  name       String // Nome descritivo da chave
+  preview    String // Primeiros/últimos caracteres para exibição
+  enabled    Boolean   @default(true) // Se a chave está ativa
+  scopes     Json      @default("[]") // Escopos de acesso
+  lastUsedAt DateTime? // Último uso da chave
+  createdAt  DateTime  @default(now()) // Data de criação
+  updatedAt  DateTime  @updatedAt // Data de atualização
 
   // Relacionamentos
   organizationId String
@@ -860,7 +863,7 @@ model PortalIntegration {
   settings   Json? // Configurações personalizadas
   createdAt  DateTime                @default(now()) // Data de criação
   updatedAt  DateTime                @updatedAt // Data de atualização
-  
+
   // Relacionamentos
   organizationId String // Chave estrangeira para multi-tenant
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -1055,12 +1058,18 @@ enum AuditAction {
   READ // Leitura de registro
   LOGIN // Login de usuário
   LOGOUT // Logout de usuário
+  SEARCH // Pesquisa de dados
+  ACCESS // Acesso a recurso sensível
   EXPORT // Exportação de dados
   IMPORT // Importação de dados
+  PUBLISH // Publicação (ex: portais)
+  REVOKE // Revogação de acesso
   APPROVE // Aprovação
   REJECT // Rejeição
   SEND // Envio de mensagem
   RECEIVE // Recebimento de mensagem
+  PASSWORD_CHANGE // Alteração de senha
+  SETTINGS_CHANGE // Alteração de configurações
 }
 
 /// Entidade auditada
@@ -1091,14 +1100,16 @@ model AuditLog {
   id String @id @default(cuid())
 
   // Identificação da ação
-  action   AuditAction // Tipo de ação realizada
-  entity   AuditEntity // Entidade afetada
-  entityId String // ID do registro afetado
+  action     AuditAction // Tipo de ação realizada
+  entityType String? // Tipo da entidade afetada (Property, Lead, User)
+  entityId   String? // ID do registro afetado
 
   // Dados da ação
-  changes     Json? // Alterações realizadas (antes/depois)
-  metadata    Json? // Metadados adicionais
-  description String? // Descrição da ação
+  beforeValues Json? // Estado anterior
+  afterValues  Json? // Estado posterior
+  diff         Json? // Diferença entre estados
+  metadata     Json? // Metadados adicionais
+  description  String? // Descrição da ação
 
   // Contexto de segurança
   ipAddress String? // Endereço IP do usuário
@@ -1120,23 +1131,13 @@ model AuditLog {
   timestamp DateTime @default(now()) // Quando ocorreu
   createdAt DateTime @default(now())
 
-  // Comentários
-  /// Log de auditoria para conformidade LGPD e segurança
-  /// Armazena todas as ações realizadas no sistema
-  /// Suporta consulta por usuário, entidade, data e risco
-
-  // Índices para performance
-  @@index([entity, entityId])
+  // Índiices para performance
   @@index([userId])
   @@index([organizationId])
   @@index([action])
   @@index([timestamp])
   @@index([riskLevel])
-  @@index([ipAddress])
-  @@index([sessionId])
-  // Índices compostos para auditoria
-  @@index([organizationId, action, timestamp])
-  @@index([entity, timestamp])
+  @@index([entityType, entityId])
 }
 
 // ============================================
@@ -1232,32 +1233,33 @@ model BackupLog {
 
 /// Modelo de Contratos
 model Contract {
-  id              String           @id @default(cuid())
+  id              String    @id @default(cuid())
   templateId      String?
   type            String // sale, rent, proposal, authorization, commercial
   status          String // draft, pending_review, etc.
   title           String
-  description     String?          @db.Text
-  totalValue      Decimal?         @db.Decimal(15, 2)
+  description     String?   @db.Text
+  totalValue      Decimal?  @db.Decimal(15, 2)
   installments    Int?
   startDate       DateTime?
   endDate         DateTime?
   expiresAt       DateTime?
   signedAt        DateTime?
   documentUrl     String?
-  documentVersion Int              @default(1)
+  documentVersion Int       @default(1)
   metadata        Json?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   createdBy       String?
 
   // Relacionamentos
   organizationId  String
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  property        Property?         @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   parties         ContractParty[]
   clauses         ContractClause[]
+  ContractHistory ContractHistory[]
 
   @@index([organizationId])
   @@index([propertyId])
@@ -1296,44 +1298,31 @@ model ContractClause {
   @@index([contractId])
 }
 
-/// Tipo de ação para auditoria
-enum AuditAction {
-  CREATE // Criação de registro
-  UPDATE // Atualização de registro
-  DELETE // Exclusão de registro
-  LOGIN // Login de usuário
-  LOGOUT // Logout de usuário
-  SEARCH // Pesquisa de dados
-  ACCESS // Acesso a recurso sensível
-  EXPORT // Exportação de dados
-  PUBLISH // Publicação (ex: portais)
-  REVOKE // Revogação de acesso
-  PASSWORD_CHANGE // Alteração de senha
-  SETTINGS_CHANGE // Alteração de configurações
+/// Modelo de Histórico de Propriedades (Versão Simples de Snapshot)
+model PropertyHistory {
+  id         String   @id @default(cuid())
+  propertyId String
+  snapshot   Json // Dados completos do imóvel no momento
+  changeType String // PRICE_CHANGE, STATUS_CHANGE, etc.
+  changedBy  String // ID do usuário
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
 }
 
-/// Modelo de Logs de Auditoria (Para conformidade SOC2/LGPD)
-model AuditLog {
-  id             String      @id @default(cuid())
-  action         AuditAction // Ação realizada
-  entityType     String? // Tipo da entidade afetada (Property, Lead, User)
-  entityId       String? // ID da entidade afetada
-  userId         String? // ID do usuário que realizou a ação
-  user           User?       @relation(fields: [userId], references: [id])
-  organizationId String? // ID da organização para multi-tenant
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  ipAddress      String? // IP da origem da ação
-  userAgent      String? // Navegador/Sistema da origem
-  beforeValues   String? // Estado anterior (JSON string)
-  afterValues    String? // Estado posterior (JSON string)
-  diff           String? // Diferença entre estados (JSON string)
-  metadata       String? // Metadados adicionais (JSON string)
-  createdAt      DateTime    @default(now()) // Carimbo de tempo da ação
+/// Modelo de Histórico de Contratos
+model ContractHistory {
+  id         String   @id @default(cuid())
+  contractId String
+  version    Int // Número da versão (1, 2, 3...)
+  snapshot   Json // Conteúdo do contrato, valores, etc.
+  reason     String? // Motivo da alteração
+  changedBy  String // ID do usuário
+  createdAt  DateTime @default(now())
 
-  // Índices para performance de auditoria
-  @@index([organizationId])
-  @@index([userId])
-  @@index([entityType, entityId])
-  @@index([action])
-  @@index([createdAt])
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
 }

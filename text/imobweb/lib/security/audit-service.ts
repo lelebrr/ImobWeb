@@ -3,13 +3,13 @@
  * 2026 - Registro detalhado de ações críticas para conformidade SOC2
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, AuditAction } from "@prisma/client";
 import { headers } from "next/headers";
 
 const prisma = new PrismaClient();
 
 export interface AuditLogOptions {
-  action: string;
+  action: AuditAction;
   entityType: string;
   entityId?: string;
   organizationId: string;
@@ -41,7 +41,6 @@ export async function auditLog({
     // Calcula diff se oldData e newData estiverem presentes
     const changeDiff = oldData && newData ? calculateDiff(oldData, newData) : null;
 
-    // @ts-ignore - Aguardando deploy do schema AuditLog pelo AI de Core
     await prisma.auditLog.create({
       data: {
         action,
@@ -51,10 +50,10 @@ export async function auditLog({
         userId,
         ipAddress: ip,
         userAgent: userAgent,
-        beforeValues: oldData ? JSON.stringify(oldData) : null,
-        afterValues: newData ? JSON.stringify(newData) : null,
-        diff: changeDiff ? JSON.stringify(changeDiff) : null,
-        metadata: JSON.stringify(metadata),
+        beforeValues: oldData || undefined,
+        afterValues: newData || undefined,
+        diff: changeDiff || undefined,
+        metadata: metadata as any,
       },
     });
 

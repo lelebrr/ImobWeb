@@ -46,7 +46,7 @@ export const RoleSchema = z.object({
   permissions: z.array(z.object({
     resource: ResourceTypeSchema,
     actions: z.array(PermissionActionSchema),
-    conditions: z.record(z.unknown()).optional(),
+    conditions: z.record(z.string(), z.unknown()).optional(),
   })),
   isSystem: z.boolean().default(false),
   isCustom: z.boolean().default(true),
@@ -63,7 +63,7 @@ export const UserPermissionsSchema = z.object({
   customPermissions: z.array(z.object({
     resource: ResourceTypeSchema,
     actions: z.array(PermissionActionSchema),
-    conditions: z.record(z.unknown()).optional(),
+    conditions: z.record(z.string(), z.unknown()).optional(),
   })).optional(),
   teamId: z.string().optional(),
   organizationId: z.string().optional(),
