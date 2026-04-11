@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get('image') as File;
-    
+
     if (!file) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
@@ -50,9 +50,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Processing failed', details: error.message }, { status: 500 });
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false, // Handle dynamic form data
-  },
-};
