@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ChatInputSchema, processChat } from '../../../../lib/ai/chat-agent';
+import { ChatInputSchema, processChat } from '@/lib/ai/chat-agent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

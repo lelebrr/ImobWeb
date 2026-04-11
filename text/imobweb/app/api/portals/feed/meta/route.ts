@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { metaCatalogGenerator } from '../../../../../lib/xml-processor/meta-catalog';
+import { metaCatalogGenerator } from '@/lib/xml-processor/meta-catalog';
 
 const prisma = new PrismaClient();
 

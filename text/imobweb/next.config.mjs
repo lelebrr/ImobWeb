@@ -56,10 +56,9 @@ const nextConfig = {
     ];
   },
 
+  reactCompiler: true,
   // Otimizações de Compilação e Runtime para 2026
   experimental: {
-    // React 19 Compiler (Forget)
-    reactCompiler: true,
     optimizePackageImports: [
       'lucide-react',
       'framer-motion',
@@ -72,16 +71,12 @@ const nextConfig = {
       bodySizeLimit: '2mb',
       allowedOrigins: ['imobweb.com', '*.imobweb.com'],
     },
-    // Turbo traces para build mais rápido
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
+
+  // Turbo configuration moved to root or handled differently in Next 16
+  // rules for svg can be handled via loader or custom webpack config if needed
+  // but let's try removing the unrecognized experimental.turbo first
+
 
   // State-of-the-Art Image Optimization
   images: {

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { MarketingLanguageProvider } from '@/lib/i18n/MarketingLanguageContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,11 +27,13 @@ export default function MarketingLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="pt-BR">
+        <html lang="pt-BR" className="scroll-smooth">
             <body className={inter.className}>
-                <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-                    {children}
-                </div>
+                <MarketingLanguageProvider>
+                    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-200">
+                        {children}
+                    </div>
+                </MarketingLanguageProvider>
             </body>
         </html>
     )

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PriceInputSchema, suggestPrice, formatPrice } from '../../../../lib/ai/price-suggester';
+import { PriceInputSchema, suggestPrice, formatPrice } from '@/lib/ai/price-suggester';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

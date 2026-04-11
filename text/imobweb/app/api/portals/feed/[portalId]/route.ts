@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { xmlGenerator } from '../../../../lib/xml-processor/xml-generator';
+import { xmlGenerator } from '@/lib/xml-processor/xml-generator';
 
 const prisma = new PrismaClient();
 

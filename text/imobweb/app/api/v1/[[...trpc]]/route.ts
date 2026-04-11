@@ -1,6 +1,6 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { publicApiRouter } from "../../../../lib/api-public/router";
-import { authenticatePublicRequest } from "../../../../lib/api-public/auth";
+import { publicApiRouter } from "@/lib/api-public/router";
+import { authenticatePublicRequest } from "@/lib/api-public/auth";
 import { NextRequest } from "next/server";
 
 /**

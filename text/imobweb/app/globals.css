@@ -4,12 +4,15 @@
 
 @layer base {
   :root {
-    /* Base Neutral Colors */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
-    /* Brand Accent Colors (White Label Configurable) */
-    /* ImobWeb Default / Blue */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
@@ -25,28 +28,23 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Structural Colors */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --radius: 0.75rem;
-
-    /* Theme-specific shadows & glass */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.5);
+    --radius: 0.5rem;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    /* Dark Mode Brand - Keep brand hue but adjust lightness/saturation */
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
@@ -65,59 +63,79 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --glass-bg: rgba(23, 23, 23, 0.7);
-    --glass-border: rgba(38, 38, 38, 0.5);
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    /* Evita scroll horizontal indesejado causado por larguras mal dimensionadas */
+    max-width: 100vw;
   }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    /* Smooth Scroll */
+  
+  html {
+    /* Base fluida: o tamanho base aumenta gradualmente de mobile a desktop */
+    font-size: clamp(14px, 0.8rem + 0.25vw, 16px);
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
-  /* Custom Scrollbar for sleek aesthetic */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  body {
+    @apply bg-background text-foreground antialiased overflow-x-hidden min-h-screen text-fluid-base;
+    /* Reduz Cumulative Layout Shift */
+    padding-env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+
+  /* Typography fluid defaults */
+  h1 {
+    @apply text-fluid-4xl font-extrabold tracking-tight;
   }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-full;
+  h2 {
+    @apply text-fluid-3xl font-bold tracking-tight;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+  h3 {
+    @apply text-fluid-2xl font-bold tracking-tight;
+  }
+  h4 {
+    @apply text-fluid-xl font-semibold tracking-tight;
+  }
+  p {
+    @apply leading-relaxed;
   }
 }
 
-/* Glassmorphism Utilities */
-@layer utilities {
-  .glass {
-    @apply bg-background/80 backdrop-blur-md border border-border shadow-sm;
-  }
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border shadow-sm rounded-xl;
+@layer components {
+  /* Utilitário para container queries fluidos */
+  .fluid-px {
+    @apply px-fluid-4 md:px-fluid-6 lg:px-fluid-8;
   }
   
-  /* Text Balance for Headlines */
+  .fluid-py {
+    @apply py-fluid-4 md:py-fluid-6 lg:py-fluid-8;
+  }
+  
+  .fluid-gap {
+    @apply gap-fluid-4 md:gap-fluid-6;
+  }
+}
+
+@layer utilities {
+  /* Evita quebra de layout ao exibir imagens ou elementos grandes */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+  
+  /* Text balance para headers mais limpos em telas menores */
   .text-balance {
     text-wrap: balance;
   }
   
-  /* PB Safe for Mobile iOS/Android bottom nav avoidance */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
+  /* Esconder scrollbars se desejado para containers específicos (mobile cards, etc) */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DescriptionInputSchema, generateDescription, createDescriptionVariations } from '../../../../lib/ai/description-generator';
+import { DescriptionInputSchema, generateDescription, createDescriptionVariations } from '@/lib/ai/description-generator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

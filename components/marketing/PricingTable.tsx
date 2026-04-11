@@ -1,126 +1,128 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Check, X, Star } from 'lucide-react'
+import { Check, Star } from 'lucide-react'
 import Link from 'next/link'
-
-const pricingPlans = [
-    {
-        name: 'Grátis',
-        description: 'Perfeito para corretores autônomos começando',
-        price: 'R$ 0',
-        period: '/mês',
-        featured: false,
-        features: [
-            'Até 10 imóveis',
-            'Até 100 contatos',
-            'Suporte básico',
-            'Relatórios simples',
-        ],
-        cta: 'Comece Grátis',
-        ctaVariant: 'default',
-    },
-    {
-        name: 'Professional',
-        description: 'Ideal para pequenas e médias imobiliárias',
-        price: 'R$ 99',
-        period: '/mês',
-        featured: true,
-        features: [
-            'Imóveis ilimitados',
-            'Contatos ilimitados',
-            'Integração WhatsApp',
-            'Relatórios avançados',
-            'Suporte prioritário',
-            'API de integração',
-        ],
-        cta: 'Experimente 7 dias grátis',
-        ctaVariant: 'default',
-    },
-    {
-        name: 'Enterprise',
-        description: 'Para imobiliárias de grande porte',
-        price: 'Personalizado',
-        period: '',
-        featured: false,
-        features: [
-            'Tudo do Professional',
-            'Suporte dedicado',
-            'Personalizações exclusivas',
-            'Treinamento da equipe',
-            'SLA garantido',
-            'Integrações customizadas',
-        ],
-        cta: 'Fale com um especialista',
-        ctaVariant: 'outline',
-    },
-]
+import { useMarketingLanguage } from '@/lib/i18n/MarketingLanguageContext'
+import { motion } from 'framer-motion'
 
 const PricingTable = () => {
+    const { t } = useMarketingLanguage()
+
+    const pricingPlans = [
+        {
+            name: t.pricing.starter,
+            description: t.pricing.starterDesc,
+            price: 'R$ 0',
+            period: t.pricing.perMonth,
+            featured: false,
+            features: [
+                'Até 10 imóveis',
+                'Até 100 contatos',
+                'Suporte básico',
+                'Relatórios simples',
+            ],
+            cta: t.pricing.startFree,
+            ctaVariant: 'outline',
+        },
+        {
+            name: t.pricing.professional,
+            description: t.pricing.professionalDesc,
+            price: 'R$ 99',
+            period: t.pricing.perMonth,
+            featured: true,
+            features: [
+                'Imóveis ilimitados',
+                'Contatos ilimitados',
+                'Integração WhatsApp',
+                'Relatórios avançados',
+                'Suporte prioritário',
+                'API de integração',
+            ],
+            cta: t.pricing.startPro,
+            ctaVariant: 'default',
+        },
+        {
+            name: t.pricing.enterprise,
+            description: t.pricing.enterpriseDesc,
+            price: 'Custom',
+            period: '',
+            featured: false,
+            features: [
+                'Tudo do Professional',
+                'Suporte dedicado',
+                'Personalizações exclusivas',
+                'Treinamento da equipe',
+                'SLA garantido',
+                'Integrações customizadas',
+            ],
+            cta: t.pricing.contactSales,
+            ctaVariant: 'outline',
+        },
+    ]
+
     return (
-        <section className="py-24 bg-white">
+        <section className="py-24 bg-white relative">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                        Planos para cada necessidade
+                <div className="text-center max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                        {t.pricing.title}
                     </h2>
-                    <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-                        Escolha o plano perfeito para sua imobiliária e comece a transformar seu negócio hoje.
+                    <p className="mx-auto mt-4 text-lg text-slate-600">
+                        {t.pricing.subtitle}
                     </p>
                 </div>
 
                 <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {pricingPlans.map((plan, index) => (
-                        <div
+                        <motion.div
+                            whileHover={{ y: -8 }}
                             key={index}
-                            className={`relative rounded-2xl border p-8 ${plan.featured
-                                    ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-2'
-                                    : 'border-gray-200'
+                            className={`relative flex flex-col rounded-3xl p-8 shadow-sm ring-1 transition-shadow hover:shadow-xl ${plan.featured
+                                    ? 'bg-slate-900 ring-slate-900 text-white shadow-2xl'
+                                    : 'bg-white ring-slate-200'
                                 }`}
                         >
                             {plan.featured && (
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded-full bg-blue-500 px-4 py-1 text-sm font-semibold text-white">
-                                    <Star className="mr-1 inline h-4 w-4" /> Mais Popular
+                                <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                                    <div className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 px-4 py-1 text-sm font-semibold text-white shadow-sm">
+                                        <Star className="mr-1 inline h-4 w-4 fill-white" /> {t.pricing.save20}
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="text-center">
-                                <h3 className="text-xl font-semibold text-gray-900">{plan.name}</h3>
-                                <p className="mt-2 text-gray-600">{plan.description}</p>
-
-                                <div className="mt-6 flex justify-center items-baseline">
-                                    <span className="text-4xl font-bold tracking-tight text-gray-900">
-                                        {plan.price}
-                                    </span>
-                                    <span className="ml-2 text-gray-600">{plan.period}</span>
-                                </div>
-
-                                <Button
-                                    asChild
-                                    className={`mt-8 w-full ${plan.featured ? 'bg-blue-600 hover:bg-blue-700' : ''
-                                        } ${plan.ctaVariant === 'outline' ? 'border border-gray-300' : ''}`}
-                                    variant={plan.ctaVariant as any}
-                                >
-                                    <Link href="/onboarding">{plan.cta}</Link>
-                                </Button>
+                            <div className="mb-6">
+                                <h3 className={`text-2xl font-bold ${plan.featured ? 'text-white' : 'text-slate-900'}`}>{plan.name}</h3>
+                                <p className={`mt-2 text-sm ${plan.featured ? 'text-slate-300' : 'text-slate-500'}`}>{plan.description}</p>
                             </div>
 
-                            <ul className="mt-8 space-y-4">
+                            <div className="mt-4 flex items-baseline text-5xl font-extrabold">
+                                {plan.price}
+                                <span className={`ml-1 text-xl font-medium ${plan.featured ? 'text-slate-300' : 'text-slate-500'}`}>{plan.period}</span>
+                            </div>
+
+                            <Button
+                                asChild
+                                size="lg"
+                                className={`mt-8 w-full rounded-full font-semibold transition-colors ${plan.featured 
+                                    ? 'bg-blue-500 text-white hover:bg-blue-400' 
+                                    : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                                    }`}
+                                variant={plan.ctaVariant as any}
+                            >
+                                <Link href="/onboarding">{plan.cta}</Link>
+                            </Button>
+
+                            <ul className="mt-8 space-y-4 flex-1">
                                 {plan.features.map((feature, featureIndex) => (
                                     <li key={featureIndex} className="flex items-start">
-                                        <Check className="mr-3 h-5 w-5 text-green-500 flex-shrink-0" />
-                                        <span className="text-gray-600">{feature}</span>
+                                        <Check className={`mr-3 h-5 w-5 flex-shrink-0 ${plan.featured ? 'text-blue-400' : 'text-blue-500'}`} />
+                                        <span className={`text-sm ${plan.featured ? 'text-slate-300' : 'text-slate-600'}`}>{feature}</span>
                                     </li>
                                 ))}
                             </ul>
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
-
-                <div className="mt-16 text-center">
-                    <p className="text-lg text-gray-600">
-                        Precisa de um plano customizado? <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Fale com nosso time</a>
-                    </p>
                 </div>
             </div>
         </section>

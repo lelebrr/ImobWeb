@@ -1,24 +1,67 @@
 import type { Config } from "tailwindcss";
-import animate from "tailwindcss-animate";
 
-const config: Config = {
+const config = {
   darkMode: ["class"],
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
   ],
+  prefix: "",
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "clamp(1rem, 5vw, 2rem)",
+        sm: "2rem",
+        lg: "4rem",
+        xl: "5rem",
+        "2xl": "6rem",
+      },
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
+      screens: {
+        xs: "475px",
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1440px",
+        "3xl": "1920px",
+      },
+      fontSize: {
+        // Fluid typography: clamp(min, preferred, max)
+        "fluid-xs": "clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)",
+        "fluid-sm": "clamp(0.875rem, 0.8rem + 0.375vw, 1rem)",
+        "fluid-base": "clamp(1rem, 0.9rem + 0.5vw, 1.125rem)",
+        "fluid-lg": "clamp(1.125rem, 1rem + 0.625vw, 1.25rem)",
+        "fluid-xl": "clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem)",
+        "fluid-2xl": "clamp(1.5rem, 1.3rem + 1vw, 2rem)",
+        "fluid-3xl": "clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem)",
+        "fluid-4xl": "clamp(2.25rem, 1.75rem + 2.5vw, 3rem)",
+        "fluid-5xl": "clamp(2.5rem, 2rem + 3.5vw, 4rem)",
+        "fluid-6xl": "clamp(3rem, 2.5rem + 4vw, 5rem)",
+      },
+      spacing: {
+        "fluid-1": "clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem)",
+        "fluid-2": "clamp(0.5rem, 0.4rem + 0.5vw, 0.75rem)",
+        "fluid-3": "clamp(0.75rem, 0.6rem + 0.75vw, 1rem)",
+        "fluid-4": "clamp(1rem, 0.8rem + 1vw, 1.5rem)",
+        "fluid-5": "clamp(1.25rem, 1rem + 1.25vw, 1.75rem)",
+        "fluid-6": "clamp(1.5rem, 1.2rem + 1.5vw, 2rem)",
+        "fluid-8": "clamp(2rem, 1.6rem + 2vw, 2.5rem)",
+        "fluid-10": "clamp(2.5rem, 2rem + 2.5vw, 3rem)",
+        "fluid-12": "clamp(3rem, 2.4rem + 3vw, 4rem)",
+        "fluid-16": "clamp(4rem, 3.2rem + 4vw, 5rem)",
+        "fluid-20": "clamp(5rem, 4rem + 5vw, 6rem)",
+        "fluid-24": "clamp(6rem, 4.8rem + 6vw, 8rem)",
+      },
       colors: {
-        // Redefinindo para variáveis CSS para permitir White Label dinâmico
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -52,37 +95,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Estilos Premium Enterprise 2026
-        brand: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "var(--primary)",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
-        },
-      },
-      backgroundImage: {
-        "glass-gradient": "linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
-        "premium-shine": "linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%)",
-      },
-      backdropBlur: {
-        xs: "2px",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "1rem",
-        "2xl": "1.5rem",
-      },
-      boxShadow: {
-        glass: "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
-        "premium-hover": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
       },
       keyframes: {
         "accordion-down": {
@@ -93,28 +110,17 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
-        "slide-in": {
-          "0%": { transform: "translateY(10px)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-        "shimmer": {
-          "100%": { transform: "translateX(100%)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "slide-in": "slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-        "shimmer": "shimmer 2s infinite",
       },
     },
   },
-  plugins: [animate],
-};
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/container-queries"),
+  ],
+} satisfies Config;
 
 export default config;

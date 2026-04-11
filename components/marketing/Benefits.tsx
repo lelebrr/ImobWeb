@@ -1,81 +1,73 @@
 'use client'
 
-import { CheckCircle, Users, Building2, MessageSquare, BarChart3, Zap } from 'lucide-react'
-
-const features = [
-    {
-        icon: <Users className="h-8 w-8" />,
-        title: 'Gestão de Corretores',
-        description: 'Cadastre, gerencie e acompanhe o desempenho de toda sua equipe de corretores em um só lugar.',
-        color: 'bg-blue-500',
-    },
-    {
-        icon: <Building2 className="h-8 w-8" />,
-        title: 'Controle de Imóveis',
-        description: 'Cadastre, organize e gerencie todos os imóveis com fotos, detalhes e histórico completo.',
-        color: 'bg-green-500',
-    },
-    {
-        icon: <MessageSquare className="h-8 w-8" />,
-        title: 'Integração WhatsApp',
-        description: 'Automatize conversas, envie lembretes e mantenha o contato com clientes de forma profissional.',
-        color: 'bg-purple-500',
-    },
-    {
-        icon: <BarChart3 className="h-8 w-8" />,
-        title: 'Análise de Desempenho',
-        description: 'Relatórios detalhados sobre conversões, taxa de fechamento e ROI por corretor e imóvel.',
-        color: 'bg-yellow-500',
-    },
-    {
-        icon: <Zap className="h-8 w-8" />,
-        title: 'Rápido e Intuitivo',
-        description: 'Interface moderna e responsiva, projetada para agilizar seu trabalho diário e aumentar produtividade.',
-        color: 'bg-red-500',
-    },
-    {
-        icon: <CheckCircle className="h-8 w-8" />,
-        title: 'Segurança e Conformidade',
-        description: 'Dados armazenados com segurança total, backups automáticos e conformidade com LGPD.',
-        color: 'bg-indigo-500',
-    },
-]
+import { Building2, MessageSquare, Shield, GitMerge } from 'lucide-react'
+import { useMarketingLanguage } from '@/lib/i18n/MarketingLanguageContext'
+import { motion } from 'framer-motion'
 
 const Benefits = () => {
+    const { t } = useMarketingLanguage()
+
     return (
-        <section className="py-24 bg-white">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                        Tudo que sua imobiliária precisa em uma plataforma
+        <section className="py-24 bg-slate-50 relative">
+            <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-white to-transparent pointer-events-none"></div>
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="text-center max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600">
+                        {t.benefits.title}
                     </h2>
-                    <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-                        Recursos completos para gerenciar imóveis, corretores e clientes com eficiência e profissionalismo.
+                    <p className="mx-auto mt-4 text-lg text-slate-600">
+                        {t.benefits.subtitle}
                     </p>
                 </div>
 
-                <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {features.map((feature, index) => (
-                        <div
-                            key={index}
-                            className="relative overflow-hidden rounded-2xl border border-gray-200 p-8 transition-all hover:shadow-lg hover:border-blue-300"
-                        >
-                            <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${feature.color} text-white`}>
-                                {feature.icon}
+                <div className="mt-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
+                    {/* Feature 1 */}
+                    <motion.div whileHover={{ y: -5 }} className="relative group">
+                        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-500 opacity-20 blur transition group-hover:opacity-40"></div>
+                        <div className="relative flex flex-col items-start rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200">
+                            <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100 mb-6">
+                                <Building2 className="h-8 w-8 text-blue-600" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
-                            <p className="mt-2 text-gray-600">{feature.description}</p>
+                            <h3 className="text-2xl font-bold text-slate-900">{t.benefits.b1Title}</h3>
+                            <p className="mt-3 text-slate-600 leading-relaxed text-lg">{t.benefits.b1Desc}</p>
                         </div>
-                    ))}
-                </div>
+                    </motion.div>
 
-                <div className="mt-16 text-center">
-                    <p className="text-lg text-gray-600">
-                        Pronto para transformar sua imobiliária?
-                    </p>
-                    <button className="mt-4 rounded-md bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
-                        Comece sua teste grátis
-                    </button>
+                    {/* Feature 2 */}
+                    <motion.div whileHover={{ y: -5 }} className="relative group">
+                        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-400 opacity-20 blur transition group-hover:opacity-40"></div>
+                        <div className="relative flex flex-col items-start rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200">
+                            <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100 mb-6">
+                                <MessageSquare className="h-8 w-8 text-emerald-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-900">{t.benefits.b2Title}</h3>
+                            <p className="mt-3 text-slate-600 leading-relaxed text-lg">{t.benefits.b2Desc}</p>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 3 */}
+                    <motion.div whileHover={{ y: -5 }} className="relative group">
+                        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 to-pink-500 opacity-20 blur transition group-hover:opacity-40"></div>
+                        <div className="relative flex flex-col items-start rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200">
+                            <div className="rounded-2xl bg-purple-50 p-4 ring-1 ring-purple-100 mb-6">
+                                <GitMerge className="h-8 w-8 text-purple-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-900">{t.benefits.b3Title}</h3>
+                            <p className="mt-3 text-slate-600 leading-relaxed text-lg">{t.benefits.b3Desc}</p>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 4 */}
+                    <motion.div whileHover={{ y: -5 }} className="relative group">
+                        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500 to-orange-400 opacity-20 blur transition group-hover:opacity-40"></div>
+                        <div className="relative flex flex-col items-start rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200">
+                            <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-100 mb-6">
+                                <Shield className="h-8 w-8 text-amber-600" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-900">{t.benefits.b4Title}</h3>
+                            <p className="mt-3 text-slate-600 leading-relaxed text-lg">{t.benefits.b4Desc}</p>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
         </section>

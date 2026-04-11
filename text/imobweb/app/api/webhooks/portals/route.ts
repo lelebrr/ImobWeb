@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { portalParser } from '../../../../lib/xml-processor/parser';
-import { portalAnalytics } from '../../../../lib/portals/analytics';
+import { portalParser } from '@/lib/xml-processor/parser';
+import { portalAnalytics } from '@/lib/portals/analytics';
 
 const prisma = new PrismaClient();
 

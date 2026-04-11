@@ -1,4 +1,4 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import createI18nMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from '@/lib/i18n/settings';
@@ -12,24 +12,62 @@ const i18nMiddleware = createI18nMiddleware({
 });
 
 /**
- * Middleware para proteção de rotas, redirecionamentos e i18n
+ * Proxy para proteção de rotas, redirecionamentos e i18n (Next.js 16+)
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 1. Processar i18n primeiro para garantir o locale na URL
   const i18nResponse = i18nMiddleware(request);
   
-  // Se for apenas uma mudança de locale ou redirecionamento de locale, retornar
-  if (request.nextUrl.pathname.includes('/_next') || request.nextUrl.pathname.includes('/api')) {
-    // API e Static não precisam de i18n middleware prefixing geralmente
-  } else if (i18nResponse.headers.get('x-next-intl-locale')) {
-     // Apenas continua se não for um redirecionamento forçado do next-intl
-  }
+  let response = i18nResponse || NextResponse.next()
 
-  const response = i18nResponse || NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res: response })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
 
   // Obter sessão do usuário
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
 
   const pathname = request.nextUrl.pathname;
   
@@ -84,6 +122,7 @@ export async function middleware(request: NextRequest) {
 
   return response
 }
+
 
 /**
  * Configuração de rotas que não precisam de autenticação

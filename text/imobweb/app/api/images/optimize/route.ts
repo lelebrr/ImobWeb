@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ImageProcessor } from '../../../../lib/image-optimization/image-processor';
+import { ImageProcessor } from '@/lib/image-optimization/image-processor';
 
 /**
  * IMAGE OPTIMIZATION API - IMOBWEB 2026
