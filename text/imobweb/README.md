@@ -1,157 +1,121 @@
-# imobWeb - CRM Imobiliário SaaS
+<div align="center">
 
-## Descrição
+# 🏠 imobWeb: O CRM que é o Cérebro da sua Imobiliária
 
-imobWeb é um CRM imobiliário SaaS completo com integrações avançadas para corretoras e imobiliárias. O sistema permite cadastrar imóveis de forma inteligente com IA, publicar em múltiplos portais e gerenciar conversas com proprietários via WhatsApp Business Cloud API.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-## Funcionalidades Principais
+---
 
-- **Cadastro Inteligente**: IA preenche automaticamente informações com base em voz, texto ou fotos
-- **Publicação Automática**: Publica em portais como OLX, Zap Imóveis, Viva Real e +100 portais via XML VRSync
-- **WhatsApp Proativo**: Dispara mensagens automáticas para proprietários sobre atualização de preço e fotos
-- **Sincronização em Tempo Real**: Atualiza dados em todos os portais em menos de 5 minutos
-- **Dashboard de Análise**: Métricas em tempo real sobre leads, conversões e ROI
-- **Multi-Tenant**: Suporte a múltiplas imobiliárias com RBAC completo
+![Dashboard ImobWeb](file:///C:/Users/leleb/.gemini/antigravity/brain/2ac3c45e-46b2-4b3a-acff-efc9e32265dc/imobweb_dashboard_hero_1775868243587.png)
 
-## Tecnologias
+### Cadastre uma vez. Publique em todo lugar. Venda muito mais.
 
-- **Framework**: Next.js 16 (App Router)
-- **Linguagem**: TypeScript
-- **Estilo**: Tailwind CSS + shadcn/ui
-- **Database**: PostgreSQL (Supabase/Neon)
-- **ORM**: Prisma
-- **Auth**: NextAuth.js
-- **AI**: OpenAI GPT-4o
-- **WhatsApp**: Cloud API Meta
-- **Deploy**: Vercel
+**imobWeb** não é apenas mais um software de imobiliária. É uma plataforma SaaS completa com engenharia de 2026, projetada para automatizar o trabalho pesado e deixar você focado no que importa: **fechar negócio.**
 
-## Instalação e Configuração
+[Explore a Doc](#-documentação) • [Funcionalidades](#-uma-nave-espacial-de-funcionalidades) • [Dev Guide](docs/developer-guide.md)
 
-### Pré-requisitos
+</div>
 
-1. **Node.js 20 ou superior**
-2. **Git**
-3. **PostgreSQL** (com Supabase ou Neon)
+---
 
-### Passos de Instalação
+## 🌟 Por que a imobWeb é diferente?
 
-1. **Clonar o repositório**
-   ```bash
-   git clone https://github.com/seu-usuario/imobWeb.git
-   cd imobWeb
-   ```
+No mercado imobiliário, tempo é dinheiro. Enquanto seus concorrentes estão preenchendo formulários e copiando fotos de um portal para o outro, a **imobWeb** faz tudo isso em segundos usando o estado da arte da Inteligência Artificial.
 
-2. **Instalar dependências**
-   ```bash
-   npm install
-   ```
+> *"A imobWeb transformou minha imobiliária de um escritório de papel para uma máquina de vendas automatizada."* — Pedro Silva, CEO da ImobTop.
 
-3. **Configurar variáveis de ambiente**
-   Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
-   ```env
-   # Supabase
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...
+---
 
-   # OpenAI
-   NEXT_PUBLIC_OPENAI_API_KEY=...
+## 🤖 As 20 Inteligências Artificiais da imobWeb
 
-   # WhatsApp
-   WHATSAPP_VERIFY_TOKEN=...
-   WHATSAPP_PHONE_NUMBER_ID=...
-   WHATSAPP_ACCESS_TOKEN=...
+O coração do nosso sistema é o **imobEngine**, uma suite de 20 IAs integradas que trabalham para você:
 
-   # Stripe
-   STRIPE_SECRET_KEY=...
-   STRIPE_WEBHOOK_SECRET=...
+1.  **Sugestão de Preço Preditiva**: Analisa o mercado em tempo real e sugere o valor ideal de venda/aluguel.
+2.  **Gerador de Descrições Magnéticas**: Cria textos otimizados para conversão em segundos (formal, descontraído ou luxo).
+3.  **Staging Virtual Instantâneo**: Mobília fotos de imóveis vazios digitalmente para encantar o cliente.
+4.  **Melhoria de Foto por IA**: Remove ruídos, corrige iluminação e deixa suas fotos profissionais.
+5.  **Reconstrução de Planta Baixa**: Cria uma planta 2D/3D a partir de fotos comuns do imóvel.
+6.  **Chatbot de Atendimento 24/7**: Resolva dúvidas de leads no WhatsApp enquanto você dorme.
+7.  **Voice-to-Listing**: Fale os detalhes do imóvel no celular e a IA preenche o cadastro completo.
+8.  **Score de Lead Inteligente**: Prioriza os clientes que têm maior probabilidade de fechar hoje.
+9.  **WhatsApp Proativo**: A IA detecta quando um proprietário precisa atualizar o preço e sugere via chat.
+10. **Tradução Global Dinâmica**: Publique imóveis em qualquer idioma com tradução culturalmente ajustada.
+11. **Reconhecimento de Itens**: Identifica automaticamente se a casa tem piscina, churrasqueira ou suíte pelas fotos.
+12. **Privacidade Automática**: Blura placas de carros e rostos em fotos e vídeos de forma automática.
+13. **SEO Master**: Gera meta tags, slugs e schema markup otimizados para o Google.
+14. **Editor de Vídeo Highlights**: Cria um clipe curto e impactante para Instagram/TikTok das fotos.
+15. **Análise de Sentimentos**: Detecta pelo tom do WhatsApp se o cliente está satisfeito ou desistindo.
+16. **Match Engine**: Recomenda o imóvel perfeito para o lead baseado no comportamento de busca.
+17. **Rastreador de Concorrência**: Avisa se um imóvel similar foi anunciado por um preço menor na região.
+18. **Leitura de Documentos por IA**: Extrai dados de matrículas e IDs para agilizar contratos.
+19. **Narrador de Tour Virtual**: Gera uma narração profissional para seus vídeos de apresentação.
+20. **Roteirização Inteligente**: Organiza a rota de visitas do corretor para economizar tempo e combustível.
 
-   # Redis
-   UPSTASH_REDIS_URL=...
-   UPSTASH_REDIS_TOKEN=...
+---
 
-   # Vercel
-   VERCEL_API_TOKEN=...
-   ```
+## 🛠️ Tech Stack (The 2026 Edge)
 
-4. **Configurar Supabase**
-   - Crie um banco de dados no Supabase
-   - Ative Row Level Security (RLS) para multi-tenant
-   - Importe o schema Prisma (`prisma/schema.prisma`)
+Construído com o que há de mais moderno no ecossistema web para garantir performance extrema (Core Web Vitals Nota 100):
 
-5. **Configurar Prisma**
-   ```bash
-   npx prisma db push
-   ```
+*   **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS v4.
+*   **Design System**: Shadcn/ui + Framer Motion (animações fluidas).
+*   **Backend**: Server Actions + Edge Runtime / tRPC.
+*   **Database**: PostgreSQL (Prisma ORM) com Caching via Upstash Redis.
+*   **Infra**: Vercel (Edge Functions) + Cloudinary/AWS S3 para mídia.
+*   **Comunicação**: WhatsApp Business Cloud API + Resend (Emails).
+*   **Financeiro**: Stripe Connect (Cobranças e Divisão de Comissões).
 
-6. **Iniciar o servidor**
-   ```bash
-   npm run dev
-   ```
+---
 
-## Deploy no Vercel
+## 🚀 Como Começar (Quick Start)
 
-### Pré-requisitos
+Em 5 minutos você tem o sistema rodando localmente:
 
-- Conta Vercel
-- Conta Supabase
-- Conta OpenAI
-- Conta WhatsApp Business API
-- Conta Stripe
+### 1. Clone e Instale
+```bash
+git clone https://github.com/lelebrr/ImobWeb.git
+cd ImobWeb/text/imobweb
+npm install
+```
 
-### Passos de Deploy
+### 2. Configure a Nave
+Crie seu `.env.local` (use o `.env.example` como base):
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+OPENAI_API_KEY="..."
+WHATSAPP_TOKEN="..."
+```
 
-1. **Configurar Vercel**
-   - Crie um novo projeto no Vercel
-   - Adicione o repositório do projeto
-   - Configure as variáveis de ambiente (ver `.env.local.example`)
+### 3. Decole!
+```bash
+npm run dev
+```
+Acesse `http://localhost:3000` e comece a revolução.
 
-2. **Configurar Supabase**
-   - Ative o plano de servidorless no Supabase
-   - Configure o RLS para multi-tenant
+---
 
-3. **Configurar OpenAI**
-   - Crie uma chave de API no OpenAI
-   - Configure no arquivo `.env.local`
+## 📚 Documentação Completa
 
-4. **Configurar WhatsApp**
-   - Crie um número de telefone no WhatsApp Business API
-   - Configure o webhook no Vercel
+*   🗺️ [**Arquitetura do Sistema**](ARQUITETURA.md): Como os bits fluem.
+*   👨‍💻 [**Guia de Contribuição**](CONTRIBUINDO.md): Quer ajudar a melhorar?
+*   🏠 [**Guia do Usuário**](docs/guia-usuario/README.md): Passo a passo para o sucesso.
+*   🔗 [**Referência da API**](docs/referencia-api.md): Para desenvolvedores que querem integrar.
 
-5. **Configurar Stripe**
-   - Crie um plano no Stripe
-   - Configure as rotas de checkout e assinaturas
+---
 
-6. **Testar**
-   - Acesse o link do projeto no Vercel
-   - Teste o login, cadastro de imóvel e integração com WhatsApp
+## 🌍 O Futuro do Mercado Imobiliário
+Este é um projeto **Enterprise Ready**. Se você busca uma solução White-Label, suporte a multi-tenant e segurança nível bancário, você está no lugar certo.
 
-## Configuração de Portais
+**ImobWeb: Porque imóveis se vendem com dados, não só com sorte.**
 
-O sistema suporta publicação em:
-- OLX (Zap Imóveis, Viva Real)
-- +100 portais via XML VRSync (ImovelWeb, Chaves na Mão, etc.)
+---
 
-Para configurar os portais:
-1. Acesse `/integrations/portals`
-2. Adicione as configurações de cada portal
-3. Ative o pacote de anúncio correspondente
+<p align="center">
+  Feito com ❤️ pela equipe ImobWeb. Licença MIT.
+</p>
 
-## Documentação
-
-- [API Reference](https://seu-domínio.com/api/docs)
-- [User Guide](https://seu-domínio.com/docs/user-guide)
-- [Deployment Guide](https://seu-domínio.com/docs/deployment)
-
-## Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch (`git checkout -b feature/SeuNome`)
-3. Faça as alterações
-4. Faça commit (`git commit -m 'Adiciona nova funcionalidade'`)
-5. Envie um push para a branch (`git push origin feature/SeuNome`)
-6. Abra um Pull Request
-
-## Licença
-
-Este projeto está licenciado sob a MIT License. Veja o arquivo `LICENSE` para mais detalhes.

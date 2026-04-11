@@ -66,6 +66,7 @@ const nextConfig = {
       '@radix-ui/react-icons',
       'shadcn-ui',
       'recharts',
+      'zustand',
     ],
     serverActions: {
       bodySizeLimit: '2mb',
