@@ -190,7 +190,7 @@ export class NotificationService {
       ...notification,
       formattedTime,
       icon: NOTIFICATION_ICONS[notification.type],
-      actionUrl: notification.data?.url as string || null,
+      actionUrl: (notification.data as any)?.url || undefined,
     };
   }
 
@@ -268,6 +268,9 @@ export class NotificationService {
       data,
       priority: priority || 'normal',
       channels: ['in_app'],
+      read: false,
+      sendPush: true,
+      sendEmail: false,
     };
   }
 }

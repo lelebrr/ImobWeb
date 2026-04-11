@@ -272,6 +272,7 @@ model Organization {
   maxLeads      Int? // Limite de leads
   features      Json? // Recursos disponíveis no plano
   settings      Json? // Configurações personalizadas
+  subDomain     String?      @unique // Subdomínio exclusivo da imobiliária
   createdAt     DateTime     @default(now()) // Data de criação
   updatedAt     DateTime     @updatedAt // Data de atualização
 
@@ -282,6 +283,8 @@ model Organization {
   subscriptions Subscription[] // Assinaturas da organização
   apiKeys       ApiKey[] // Chaves de API da organização
   auditLogs     AuditLog[]
+  contracts     Contract[] // Contratos da organização
+  portalIntegrations PortalIntegration[] // Integrações com portais
 
   // Comentários
   /// Organização principal para suporte multi-tenant
@@ -488,6 +491,7 @@ model Property {
   leads         Lead[] // Leads relacionados ao imóvel
   announcements Announcement[] // Anúncios do imóvel
   features      PropertyFeature[] // Características do imóvel
+  contracts     Contract[] // Contratos relacionados ao imóvel
 
   // Comentários
   /// Modelo principal de imóveis com +80 campos detalhados
@@ -820,6 +824,7 @@ model ApiKey {
   name           String // Nome descritivo da chave
   preview        String // Primeiros/últimos caracteres para exibição
   enabled        Boolean      @default(true) // Se a chave está ativa
+  scopes         Json         @default("[]") // Escopos de acesso
   lastUsedAt     DateTime? // Último uso da chave
   createdAt      DateTime     @default(now()) // Data de criação
   updatedAt      DateTime     @updatedAt // Data de atualização
@@ -855,6 +860,10 @@ model PortalIntegration {
   settings   Json? // Configurações personalizadas
   createdAt  DateTime                @default(now()) // Data de criação
   updatedAt  DateTime                @updatedAt // Data de atualização
+  
+  // Relacionamentos
+  organizationId String // Chave estrangeira para multi-tenant
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Relacionamentos
   announcements Announcement[] // Anúncios da integração
@@ -866,6 +875,7 @@ model PortalIntegration {
 
   @@unique([apiKey, type])
   // Índices
+  @@index([organizationId])
   @@index([type])
   @@index([status])
   @@index([lastSync])
@@ -1204,3 +1214,126 @@ model AuditLog {
 // Índice para a view materializada
 // CREATE INDEX idx_property_metrics_org ON PropertyMetrics(organization_id);
 // CREATE INDEX idx_lead_metrics_org ON LeadMetrics(organization_id);
+
+/// Log de Auditoria para Operações de Backup (LGPD)
+model BackupLog {
+  id           String   @id @default(cuid())
+  backupId     String // ID externo ou da tarefa
+  status       String // SUCCESS, FAILED, PENDING
+  duration     Int? // Duração em ms
+  size         Int? // Tamanho em bytes
+  errorMessage String? // Mensagem de erro se houver
+  type         String // FULL, INCREMENTAL, RESTORE
+  executedAt   DateTime @default(now())
+
+  @@index([backupId])
+  @@index([status])
+}
+
+/// Modelo de Contratos
+model Contract {
+  id              String           @id @default(cuid())
+  templateId      String?
+  type            String // sale, rent, proposal, authorization, commercial
+  status          String // draft, pending_review, etc.
+  title           String
+  description     String?          @db.Text
+  totalValue      Decimal?         @db.Decimal(15, 2)
+  installments    Int?
+  startDate       DateTime?
+  endDate         DateTime?
+  expiresAt       DateTime?
+  signedAt        DateTime?
+  documentUrl     String?
+  documentVersion Int              @default(1)
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  createdBy       String?
+
+  // Relacionamentos
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  propertyId      String?
+  property        Property?        @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  parties         ContractParty[]
+  clauses         ContractClause[]
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([type])
+  @@index([status])
+}
+
+/// Partes envolvidas no contrato
+model ContractParty {
+  id           String   @id @default(cuid())
+  contractId   String
+  contract     Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  type         String // buyer, seller, tenant, landlord, witness, guarantor
+  name         String
+  document     String
+  documentType String // cpf, cnpj, rg
+  email        String
+  phone        String
+  address      String?
+  status       String   @default("pending") // pending, sent, viewed, signed, etc.
+
+  @@index([contractId])
+}
+
+/// Cláusulas do contrato
+model ContractClause {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  title      String
+  content    String   @db.Text
+  order      Int
+  required   Boolean  @default(true)
+  custom     Boolean  @default(false)
+
+  @@index([contractId])
+}
+
+/// Tipo de ação para auditoria
+enum AuditAction {
+  CREATE // Criação de registro
+  UPDATE // Atualização de registro
+  DELETE // Exclusão de registro
+  LOGIN // Login de usuário
+  LOGOUT // Logout de usuário
+  SEARCH // Pesquisa de dados
+  ACCESS // Acesso a recurso sensível
+  EXPORT // Exportação de dados
+  PUBLISH // Publicação (ex: portais)
+  REVOKE // Revogação de acesso
+  PASSWORD_CHANGE // Alteração de senha
+  SETTINGS_CHANGE // Alteração de configurações
+}
+
+/// Modelo de Logs de Auditoria (Para conformidade SOC2/LGPD)
+model AuditLog {
+  id             String      @id @default(cuid())
+  action         AuditAction // Ação realizada
+  entityType     String? // Tipo da entidade afetada (Property, Lead, User)
+  entityId       String? // ID da entidade afetada
+  userId         String? // ID do usuário que realizou a ação
+  user           User?       @relation(fields: [userId], references: [id])
+  organizationId String? // ID da organização para multi-tenant
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  ipAddress      String? // IP da origem da ação
+  userAgent      String? // Navegador/Sistema da origem
+  beforeValues   String? // Estado anterior (JSON string)
+  afterValues    String? // Estado posterior (JSON string)
+  diff           String? // Diferença entre estados (JSON string)
+  metadata       String? // Metadados adicionais (JSON string)
+  createdAt      DateTime    @default(now()) // Carimbo de tempo da ação
+
+  // Índices para performance de auditoria
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}

@@ -30,7 +30,7 @@ export const NotificationSchema = z.object({
   type: NotificationTypeSchema,
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(1000),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   priority: NotificationPrioritySchema.default('normal'),
   read: z.boolean().default(false),
   createdAt: z.number().default(() => Date.now()),

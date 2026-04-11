@@ -125,7 +125,7 @@ export class PWAStorage {
     });
   }
 
-  static async addToSyncQueue(action: string, data: Record<string, unknown>): Promise<number> {
+  static async addToSyncQueue(action: string, data: Record<string, unknown>): Promise<void> {
     return this.set('syncQueue', `sync_${Date.now()}`, { action, data, createdAt: Date.now() });
   }
 

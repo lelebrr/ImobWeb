@@ -5,6 +5,9 @@
  * Ela usa processamento de linguagem natural (NLP) e visão computacional 
  * para transformar dados brutos em anúncios magnéticos.
  */
+
+import { Property, PropertyMedia } from '@/types/property';
+
 export class PropertyGenerator {
   /**
    * Gera uma descrição de imóvel otimizada para conversão (Direct Response Copywriting).

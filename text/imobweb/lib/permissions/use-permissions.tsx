@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { PermissionAction, ResourceType } from '../types/permissions';
+import { PermissionAction, ResourceType } from '@/types/permissions';
 
 interface UsePermissionsOptions {
   userId: string;

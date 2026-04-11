@@ -113,7 +113,7 @@ export class PushNotificationService {
         silent: payload.silent,
         vibrate: payload.vibrate,
         actions: payload.actions
-      });
+      } as any);
 
       return true;
     } catch (error) {

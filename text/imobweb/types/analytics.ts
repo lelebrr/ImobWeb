@@ -7,7 +7,7 @@ export type KpiCategory =
   | 'team'
   | 'portals';
 
-export type KpiUnit = 'currency' | 'percentage' | 'number' | 'days' | 'ratio';
+export type KpiUnit = 'currency' | 'percentage' | 'number' | 'days' | 'minutes' | 'ratio';
 
 export type KpiTrend = 'up' | 'down' | 'stable' | 'neutral';
 

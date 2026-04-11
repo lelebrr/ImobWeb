@@ -225,8 +225,8 @@ export class MetricCalculator {
     const metric = METRIC_DEFINITIONS[category]?.[metricKey as keyof typeof METRIC_DEFINITIONS[typeof category]];
     if (!metric) return 0;
 
-    const { aggregation, source } = metric;
-    const [primarySource] = source.split(',');
+    const { aggregation, source } = metric as any;
+    const [primarySource] = (source as string).split(',');
 
     switch (primarySource) {
       case 'deals':
@@ -384,8 +384,9 @@ export function getMetricById(id: string): { category: MetricCategory; key: stri
   for (const category of Object.keys(METRIC_DEFINITIONS) as MetricCategory[]) {
     const metrics = METRIC_DEFINITIONS[category];
     for (const key of Object.keys(metrics)) {
-      if (metrics[key as keyof typeof metrics].id === id) {
-        return { category, key, definition: metrics[key as keyof typeof metrics] };
+      const metric = (metrics as any)[key];
+      if (metric.id === id) {
+        return { category, key, definition: metric };
       }
     }
   }

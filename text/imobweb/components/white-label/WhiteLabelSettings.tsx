@@ -146,7 +146,7 @@ export const WhiteLabelSettings: React.FC = () => {
              </div>
              <div className="space-y-2">
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Senha / API Key</label>
-               <input type="password" underline className="w-full rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold outline-none focus:border-indigo-500 dark:bg-slate-800" defaultValue="**********" />
+               <input type="password" className="w-full rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold outline-none focus:border-indigo-500 dark:bg-slate-800" defaultValue="**********" />
              </div>
           </div>
         </div>

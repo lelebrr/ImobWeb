@@ -142,7 +142,7 @@ function NavItem({
       )}
       title={collapsed ? label : undefined}
     >
-      {React.cloneElement(icon as React.ReactElement, { 
+      {React.cloneElement(icon as React.ReactElement<any>, { 
         className: cn(
           "w-5 h-5 shrink-0 transition-colors", 
           active ? "text-primary" : "group-hover:text-foreground"

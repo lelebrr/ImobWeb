@@ -8,7 +8,11 @@ const prisma = new PrismaClient();
  */
 export async function GET(req: NextRequest) {
   try {
+    const org = await prisma.organization.findFirst();
+    if (!org) return NextResponse.json({ success: false, error: 'Organization not found' }, { status: 404 });
+
     const portals = await prisma.portalIntegration.findMany({
+      where: { organizationId: org.id },
       orderBy: { name: 'asc' }
     });
 
@@ -39,7 +43,8 @@ export async function POST(req: NextRequest) {
       update: {
         name: data.name,
         settings: data.settings,
-        status: status
+        status: status,
+        organizationId: org.id
       },
       create: {
         name: data.name,
@@ -47,6 +52,7 @@ export async function POST(req: NextRequest) {
         apiKey: data.apiKey || 'TEMP_KEY',
         status: 'ATIVO' as PortalIntegrationStatus,
         settings: data.settings || {},
+        organizationId: org.id
       }
     });
 

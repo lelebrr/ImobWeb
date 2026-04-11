@@ -96,7 +96,7 @@ export default function OfflinePropertyForm() {
             className="w-full bg-slate-50 dark:bg-slate-950 border-none rounded-2xl p-4 focus:ring-2 ring-primary transition-all text-sm"
             placeholder="Ex: Apartamento Vista Mar"
             value={formData.title}
-            onChange={e => setFormData({ ...prev => ({ ...prev, title: e.target.value }) })}
+            onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
             required
           />
         </div>
@@ -109,7 +109,7 @@ export default function OfflinePropertyForm() {
               className="w-full bg-slate-50 dark:bg-slate-950 border-none rounded-2xl p-4 focus:ring-2 ring-primary transition-all text-sm"
               placeholder="0.00"
               value={formData.price}
-              onChange={e => setFormData({ ...prev => ({ ...prev, price: e.target.value }) })}
+              onChange={e => setFormData(prev => ({ ...prev, price: e.target.value }))}
               required
             />
           </div>
@@ -141,7 +141,7 @@ export default function OfflinePropertyForm() {
             className="w-full bg-slate-50 dark:bg-slate-950 border-none rounded-2xl p-4 focus:ring-2 ring-primary transition-all text-sm min-h-[100px]"
             placeholder="Detalhes do imóvel..."
             value={formData.description}
-            onChange={e => setFormData({ ...prev => ({ ...prev, description: e.target.value }) })}
+            onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
           />
         </div>
 

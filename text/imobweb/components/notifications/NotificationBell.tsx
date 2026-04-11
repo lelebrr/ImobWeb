@@ -135,7 +135,9 @@ export function NotificationBell({ userId, onNotificationClick, onMarkAllRead, o
   };
 
   const handleNotificationClick = (notification: NotificationWithMeta) => {
-    handleMarkAsRead(notification.id);
+    if (notification.id) {
+      handleMarkAsRead(notification.id);
+    }
     onNotificationClick?.(notification as Notification);
   };
 

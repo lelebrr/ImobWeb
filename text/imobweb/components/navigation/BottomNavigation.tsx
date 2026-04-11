@@ -28,7 +28,7 @@ function NavItem({ icon, label, active = false }: { icon: React.ReactNode; label
       active ? "text-primary scale-105" : "text-muted-foreground hover:text-foreground active:scale-95"
     )}>
       <div className={cn("relative", active && "after:absolute after:-bottom-3 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-primary after:rounded-full")}>
-         {React.cloneElement(icon as React.ReactElement, { className: "w-5 h-5" })}
+         {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5" })}
       </div>
       <span className="text-[10px] font-semibold tracking-wider">{label}</span>
     </button>

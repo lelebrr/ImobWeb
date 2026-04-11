@@ -367,7 +367,8 @@ LOCATÁRIO(A): ${buyers.map(b => b.name).join(', ')}, ${buyers[0]?.documentType.
           } else if (type === 'rent') {
             content = `O presente contrato tem por objeto a locação do imóvel localizado na ${property.address}, ${property.city}-${property.state}, CEP ${property.zipCode}, com área aproximada de ${property.area || 'não informada'} m².`;
           } else if (type === 'proposal') {
-            content = `Proposta de ${type === 'sale' ? 'compra e venda' : 'locação'} referente ao imóvel localizado na ${property.address}, ${property.city}-${property.state}.`;
+            const proposalTypeText = (variables?.proposalType as string) === 'sale' ? 'compra e venda' : 'locação';
+            content = `Proposta de ${proposalTypeText} referente ao imóvel localizado na ${property.address}, ${property.city}-${property.state}.`;
           }
           break;
 

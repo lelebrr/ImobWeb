@@ -18,7 +18,7 @@ import {
   RESOURCE_LABELS, 
   ACTION_LABELS, 
   Role 
-} from '../types/permissions';
+} from '@/types/permissions';
 
 interface PermissionMatrixProps {
   roles: Role[];

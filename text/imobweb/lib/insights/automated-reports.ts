@@ -38,7 +38,7 @@ export class AutomatedInsightsEngine {
         }
       });
 
-      if (leadsCount === 0 && prop.views > 100) {
+      if (leadsCount === 0 && (prop.views || 0) > 100) {
         priceOptimizableProperties.push(prop.title);
       }
     }

@@ -211,6 +211,7 @@ export function createDealFromProperty(
     property: {
       id: propertyId,
       address: property.address,
+      type: 'house',
       city: '',
       state: '',
       zipCode: ''

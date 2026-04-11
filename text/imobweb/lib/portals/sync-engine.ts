@@ -6,6 +6,18 @@ import { autoMaintenance } from './auto-maintenance';
 const prisma = new PrismaClient();
 
 /**
+ * Interface para adaptadores de portais externos
+ */
+export interface PortalAdapter {
+  createProperty(data: Record<string, unknown>): Promise<string>;
+  updateProperty(externalId: string, data: Record<string, unknown>): Promise<void>;
+  deleteProperty(externalId: string): Promise<void>;
+  getProperty(externalId: string): Promise<Record<string, unknown>>;
+  getLeads(): Promise<any[]>;
+  getAnalytics(propertyId?: string): Promise<Record<string, unknown>>;
+}
+
+/**
  * Motor de Sincronização Bidirecional Avançado (Sync Engine)
  * Responsável por orquestrar a publicação e atualização de imóveis nos portais.
  */

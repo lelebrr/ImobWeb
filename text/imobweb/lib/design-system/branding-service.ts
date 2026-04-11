@@ -24,9 +24,7 @@ export async function getOrganizationBranding(organizationId: string): Promise<O
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: {
-        primaryColor: true,
-        secondaryColor: true,
-        logoUrl: true,
+        logo: true,
         settings: true,
       }
     });
@@ -36,9 +34,9 @@ export async function getOrganizationBranding(organizationId: string): Promise<O
     const settings = (org.settings as any) || {};
 
     return {
-      primaryColor: org.primaryColor || "#3b82f6",
-      secondaryColor: org.secondaryColor || "#1e293b",
-      logoUrl: org.logoUrl || "/logo-default.png",
+      primaryColor: settings.primaryColor || "#3b82f6",
+      secondaryColor: settings.secondaryColor || "#1e293b",
+      logoUrl: org.logo || settings.logoUrl || "/logo-default.png",
       faviconUrl: settings.faviconUrl,
       customDomain: settings.customDomain,
       fontFamily: settings.fontFamily || "Inter, sans-serif",

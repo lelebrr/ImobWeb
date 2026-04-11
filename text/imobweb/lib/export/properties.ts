@@ -168,7 +168,7 @@ export function transformPropertyForExport(property: {
     beds: property.details?.beds ?? null,
     baths: property.details?.baths ?? null,
     parking: property.details?.parking ?? null,
-    description: property.description,
+    description: property.description ?? null,
     features: property.features || [],
     createdAt: property.createdAt || Date.now(),
     updatedAt: property.updatedAt || Date.now(),

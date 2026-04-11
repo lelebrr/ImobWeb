@@ -44,7 +44,7 @@ export const FranchiseSchema = z.object({
     maxProperties: z.number().default(100),
     maxLeads: z.number().default(500),
     availablePackages: z.array(z.string()).optional(),
-    features: z.record(z.boolean()).optional(),
+    features: z.record(z.string(), z.boolean()).optional(),
   }).optional(),
   
   royalties: z.object({
@@ -287,6 +287,9 @@ export class FranchiseManager {
     
     return this.update(franchiseId, {
       configuration: {
+        maxUsers: 10,
+        maxProperties: 100,
+        maxLeads: 500,
         ...franchise.configuration,
         ...config,
       },

@@ -45,7 +45,7 @@ export class LimitEnforcer {
       }
       
       case 'add_agent': {
-        const count = await prisma.user.count({ where: { organizationId: tenantId, role: 'AGENT' } });
+        const count = await prisma.user.count({ where: { organizationId: tenantId, role: 'CORRETOR' } });
         if (count >= limits.maxAgents) {
           return { allowed: false, reason: `Limite de corretores atingido (${limits.maxAgents}).` };
         }
@@ -78,7 +78,7 @@ export class LimitEnforcer {
       limits,
       current: {
         properties: await prisma.property.count({ where: { organizationId: tenantId } }),
-        agents: await prisma.user.count({ where: { organizationId: tenantId, role: 'AGENT' } }),
+        agents: await prisma.user.count({ where: { organizationId: tenantId, role: 'CORRETOR' } }),
       }
     };
   }

@@ -41,7 +41,7 @@ export class OnboardingService {
         data: {
           name: data.organizationName,
           subDomain: data.subDomain,
-          contactEmail: data.adminEmail,
+          email: data.adminEmail,
           // Vinculação lógica via settings (ou via campo proprietário se existir no schema)
           settings: {
             parentId: data.partnerId,

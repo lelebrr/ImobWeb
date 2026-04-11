@@ -1,3 +1,5 @@
+import type { PresentationMode, PropertyPresentationData } from '@/types/presentation';
+
 /**
  * Engine de Apresentação Imobiliária (imobEngine)
  * 

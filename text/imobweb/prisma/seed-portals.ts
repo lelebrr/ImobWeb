@@ -53,8 +53,14 @@ async function main() {
   for (const data of portalData) {
     await prisma.portalIntegration.upsert({
       where: { apiKey_type: { apiKey: data.apiKey, type: data.type as any } },
-      update: data,
-      create: data
+      update: {
+        ...data,
+        organizationId: org.id
+      },
+      create: {
+        ...data,
+        organizationId: org.id
+      }
     });
   }
 

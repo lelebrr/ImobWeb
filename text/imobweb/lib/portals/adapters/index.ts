@@ -1,10 +1,15 @@
 export { ZapAdapter, createZapAdapter } from './zap-adapter';
 
 import { createZapAdapter } from './zap-adapter';
-import type { PortalAdapter, PortalId } from '../sync-engine';
+import type { PortalId } from '@/types/portals';
+import type { PortalAdapter } from '../sync-engine';
 
 const adapters: Partial<Record<PortalId, (config: Record<string, string>) => PortalAdapter>> = {
-  zap: createZapAdapter
+  zap: (config: Record<string, string>) => createZapAdapter({ 
+    apiKey: config.apiKey || '', 
+    endpoint: config.endpoint,
+    clientId: config.clientId 
+  })
 };
 
 export function getPortalAdapter(portalId: PortalId, config: Record<string, string>): PortalAdapter | null {

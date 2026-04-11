@@ -145,6 +145,8 @@ export class BackupEngine {
     const expiryDate = new Date(now.setDate(now.getDate() - this.config.retentionDays))
 
     for (const file of files) {
+      if (!file.created_at) continue;
+      
       const fileDate = new Date(file.created_at)
       if (fileDate < expiryDate) {
         console.info(`[Backup] Removendo backup expirado: ${file.name}`)

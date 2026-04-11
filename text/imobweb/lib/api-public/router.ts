@@ -73,10 +73,18 @@ export const publicApiRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       validateScope(ctx, "properties:write");
 
+      const { photos, features, ...rest } = input;
+
       const property = await prisma.property.create({
         data: {
-          ...input,
+          ...rest,
           organizationId: ctx.organizationId,
+          photos: {
+            create: photos.map(url => ({ url }))
+          },
+          features: {
+            create: features.map(name => ({ name, value: "true" }))
+          }
         },
       });
 
@@ -117,12 +125,28 @@ export const publicApiRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       validateScope(ctx, "properties:write");
 
+      const { photos, features, ...rest } = input.data;
+
       const property = await prisma.property.update({
         where: { 
           id: input.id,
           organizationId: ctx.organizationId
         },
-        data: input.data,
+        data: {
+          ...rest,
+          ...(photos && {
+            photos: {
+              deleteMany: {},
+              create: photos.map(url => ({ url }))
+            }
+          }),
+          ...(features && {
+            features: {
+              deleteMany: {},
+              create: features.map(name => ({ name, value: "true" }))
+            }
+          })
+        },
       });
 
       return property as any;

@@ -1,4 +1,5 @@
-import type { PortalId, PortalFieldMapping, PropertyStatus } from '@/types/portals';
+import type { PortalId } from '@/types/portals';
+import type { PropertyStatus } from '@prisma/client';
 
 export interface PropertyData {
   id?: string;
@@ -308,8 +309,27 @@ export class XmlGenerator {
         land: 'terreno',
         industrial: 'galpao'
       },
-      meta: {},
-      vrsync: {}
+      meta: {
+        apartment: 'Apartment',
+        house: 'House',
+        commercial: 'Commercial',
+        land: 'Land',
+        industrial: 'Industrial'
+      },
+      vrsync: {
+        apartment: 'Apartamento',
+        house: 'Casa',
+        commercial: 'Comercial',
+        land: 'Terreno',
+        industrial: 'Galpão'
+      },
+      custom: {
+        apartment: 'Apartamento',
+        house: 'Casa',
+        commercial: 'Comercial',
+        land: 'Terreno',
+        industrial: 'Galpão'
+      }
     };
 
     return mappings[portal]?.[type] || type;

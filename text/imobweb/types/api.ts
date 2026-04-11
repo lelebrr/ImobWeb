@@ -11,8 +11,16 @@ export const PropertyStatusSchema = z.enum([
   "DISPONIVEL",
   "VENDIDO",
   "ALUGADO",
+  "RESERVADO",
+  "DESATUALIZADO",
   "SUSPENSO",
-  "EM_NEGOCIACAO",
+  "RASCUNHO",
+]);
+
+export const BusinessTypeSchema = z.enum([
+  "VENDA",
+  "LOCAÇÃO",
+  "VENDA_LOCACAO",
 ]);
 
 export const PropertyTypeSchema = z.enum([
@@ -20,9 +28,21 @@ export const PropertyTypeSchema = z.enum([
   "CASA",
   "TERRENO",
   "COMERCIAL",
-  "LOJA",
-  "GALPAO",
+  "COMERCIAL_LOJA",
+  "COMERCIAL_GARAGEM",
+  "COMERCIAL_LOTE",
+  "COMERCIAL_OUTRO",
+  "SITIO",
   "CHACARA",
+  "FAZENDA",
+  "CONDOMINIO",
+  "GARAGEM",
+  "CABINE",
+  "QUADRA",
+  "TERRENO_RESIDENCIAL",
+  "SITIO_RESIDENCIAL",
+  "CHACARA_RESIDENCIAL",
+  "OUTRO",
 ]);
 
 export const PublicPropertySchema = z.object({
@@ -30,15 +50,16 @@ export const PublicPropertySchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   price: z.number(),
+  businessType: BusinessTypeSchema,
   type: PropertyTypeSchema,
   status: PropertyStatusSchema,
   city: z.string(),
   neighborhood: z.string(),
   state: z.string().length(2),
-  area: z.number(),
+  areaTotal: z.number(),
   bedrooms: z.number().int().min(0),
   bathrooms: z.number().int().min(0),
-  parking: z.number().int().min(0),
+  garages: z.number().int().min(0),
   features: z.array(z.string()),
   photos: z.array(z.string().url()),
   updatedAt: z.string().datetime(),
@@ -53,10 +74,23 @@ export const CreatePropertySchema = PublicPropertySchema.omit({
 
 export const LeadStatusSchema = z.enum([
   "NOVO",
-  "EM_ATENDIMENTO",
-  "QUALIFICADO",
-  "DESQUALIFICADO",
+  "CONTATADO",
+  "INTERESSADO",
+  "AGUARDANDO",
+  "PERDIDO",
   "CONVERTIDO",
+  "ARQUIVADO",
+]);
+
+export const LeadSourceSchema = z.enum([
+  "WEBSITE",
+  "PORTAL",
+  "INDICATION",
+  "REFERRAL",
+  "SOCIAL",
+  "PHONE",
+  "WALK_IN",
+  "OTHER",
 ]);
 
 export const PublicLeadSchema = z.object({
@@ -65,7 +99,7 @@ export const PublicLeadSchema = z.object({
   email: z.string().email(),
   phone: z.string(),
   propertyId: z.string().uuid().optional(),
-  source: z.string(),
+  source: LeadSourceSchema,
   status: LeadStatusSchema,
   createdAt: z.string().datetime(),
 });
