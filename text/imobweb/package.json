@@ -68,7 +68,10 @@
     "zustand": "^5.0.1",
     "xmlbuilder2": "^3.1.1",
     "next-intl": "^3.26.0",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "@asteasolutions/zod-to-openapi": "^7.3.0",
+    "trpc-openapi": "^1.2.0",
+    "swagger-ui-react": "^5.18.2"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
