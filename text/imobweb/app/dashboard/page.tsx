@@ -32,13 +32,13 @@ import {
     Shield,
     Lock,
     Globe,
-    Share2
+    Share2,
+    Eye
 } from 'lucide-react'
 import { Button } from '@/components/design-system/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/design-system/card'
 import { Input } from '@/components/design-system/input'
 import { Badge } from '@/components/design-system/badge'
-import { Progress } from '@/components/design-system/progress'
 import { useAuth } from '@/providers'
 import { useTheme } from '@/providers/theme-provider'
 
@@ -162,11 +162,11 @@ export default function DashboardPage() {
 
                             <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
                                 <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                    {user?.name?.charAt(0) || 'U'}
+                                    {user?.email?.charAt(0) || 'U'}
                                 </div>
                                 <div className="hidden sm:block">
                                     <p className="text-sm font-medium text-slate-900 dark:text-white">
-                                        {user?.name || 'Usuário'}
+                                        {user?.email || 'Usuário'}
                                     </p>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
                                         {user?.email}
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                     {/* Welcome Section */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                            Bem-vindo de volta, {user?.name?.split(' ')[0] || 'Corretor'}! 👋
+                            Bem-vindo de volta! 👋
                         </h2>
                         <p className="text-slate-600 dark:text-slate-400 mt-1">
                             Aqui está o resumo do seu trabalho hoje
@@ -496,7 +496,9 @@ export default function DashboardPage() {
                                             98%
                                         </span>
                                     </div>
-                                    <Progress value={98} className="h-2" />
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '98%' }}></div>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -508,7 +510,9 @@ export default function DashboardPage() {
                                             95%
                                         </span>
                                     </div>
-                                    <Progress value={95} className="h-2" />
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '95%' }}></div>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -520,269 +524,16 @@ export default function DashboardPage() {
                                             100%
                                         </span>
                                     </div>
-                                    <Progress value={100} className="h-2" />
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Recent Properties & Leads */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Recent Properties */}
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle>Imóveis Recentes</CardTitle>
-                                    <Button variant="ghost" size="sm">
-                                        Ver todos
-                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {recentProperties.map((property) => (
-                                        <div
-                                            key={property.id}
-                                            className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
-                                            onClick={() => router.push(`/properties/${property.id}`)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                                    <Home className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white">
-                                                        {property.title}
-                                                    </p>
-                                                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                        R$ {property.price.toLocaleString('pt-BR')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Badge className={getStatusColor(property.status)}>
-                                                {property.status}
-                                            </Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Leads */}
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle>Leads Recentes</CardTitle>
-                                    <Button variant="ghost" size="sm">
-                                        Ver todos
-                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {recentLeads.map((lead) => (
-                                        <div
-                                            key={lead.id}
-                                            className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
-                                            onClick={() => router.push(`/leads/${lead.id}`)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                                    {lead.name.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white">
-                                                        {lead.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {lead.email}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className={getStatusColor(lead.status)}>
-                                                    {lead.status}
-                                                </Badge>
-                                                <div className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded">
-                                                    {getSourceIcon(lead.source)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Recent Properties & Analytics */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2">
-                                        <Home className="w-5 h-5 text-blue-600" />
-                                        Imóveis Recentes
-                                    </span>
-                                    <Button variant="ghost" size="sm">
-                                        Ver todos
-                                    </Button>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {recentProperties.map((property) => (
-                                        <div
-                                            key={property.id}
-                                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                                            onClick={() => router.push(`/properties/${property.id}`)}
-                                        >
-                                            <div className="flex-1">
-                                                <p className="font-medium text-slate-900 dark:text-white">
-                                                    {property.title}
-                                                </p>
-                                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                    R$ {property.price.toLocaleString('pt-BR')}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className={getStatusColor(property.status)}>
-                                                    {property.status}
-                                                </Badge>
-                                                <span className="text-sm text-slate-500 dark:text-slate-400">
-                                                    {property.views} views
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="w-5 h-5 text-purple-600" />
-                                    Performance
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">Taxa de Conversão</span>
-                                            <span className="text-sm font-medium text-slate-900 dark:text-white">14.7%</span>
-                                        </div>
-                                        <Progress value={14.7} className="h-2" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">Visualizações</span>
-                                            <span className="text-sm font-medium text-slate-900 dark:text-white">12.4K</span>
-                                        </div>
-                                        <Progress value={78} className="h-2" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">Leads Ativos</span>
-                                            <span className="text-sm font-medium text-slate-900 dark:text-white">156</span>
-                                        </div>
-                                        <Progress value={62} className="h-2" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Properties */}
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 lg:col-span-2">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Home className="w-5 h-5 text-blue-600" />
-                                    Imóveis Recentes
-                                </CardTitle>
-                                <Button variant="ghost" size="sm">
-                                    Ver Todos
-                                </Button>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {recentProperties.map((property) => (
-                                        <div
-                                            key={property.id}
-                                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                                                    <Home className="w-5 h-5 text-blue-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white text-sm">
-                                                        {property.title}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                        R$ {property.price.toLocaleString('pt-BR')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Badge className={getStatusColor(property.status)}>
-                                                {property.status}
-                                            </Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Leads */}
-                        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 lg:col-span-2">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-purple-600" />
-                                    Leads Recentes
-                                </CardTitle>
-                                <Button variant="ghost" size="sm">
-                                    Ver Todos
-                                </Button>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {recentLeads.map((lead) => (
-                                        <div
-                                            key={lead.id}
-                                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                                                    <Users className="w-5 h-5 text-purple-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white text-sm">
-                                                        {lead.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {lead.email}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                                                    {getSourceIcon(lead.source)}
-                                                    <span className="text-xs">{lead.source}</span>
-                                                </div>
-                                                <Badge className={getStatusColor(lead.status)}>
-                                                    {lead.status}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
                     {/* Quick Links */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                         <Link href="/properties">
                             <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group cursor-pointer">
                                 <CardContent className="p-6">
@@ -848,6 +599,7 @@ export default function DashboardPage() {
                         </Link>
                     </div>
                 </main>
+            </header>
         </div>
     )
 }

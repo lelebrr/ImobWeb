@@ -10,10 +10,10 @@ const prisma = new PrismaClient();
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { portalId: string } }
+  { params }: { params: Promise<{ portalId: string }> }
 ) {
   try {
-    const { portalId } = params;
+    const { portalId } = await params;
 
     // 1. Buscar a integração e validar status
     const integration = await prisma.portalIntegration.findUnique({

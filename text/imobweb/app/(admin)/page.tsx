@@ -1,17 +1,18 @@
 import React from 'react';
 import { AdminKPIs } from '../../components/admin/dashboard/KPIWidgets';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
 } from 'recharts';
 import { Calendar, Filter, Download, ArrowUpRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Mock data for charts
 const REVENUE_DATA = [
@@ -34,7 +35,7 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard Executivo</h1>
           <p className="text-slate-500 mt-1">Bem-vindo, veja o resumo global do imobWeb hoje.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition-all">
             <Calendar className="w-4 h-4" />
@@ -64,46 +65,46 @@ export default function AdminDashboardPage() {
               +24%
             </div>
           </div>
-          
+
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={REVENUE_DATA}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }} 
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 12 }}
-                  tickFormatter={(val) => `R$ ${val/1000}k`}
+                  tickFormatter={(val) => `R$ ${val / 1000}k`}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#0f172a', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
                     border: '1px solid #1e293b',
                     borderRadius: '12px',
-                    color: '#fff' 
+                    color: '#fff'
                   }}
                   itemStyle={{ color: '#818cf8' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#6366f1" 
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#6366f1"
                   strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -112,7 +113,7 @@ export default function AdminDashboardPage() {
 
         {/* User Engagement (Placeholder for now) */}
         <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-8 rounded-[2rem] shadow-xl">
-           <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-xl font-bold text-white">Ativação de Usuários</h2>
               <p className="text-sm text-slate-500 mt-1">Novos usuários ativos por período</p>
@@ -121,35 +122,35 @@ export default function AdminDashboardPage() {
               <Filter size={20} />
             </button>
           </div>
-          
+
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={REVENUE_DATA}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 12 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 12 }}
                 />
-                <Tooltip 
-                   contentStyle={{ 
-                    backgroundColor: '#0f172a', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
                     border: '1px solid #1e293b',
                     borderRadius: '12px',
-                    color: '#fff' 
+                    color: '#fff'
                   }}
                 />
-                <Bar 
-                  dataKey="users" 
-                  fill="#818cf8" 
-                  radius={[6, 6, 0, 0]} 
+                <Bar
+                  dataKey="users"
+                  fill="#818cf8"
+                  radius={[6, 6, 0, 0]}
                   barSize={40}
                 />
               </BarChart>
@@ -157,7 +158,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
-      
+
       {/* --- RECENT ACTIVITY SECTION (Placeholder) --- */}
       <div className="bg-slate-900/40 border border-slate-800 rounded-[2rem] p-8">
         <h3 className="text-lg font-bold text-white mb-6">Alertas Críticos & Atividade Recente</h3>
@@ -171,9 +172,9 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  log.color === 'rose' ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]" : 
-                  log.color === 'amber' ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : 
-                  "bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                  log.color === 'rose' ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]" :
+                    log.color === 'amber' ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" :
+                      "bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                 )} />
                 <div>
                   <p className="text-sm font-medium text-white">{log.msg}</p>
