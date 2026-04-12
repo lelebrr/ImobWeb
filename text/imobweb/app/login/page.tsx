@@ -26,6 +26,12 @@ export default function LoginPage() {
 
         try {
             await signIn({ email, password })
+            
+            // Track successful login
+            import('@/lib/analytics/posthog').then(({ analytics }) => {
+                analytics.trackLeadConversion('login', { method: 'email', email });
+            });
+
             router.push('/dashboard')
             router.refresh()
         } catch (err: any) {
@@ -118,6 +124,7 @@ export default function LoginPage() {
                                         className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
                                         required
                                         disabled={isLoading || authLoading}
+                                        autoComplete="email"
                                     />
                                 </div>
                             </div>
@@ -138,6 +145,7 @@ export default function LoginPage() {
                                         className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
                                         required
                                         disabled={isLoading || authLoading}
+                                        autoComplete="current-password"
                                     />
                                 </div>
                             </div>

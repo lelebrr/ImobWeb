@@ -7,3 +7,4 @@ export { AuthProvider, useAuth, useHasRole, useIsAdmin, useIsManager, useIsAgent
 export { ThemeProvider, useTheme } from './theme-provider'
 export { AIProvider, useAI } from './ai-provider'
 export { MobileProvider, useMobile } from './mobile-provider'
+export { AnalyticsProvider } from './analytics-provider'

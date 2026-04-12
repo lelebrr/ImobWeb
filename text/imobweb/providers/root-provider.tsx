@@ -9,6 +9,8 @@ import { TooltipProvider } from '@radix-ui/react-tooltip'
  * RootProvider
  * Centraliza todos os providers da aplicação para manter o layout limpo.
  */
+import { AnalyticsProvider } from './analytics-provider'
+
 export function RootProvider({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
@@ -17,16 +19,18 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider>
-        <AIProvider>
-          <MobileProvider>
-            <TooltipProvider delayDuration={0}>
-              {children}
-            </TooltipProvider>
-            <Toaster richColors position="top-right" closeButton />
-          </MobileProvider>
-        </AIProvider>
-      </AuthProvider>
+      <AnalyticsProvider>
+        <AuthProvider>
+          <AIProvider>
+            <MobileProvider>
+              <TooltipProvider delayDuration={0}>
+                {children}
+              </TooltipProvider>
+              <Toaster richColors position="top-right" closeButton />
+            </MobileProvider>
+          </AIProvider>
+        </AuthProvider>
+      </AnalyticsProvider>
     </ThemeProvider>
   )
 }

@@ -36,8 +36,17 @@ export function PropertyCard({ property, className }: PropertyCardProps) {
     minimumFractionDigits: 0
   }).format(property.price.amount);
 
+  const handleTrackClick = () => {
+    import('@/lib/analytics/posthog').then(({ analytics }) => {
+      analytics.trackPropertyView(property.id, property.title);
+    });
+  };
+
   return (
-    <div className={cn("@container w-full group cursor-pointer", className)}>
+    <div 
+      className={cn("@container w-full group cursor-pointer", className)}
+      onClick={handleTrackClick}
+    >
       <div className="glass border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full bg-white/5">
          
          {/* Imagem com Overlay Gradiente */}

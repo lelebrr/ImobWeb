@@ -61,6 +61,14 @@ export const AISupportChat: React.FC = () => {
 
       setMessages([...newMessages, { role: 'assistant', content: response, links }]);
       setIsTyping(false);
+
+      // Track AI usage
+      import('@/lib/analytics/posthog').then(({ analytics }) => {
+        analytics.trackAiUsage('support_chat', { 
+          query: text, 
+          has_results: searchResults.length > 0 
+        });
+      });
     }, 1500);
   };
 

@@ -10,7 +10,6 @@ const nextConfig = {
   poweredByHeader: false,
 
   // Otimizações específicas para Vercel
-  output: 'standalone',
   trailingSlash: true,
 
   // Headers de segurança e performance otimizados para Vercel
@@ -92,7 +91,6 @@ const nextConfig = {
     },
     reactCompiler: false,
   },
-  outputFileTracingRoot: process.cwd(),
 
   // Configurações de servidor externo para Vercel
   serverExternalPackages: ['@prisma/client'],
@@ -133,8 +131,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/public/:path*',
-        destination: '/api/public/v1/:path*',
+        source: '/api/public/((?!v1/).*)',
+        destination: '/api/public/v1/$1',
       },
     ];
   },

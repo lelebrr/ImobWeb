@@ -52,6 +52,17 @@ export default function PropertiesPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
 
+  // Track search with debounce to avoid flooding analytics
+  React.useEffect(() => {
+    if (!search) return;
+    const timer = setTimeout(() => {
+      import('@/lib/analytics/posthog').then(({ analytics }) => {
+        analytics.trackSearch(search, { results_count: MOCK_PROPERTIES.length });
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
