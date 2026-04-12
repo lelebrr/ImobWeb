@@ -91,8 +91,8 @@ const nextConfig = {
       allowedOrigins: ['imobweb.com', '*.imobweb.com'],
     },
     reactCompiler: false,
-    outputFileTracingRoot: process.cwd(),
   },
+  outputFileTracingRoot: process.cwd(),
 
   // Configurações de servidor externo para Vercel
   serverExternalPackages: ['@prisma/client'],

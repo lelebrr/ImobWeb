@@ -1,17 +1,5 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "package.json",
-            "use": "@vercel/next"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "/app/$1"
-        }
-    ],
     "env": {
         "NEXT_PUBLIC_APP_URL": "https://imobweb.com",
         "NEXT_PUBLIC_SITE_URL": "https://imobweb.com",
@@ -102,39 +90,6 @@
         {
             "source": "/robots.txt",
             "destination": "/api/robots"
-        },
-        {
-            "source": "/sitemap.xml",
-            "destination": "/api/sitemap"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/dashboard",
-            "destination": "/app/dashboard",
-            "permanent": true
-        },
-        {
-            "source": "/admin",
-            "destination": "/app/admin",
-            "permanent": true
-        },
-        {
-            "source": "/partner",
-            "destination": "/app/partner",
-            "permanent": true
-        },
-        {
-            "source": "/login",
-            "destination": "/app/login",
-            "permanent": true
-        },
-        {
-            "source": "/signup",
-            "destination": "/app/signup",
-            "permanent": true
-        }
-    ],
     "github": {
         "silent": true
     }
