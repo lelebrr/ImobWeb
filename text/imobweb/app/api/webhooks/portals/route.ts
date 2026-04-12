@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { portalParser } from '@/lib/xml-processor/parser';
 import { portalAnalytics } from '@/lib/portals/analytics';
-
-const prisma = new PrismaClient();
 
 /**
  * Endpoint de Webhook para recepção de Leads dos portais (Zap, VivaReal, etc.)

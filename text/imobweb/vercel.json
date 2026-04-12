@@ -89,7 +89,9 @@
         },
         {
             "source": "/robots.txt",
-            "destination": "/api/robots"
+            "destination": "/robots"
+        }
+    ],
     "github": {
         "silent": true
     }

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { portalAnalytics } from '@/lib/portals/analytics';
-
-const prisma = new PrismaClient();
 
 /**
  * API para fornecer dados agregados de performance para o Dashboard de ROI

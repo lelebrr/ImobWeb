@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { SyncResult, SyncStatus, PortalType } from '../../types/portals';
 import { portalValidator } from './validator';
 import { autoMaintenance } from './auto-maintenance';
-
-const prisma = new PrismaClient();
 
 /**
  * Interface para adaptadores de portais externos

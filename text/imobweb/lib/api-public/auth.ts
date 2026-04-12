@@ -1,9 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { crypto } from "next/dist/compiled/@edge-runtime/primitives";
 import { ApiKeyScope } from "../../types/api";
-
-const prisma = new PrismaClient();
 
 /**
  * Valida o hash de uma API Key usando Web Crypto para compatibilidade com Edge

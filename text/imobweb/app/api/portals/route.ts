@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, PortalType, PortalIntegrationStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PortalType, PortalIntegrationStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 /**
  * API para listar e gerenciar integrações com portais

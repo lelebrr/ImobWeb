@@ -3,10 +3,8 @@
  * 2026 - Autenticação de Integrações Externas
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { crypto } from "next/dist/compiled/@edge-runtime/primitives";
-
-const prisma = new PrismaClient();
 
 /**
  * Cria uma nova API Key para uma organização.

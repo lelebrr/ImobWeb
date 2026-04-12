@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { metaCatalogGenerator } from '@/lib/xml-processor/meta-catalog';
-
-const prisma = new PrismaClient();
 
 /**
  * API para servir o Catálogo do Facebook/Instagram

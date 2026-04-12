@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/public-api/api-key-service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import * as Sentry from "@sentry/nextjs";
-
-const prisma = new PrismaClient();
 
 /**
  * LISTAGEM DE IMÓVEIS - PUBLIC API v1

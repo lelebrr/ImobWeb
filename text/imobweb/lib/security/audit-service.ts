@@ -3,10 +3,9 @@
  * 2026 - Registro detalhado de ações críticas para conformidade SOC2
  */
 
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
-
-const prisma = new PrismaClient();
 
 export interface AuditLogOptions {
   action: AuditAction;

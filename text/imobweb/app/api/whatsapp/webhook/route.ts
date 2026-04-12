@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { PrismaClient } from '@prisma/client'
-// import { verifyWhatsAppSignature } from '@/lib/whatsapp/verify'
-// import { processIncomingMessage } from '@/lib/whatsapp/process-message'
-// import { processIncomingCall } from '@/lib/whatsapp/process-call'
-
-// Note: Using local implementations for now to stabilize build.
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 /**
  * Webhook Handler para WhatsApp Business Cloud API

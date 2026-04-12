@@ -1,7 +1,6 @@
-import { PrismaClient, PropertyStatus } from '@prisma/client';
+import { PropertyStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { differenceInDays } from 'date-fns';
-
-const prisma = new PrismaClient();
 
 /**
  * Serviço de Manutenção Automática de Inventário

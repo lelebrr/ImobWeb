@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { xmlGenerator } from '@/lib/xml-processor/xml-generator';
-
-const prisma = new PrismaClient();
 
 /**
  * Endpoint que serve o feed XML para os portais (PULL mechanism)
