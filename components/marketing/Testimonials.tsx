@@ -1,11 +1,6 @@
 'use client'
 
 import { Star } from 'lucide-react'
-
-const testimonials = [
-    {
-        name: 'Carlos Mendes',
-        company: 'Imóveis Premium',
 import { useMarketingLanguage } from '@/lib/i18n/MarketingLanguageContext'
 import { motion } from 'framer-motion'
 

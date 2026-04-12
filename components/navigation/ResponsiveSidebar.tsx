@@ -1,9 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/responsive/tailwind-utils";
 import { Menu, X, Home, Users, Settings, Building, MapPin } from "lucide-react";
-import { useResponsive } from "@/hooks/use-responsive";
+
+function useResponsive() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return { isMobile, isTablet, isClient };
+}
 
 export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) {
   const { isMobile, isTablet, isClient } = useResponsive();
@@ -30,8 +50,8 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
             </div>
             <span className="font-bold text-lg tracking-tight">ImobWeb</span>
           </div>
-          <button 
-            onClick={toggleMobileNav} 
+          <button
+            onClick={toggleMobileNav}
             className="p-2 -mr-2 rounded-md hover:bg-muted"
             aria-label="Abrir menu"
           >
@@ -40,7 +60,7 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
         </header>
 
         {/* Drawer Backdrop Overlay */}
-        <div 
+        <div
           className={cn(
             "fixed inset-0 bg-black/60 z-50 backdrop-blur-sm transition-opacity duration-300",
             isOpenMobile ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -49,7 +69,7 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
         />
 
         {/* Slider Drawer Nav */}
-        <aside 
+        <aside
           className={cn(
             "fixed top-0 bottom-0 left-0 w-72 bg-card border-r z-50 transform transition-transform duration-300 ease-out flex flex-col",
             isOpenMobile ? "translate-x-0 shadow-2xl" : "-translate-x-full"
@@ -58,7 +78,7 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
           <div className="flex bg-muted/30 h-16 items-center justify-between px-6 border-b">
             <span className="font-bold text-[1.125rem]">Navegação</span>
             <button onClick={toggleMobileNav} className="p-2 -mr-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5"/>
+              <X className="w-5 h-5" />
             </button>
           </div>
           <nav className="p-4 flex-1 overflow-y-auto flex flex-col gap-1">
@@ -66,7 +86,7 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
             <NavItem icon={<Building />} label="Meus Imóveis" badge="14" />
             <NavItem icon={<Users />} label="Leads / CRM" />
             <NavItem icon={<MapPin />} label="Mapa de Captação" />
-            
+
             <div className="mt-8 mb-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3">Administrativo</p>
             </div>
@@ -83,7 +103,7 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
 
   // === VERSÃO TABLET E DESKTOP ===
   return (
-    <aside 
+    <aside
       className={cn(
         "h-screen sticky top-0 bg-card border-r transition-all duration-300 ease-in-out flex flex-col z-30 shrink-0",
         isCollapsed ? "w-20" : "w-64"
@@ -118,51 +138,51 @@ export function ResponsiveSidebar({ children }: { children?: React.ReactNode }) 
 }
 
 // Subcomponente encapsulado do Navbar para simplificar o codigo base
-function NavItem({ 
-  icon, 
-  label, 
-  collapsed = false, 
+function NavItem({
+  icon,
+  label,
+  collapsed = false,
   active = false,
-  badge 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
+  badge
+}: {
+  icon: React.ReactNode;
+  label: string;
   collapsed?: boolean;
   active?: boolean;
   badge?: string;
 }) {
   return (
-    <button 
+    <button
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 relative",
         collapsed ? "justify-center p-3" : "justify-start p-3 px-4",
-        active 
-          ? "bg-primary/10 text-primary font-medium" 
+        active
+          ? "bg-primary/10 text-primary font-medium"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
       title={collapsed ? label : undefined}
     >
-      {React.cloneElement(icon as React.ReactElement<any>, { 
+      {React.cloneElement(icon as React.ReactElement<any>, {
         className: cn(
-          "w-5 h-5 shrink-0 transition-colors", 
+          "w-5 h-5 shrink-0 transition-colors",
           active ? "text-primary" : "group-hover:text-foreground"
-        ) 
+        )
       })}
-      
+
       {/* Label só aparece cheia se não colapsado */}
       {!collapsed && (
         <span className="text-sm flex-1 text-left truncate transition-all duration-300 pointer-events-none">
           {label}
         </span>
       )}
-      
+
       {/* Mini notification badge handler */}
       {!collapsed && badge && (
         <span className="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
           {badge}
         </span>
       )}
-      
+
       {/* Status Dot for colapsed menu with badges */}
       {collapsed && badge && (
         <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />

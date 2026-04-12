@@ -50,3 +50,8 @@ class AnalyticsService {
 }
 
 export const analytics = new AnalyticsService();
+
+// Provider component for PostHog
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  return <>{ children } </>;
+}

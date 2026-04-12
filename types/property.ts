@@ -1,43 +1,34 @@
 /**
- * imobWeb Property Management System - Core Types
- * Specialized for 2026 High-Performance Real Estate SaaS
+ * CORE PROPERTY TYPES - IMOBWEB 2026
+ * Essential types for high-performance real estate SaaS
  */
 
-export enum PropertyCategory {
-  RESIDENTIAL = 'RESIDENTIAL',
-  COMMERCIAL = 'COMMERCIAL',
-  RURAL = 'RURAL',
-  INDUSTRIAL = 'INDUSTRIAL',
-  VACATION = 'VACATION',
-  DEVELOPMENT = 'DEVELOPMENT', // Lançamentos / Terrenos
-}
+export type PropertyCategory = 'RESIDENTIAL' | 'COMMERCIAL' | 'RURAL' | 'INDUSTRIAL' | 'LAND' | 'VACATION';
 
-export enum PropertyStatus {
-  FOR_SALE = 'FOR_SALE',
-  FOR_RENT = 'FOR_RENT',
-  SOLD = 'SOLD',
-  RENTED = 'RENTED',
-  RESERVED = 'RESERVED',
-  OFF_MARKET = 'OFF_MARKET',
-}
+export type PropertyUsage = 'FOR_SALE' | 'FOR_RENT' | 'BOTH';
 
-export interface PropertyImage {
+export interface PropertyMedia {
   id: string;
   url: string;
   thumbnailUrl?: string;
-  alt?: string;
+  blurDataUrl?: string;
+  category: 'EXTERIOR' | 'INTERIOR' | 'AERIAL' | 'PLAN' | 'PANORAMA_360' | 'VIDEO';
   order: number;
-  isMain: boolean;
-  type: 'PHOTO' | 'VIDEO' | 'TOUR_360' | 'FLOOR_PLAN';
-  metadata: {
-    width: number;
-    height: number;
-    format: 'webp' | 'avif' | 'jpeg';
-    size: number;
-    aiQualityScore?: number; // 0-100
-    aiTags?: string[];
-    aiCaption?: string;
+  aiMetadata?: {
+    qualityScore: number;
+    detectedType: string;
+    description: string;
+    labels: string[];
+    isEnhanced: boolean;
   };
+  alt: string;
+}
+
+export interface PropertyFeature {
+  id: string;
+  label: string;
+  icon?: string;
+  category: 'INFRASTRUCTURE' | 'LEISURE' | 'SECURITY' | 'INTERIOR';
 }
 
 export interface PropertyAddress {
@@ -52,93 +43,77 @@ export interface PropertyAddress {
     lat: number;
     lng: number;
   };
-  isExactLocationDisplayed: boolean;
 }
 
-export interface PropertyFeature {
-  id: string;
-  label: string;
-  category: 'INTERIOR' | 'EXTERIOR' | 'COMMUNITY' | 'LEISURE' | 'SECURITY';
-  icon?: string;
+export interface PropertyPrice {
+  amount: number;
+  currency: 'BRL' | 'USD' | 'EUR';
+  period?: 'MONTHLY' | 'YEARLY' | 'DAILY';
+  isNegotiable: boolean;
+  fees?: {
+    condo?: number;
+    tax?: number;
+  };
 }
 
-export interface PropertySEO {
-  title: string;
-  description: string;
-  keywords: string[];
-  ogImage?: string;
-  canonicalUrl?: string;
-}
-
-/**
- * Base Property Interface
- */
 export interface Property {
   id: string;
-  externalId?: string; // Integration IDs
   slug: string;
+  externalId?: string;
+  ownerId: string;
+  organizationId: string;
+  
   title: string;
   description: string;
-  type: string; // From PropertyTypeList
+  aiDescription?: string;
+  
+  status: 'DRAFT' | 'ACTIVE' | 'PENDING' | 'RESERVED' | 'SOLD' | 'INACTIVE';
+  typeId: string; // Ref to property-types
   category: PropertyCategory;
-  status: PropertyStatus;
+  usage: PropertyUsage;
   
-  // Pricing
-  price: number;
-  currency: string;
-  condoFee?: number;
-  propertyTax?: number; // IPTU
-  pricePerMeter?: number;
-
-  // Measurement
-  totalArea: number;
-  buildArea?: number;
-  usableArea?: number;
-  areaMeasurementUnit: 'm2' | 'hectare' | 'alqueire';
-  
-  // Details
-  bedrooms?: number;
-  bathrooms?: number;
-  suites?: number;
-  parkingSpots?: number;
-  floor?: number;
-  totalFloors?: number;
-  yearBuilt?: number;
-  
-  // Media
-  images: PropertyImage[];
-  videos?: string[];
-  virtualTourUrl?: string;
-  
-  // Location
+  price: PropertyPrice;
   address: PropertyAddress;
+  media: PropertyMedia[];
+  features: string[]; // List of feature IDs
   
-  // Metadata
-  features: string[]; // IDs from Global Features List
-  tags: string[];
-  ownerId: string;
-  brokerId?: string;
-  isFeatured: boolean;
-  isExclusivelyListed: boolean;
+  // Dynamic metrics based on type
+  metrics: {
+    totalArea: number;
+    builtArea?: number;
+    landArea?: number;
+    rooms?: number;
+    bedrooms?: number;
+    suites?: number;
+    bathrooms?: number;
+    parkingSpaces?: number;
+    floor?: number;
+    totalFloors?: number;
+  };
   
-  // AI Generated
-  aiSummary?: string;
-  aiSuggestedPriceRange?: { min: number; max: number };
+  seo: {
+    title: string;
+    description: string;
+    keywords: string[];
+  };
   
-  // Meta
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
 }
 
-/**
- * Property Type Definition for logic mapping
- */
-export interface PropertyTypeDefinition {
+export interface PropertyTypeConfig {
   id: string;
-  label: string;
   category: PropertyCategory;
-  icon?: string;
-  requiredFields: Array<keyof Property>;
-  suggestedFields: Array<keyof Property>;
-  availableFeatures: string[];
+  label: string;
+  pluralLabel: string;
+  icon: string;
+  requiredFields: string[];
+  suggestedFeatures: string[];
+  showFields: {
+    rooms: boolean;
+    parking: boolean;
+    area: boolean;
+    floors: boolean;
+  };
 }
