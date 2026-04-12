@@ -135,16 +135,6 @@
             "permanent": true
         }
     ],
-    "features": {
-        "edge": {
-            "include": [
-                "/api/i18n/translate",
-                "/api/devops/health",
-                "/api/notifications",
-                "/api/security/lgpd"
-            ]
-        }
-    },
     "github": {
         "silent": true
     }
