@@ -8,13 +8,18 @@ const withNextIntl = createNextIntlPlugin(
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  
-  // Headers de segurança e performance globais
+
+  // Otimizações específicas para Vercel
+  output: 'standalone',
+  trailingSlash: true,
+
+  // Headers de segurança e performance otimizados para Vercel
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
+          // Performance headers
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
@@ -39,7 +44,12 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
           },
-          // Link Header for prefetching core assets
+          // Cache otimizado para Vercel
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          // Link Header para prefetching
           {
             key: 'Link',
             value: '<https://fonts.googleapis.com>; rel=preconnect; crossorigin',
@@ -53,9 +63,18 @@ const nextConfig = {
           { key: 'Service-Worker-Allowed', value: '/' },
         ],
       },
+      // Headers específicos para assets estáticos
+      {
+        source: '/(.*)\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
-
 
   // Otimizações de Compilação e Runtime para 2026
   experimental: {
@@ -74,6 +93,8 @@ const nextConfig = {
     reactCompiler: false,
   },
 
+  // Configurações de servidor externo para Vercel
+  serverExternalPackages: ['@prisma/client'],
 
   // State-of-the-Art Image Optimization
   images: {
@@ -95,10 +116,27 @@ const nextConfig = {
       },
     ],
     minimumCacheTTL: 31536000,
+    // Otimização para Vercel
+    unoptimized: false,
   },
 
-  // Compressão Gzip/Brotli automática
+  // Compressão otimizada para Vercel
   compress: true,
+
+  // Configurações de ambiente para Vercel
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // Redirecionamentos e rewrites (serão configurados em vercel.json)
+  async rewrites() {
+    return [
+      {
+        source: '/api/public/:path*',
+        destination: '/api/public/v1/:path*',
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);
