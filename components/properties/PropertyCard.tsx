@@ -7,160 +7,147 @@ import { motion } from 'framer-motion';
 import { 
   Bed, 
   Bath, 
-  Expand, 
+  Maximize, 
   MapPin, 
-  Heart,
-  TrendingUp,
-  ShieldCheck,
-  Star
+  Heart, 
+  Share2, 
+  Sparkles,
+  Zap
 } from 'lucide-react';
-import { Property, PropertyStatus } from '../../types/property';
+import { Property } from '../../types/property';
 import { getPropertyType } from '../../lib/properties/property-types';
 import { cn } from '../../lib/utils';
 
 interface PropertyCardProps {
   property: Property;
-  priority?: boolean;
+  viewMode?: 'grid' | 'list';
 }
 
 /**
- * Premium Property Card Component
- * Designed for conversion and performance.
+ * PREMIUM PROPERTY CARD - IMOBWEB 2026
+ * Features:
+ * - Dynamic data display based on property type
+ * - Hover interactions & smooth transitions
+ * - Core Web Vitals optimized (next/image)
+ * - AI Insight integration
  */
-export const PropertyCard: React.FC<PropertyCardProps> = ({ 
-  property,
-  priority = false 
-}) => {
-  const typeDef = getPropertyType(property.type);
-  const mainImage = property.images.find(img => img.isMain) || property.images[0];
+export const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode = 'grid' }) => {
+  const typeConfig = getPropertyType(property.typeId);
+  const mainImage = property.media.find(m => m.order === 0) || property.media[0];
 
-  const statusColors: Record<PropertyStatus, string> = {
-    [PropertyStatus.FOR_SALE]: 'bg-emerald-500',
-    [PropertyStatus.FOR_RENT]: 'bg-indigo-500',
-    [PropertyStatus.SOLD]: 'bg-rose-500',
-    [PropertyStatus.RENTED]: 'bg-slate-500',
-    [PropertyStatus.RESERVED]: 'bg-amber-500',
-    [PropertyStatus.OFF_MARKET]: 'bg-slate-700',
+  const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: property.price.currency,
+    }).format(amount);
   };
-
-  const formattedPrice = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: property.currency,
-    maximumFractionDigits: 0,
-  }).format(property.price);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
       whileHover={{ y: -8 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm transition-all hover:shadow-2xl"
+      className={cn(
+        "group bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10",
+        viewMode === 'list' ? "flex flex-col md:flex-row h-auto md:h-[280px]" : "flex flex-col h-[480px]"
+      )}
     >
-      {/* Media Section */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden">
+      {/* --- IMAGE SECTION --- */}
+      <div className={cn(
+        "relative overflow-hidden",
+        viewMode === 'list' ? "w-full md:w-[320px] h-[200px] md:h-full" : "w-full h-[240px]"
+      )}>
         <Image
-          src={mainImage?.url || '/property-placeholder.jpg'}
+          src={mainImage?.url || '/placeholders/property.jpg'}
           alt={property.title}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-110"
-          priority={priority}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         
-        {/* Overlays */}
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-          <div className="flex flex-col gap-2">
-            <span className={cn(
-              "rounded-full px-3 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-md uppercase tracking-widest",
-              statusColors[property.status]
-            )}>
-              {property.status.replace('_', ' ')}
+        {/* Badges */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+          <span className="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
+            {property.usage === 'FOR_SALE' ? 'Venda' : property.usage === 'FOR_RENT' ? 'Locação' : 'Venda + Locação'}
+          </span>
+          {property.status === 'RESERVED' && (
+            <span className="bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
+              Reservado
             </span>
-            {property.isExclusivelyListed && (
-              <span className="flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-[10px] font-bold text-white shadow-lg">
-                <ShieldCheck className="h-3 w-3" />
-                EXCLUSIVO
-              </span>
-            )}
-          </div>
-          
-          <button className="rounded-full bg-white/20 p-2 text-white backdrop-blur-md transition-all hover:bg-white/40 active:scale-90 border border-white/30">
-            <Heart className="h-4 w-4" />
-          </button>
+          )}
         </div>
 
-        {property.isFeatured && (
-          <div className="absolute bottom-4 left-4">
-            <div className="flex items-center gap-1 rounded-lg bg-yellow-400 px-2 py-1 text-[10px] font-bold text-slate-900 shadow-lg ring-1 ring-yellow-500/50">
-              <Star className="h-3 w-3 fill-slate-900" />
-              DESTAQUE
-            </div>
+        {/* Favorite Button */}
+        <button className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-rose-500 hover:text-white transition-all">
+          <Heart size={20} className="group-hover:fill-current" />
+        </button>
+
+        {/* AI Insight Badge */}
+        {mainImage?.aiMetadata?.qualityScore && mainImage.aiMetadata.qualityScore > 0.9 && (
+          <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 bg-emerald-500/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-md shadow-lg italic">
+            <Zap className="w-2.5 h-2.5 fill-current" />
+            TOP RATED PHOTO
           </div>
         )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
 
-      {/* Content Section */}
-      <div className="flex flex-col p-6">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">
-            {typeDef?.label || property.category}
+      {/* --- DETAILS SECTION --- */}
+      <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        {/* Type & Address */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+            {typeConfig?.label || property.category}
           </span>
-          <div className="flex items-center gap-1 text-slate-400">
-             <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-             <span className="text-[10px] font-medium">+12% Valorização</span>
-          </div>
+          <span className="text-slate-500 text-xs flex items-center gap-1">
+            <MapPin size={12} />
+            {property.address.neighborhood}
+          </span>
         </div>
 
-        <Link href={`/properties/${property.slug}`}>
-          <h3 className="mt-2 line-clamp-1 text-lg font-bold text-slate-900 transition-colors group-hover:text-indigo-600">
+        {/* Title */}
+        <Link href={`/properties/${property.slug}`} className="block">
+          <h3 className="text-lg font-bold text-white leading-tight mb-2 line-clamp-2 hover:text-indigo-400 transition-colors">
             {property.title}
           </h3>
         </Link>
-        
-        <div className="mt-1 flex items-center gap-1 text-slate-500">
-          <MapPin className="h-4 w-4 text-slate-400" />
-          <span className="text-sm line-clamp-1">{property.address.neighborhood}, {property.address.city}</span>
-        </div>
 
-        {/* Dynamic Specs based on type */}
-        <div className="mt-6 grid grid-cols-3 gap-4 border-y border-slate-50 py-4">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5 text-slate-700">
-              <Bed className="h-4 w-4 text-indigo-500" />
-              <span className="text-sm font-bold">{property.bedrooms || 0}</span>
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-800 my-2">
+          {typeConfig?.showFields.rooms && (
+            <div className="flex flex-col gap-1 items-center">
+              <span className="text-slate-500 flex items-center gap-1.5 text-xs font-medium">
+                <Bed size={14} /> Dorms
+              </span>
+              <span className="text-white font-bold text-sm">{property.metrics.bedrooms || 0}</span>
             </div>
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">Quartos</span>
+          )}
+          <div className="flex flex-col gap-1 items-center">
+            <span className="text-slate-500 flex items-center gap-1.5 text-xs font-medium">
+              <Bath size={14} /> Banheiros
+            </span>
+            <span className="text-white font-bold text-sm">{property.metrics.bathrooms || 0}</span>
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5 text-slate-700">
-              <Bath className="h-4 w-4 text-indigo-500" />
-              <span className="text-sm font-bold">{property.bathrooms || 0}</span>
-            </div>
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">Banheiros</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5 text-slate-700">
-              <Expand className="h-4 w-4 text-indigo-500" />
-              <span className="text-sm font-bold">{property.usableArea || property.totalArea}</span>
-            </div>
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">m² Área</span>
+          <div className="flex flex-col gap-1 items-center">
+            <span className="text-slate-500 flex items-center gap-1.5 text-xs font-medium">
+              <Maximize size={14} /> Área
+            </span>
+            <span className="text-white font-bold text-sm">{property.metrics.totalArea}m²</span>
           </div>
         </div>
 
-        {/* footer / Price */}
-        <div className="mt-6 flex items-center justify-between">
+        {/* Price Section */}
+        <div className="mt-auto pt-4 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Preço</span>
-            <span className="text-xl font-black text-slate-900">{formattedPrice}</span>
+            <p className="text-xs text-slate-500 font-medium">Valor do Imóvel</p>
+            <h4 className="text-xl font-black text-white tracking-tight">
+              {formatPrice(property.price.amount)}
+              {property.price.period && <span className="text-xs text-slate-500 font-normal ml-1">/{property.price.period === 'MONTHLY' ? 'mês' : 'dia'}</span>}
+            </h4>
           </div>
+          
           <Link 
             href={`/properties/${property.slug}`}
-            className="rounded-2xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-indigo-600 active:scale-95 shadow-lg shadow-slate-200"
+            className="w-10 h-10 bg-slate-800 rounded-2xl flex items-center justify-center text-white hover:bg-indigo-600 transition-all shadow-xl"
           >
-            Ver Detalhes
+            <Share2 size={18} />
           </Link>
         </div>
       </div>

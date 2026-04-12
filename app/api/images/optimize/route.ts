@@ -1,63 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ImageProcessor } from '../../../../lib/image-optimization/image-processor';
+import { NextResponse } from 'next/server';
+import { ImageProcessor } from '@/lib/image-optimization/image-processor';
 
 /**
- * imobWeb Media API - Real-time Image Optimization
+ * IMAGE OPTIMIZATION API - IMOBWEB 2026
+ * Processes uploads, optimizes formats, and generates AI metadata.
  */
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as Blob;
-    const optionsRaw = formData.get('options') as string;
-    
+    const file = formData.get('image') as File;
+
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const options = optionsRaw ? JSON.parse(optionsRaw) : {};
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Perform Optimization
+    // 1. Core Optimization (WebP / AVIF)
     const { buffer: optimizedBuffer, info } = await ImageProcessor.optimize(buffer, {
-      width: options.width || 1920,
-      quality: options.quality || 85,
-      format: options.format || 'webp',
-      watermarkPath: options.watermark ? './public/watermark.png' : undefined,
+      format: 'webp',
+      quality: 85,
+      width: 1920
     });
 
-    // Generate Blur Placeholder
-    const blurDataURL = await ImageProcessor.generateBlurPlaceholder(buffer);
+    // 2. Generate Blur Placeholder for LCP optimization
+    const blurDataUrl = await ImageProcessor.generateBlurPlaceholder(buffer);
 
-    // AI Assessment (Optional)
-    let aiScore = undefined;
-    if (options.aiAnalysis) {
-      aiScore = await ImageProcessor.assessQuality(buffer);
-    }
+    // 3. AI Analysis (Simulated)
+    const aiAnalysis = await ImageProcessor.aiAnalyze(buffer);
 
-    // Return the optimized image
-    // In a real scenario, you would upload this to Supabase/S3 first
-    // and return the URL. For now, we return metadata + simulated URL.
-    
+    // 4. In a real 2026 scenario, we would upload to Supabase/S3 here
+    // const { data, error } = await supabase.storage.from('properties').upload('path...', optimizedBuffer);
+
     return NextResponse.json({
       success: true,
       metadata: {
+        size: info.size,
+        format: info.format,
         width: info.width,
         height: info.height,
-        format: info.format,
-        size: info.size,
-        blurDataURL,
-        aiScore
+        blurDataUrl,
+        ai: aiAnalysis
       },
-      url: 'https://cdn.imobweb.com/temp-optimized-image.webp' // Mock
+      // url: publicUrl
     });
 
   } catch (error: any) {
-    console.error('[Media API Error]', error);
-    return NextResponse.json({ 
-      error: 'Failed to process image', 
-      details: error.message 
-    }, { status: 500 });
+    console.error('Image processing failed:', error);
+    return NextResponse.json({ error: 'Processing failed', details: error.message }, { status: 500 });
   }
 }

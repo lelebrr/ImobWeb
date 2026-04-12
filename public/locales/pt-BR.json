@@ -1,0 +1,9 @@
+{
+  "locale": "pt-BR",
+  "direction": "ltr",
+  "days": ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
+  "months": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+  "currency": "R$",
+  "decimal": ",",
+  "thousands": "."
+}

@@ -1,6 +1,6 @@
-import type { PortalAdapter } from './sync-engine';
-import { xmlGenerator } from './xml-generator';
-import type { PropertyData } from './xml-generator';
+import type { PortalAdapter } from '../sync-engine';
+import { xmlGenerator } from '../xml-generator';
+import type { PropertyData } from '../xml-generator';
 
 export class ZapAdapter implements PortalAdapter {
   private apiKey: string;

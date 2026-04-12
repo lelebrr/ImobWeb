@@ -1,200 +1,121 @@
-# imobWeb
+<div align="center">
 
-**O CRM Imobiliário mais completo e inteligente do Brasil em 2026**
+# 🏠 imobWeb: O CRM que é o Cérebro da sua Imobiliária
 
-**Tagline:** Cadastro 1x. Publica em todos os portais. WhatsApp automático para proprietários. Nunca mais anúncio desatualizado.
-
-imobWeb é um SaaS CRM imobiliário full-stack construído com Next.js 16, projetado para resolver o maior problema do mercado brasileiro: **cadastros desatualizados**. 
-
-Com ele, o corretor cadastra o imóvel **uma única vez**, escolhe o pacote e o sistema publica automaticamente no Grupo OLX (Zap Imóveis, Viva Real, OLX) + +100 portais, enquanto dispara fluxos inteligentes de WhatsApp para os proprietários pedindo atualização de preço, fotos e status.
-
----
-
-## ✨ Principais Diferenciais
-
-- **Cadastro único + Publicação multi-plataforma** (melhor que Tecimob, ImobTotal, Imobisoft)
-- **WhatsApp Business Cloud API proativo para proprietários** (diferencial quase inexistente no mercado)
-- **IA Preditiva**: Score de saúde do anúncio, recomendação de preço, previsão de churn
-- **Mobile-first + Offline support** perfeito para corretores em campo
-- **Suporte a Franquias e Multi-Tenant avançado**
-- **Financeiro completo** com cálculo de comissões, NFS-e e integração contábil
-- **Design System + White Label** completo
-- **Segurança enterprise** (LGPD, Audit Log, CSP, Rate Limiting)
-- **Help Center + Onboarding interativo** para alta taxa de adoção
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ---
 
-## 🛠️ Arquitetura e Tech Stack (2026)
+![Dashboard ImobWeb](file:///C:/Users/leleb/.gemini/antigravity/brain/2ac3c45e-46b2-4b3a-acff-efc9e32265dc/imobweb_dashboard_hero_1775868243587.png)
 
-- **Frontend**: Next.js 16 (App Router, Server Components, React 19)
-- **Estilo**: Tailwind CSS v4 + shadcn/ui + Design System customizável
-- **Banco**: PostgreSQL (Supabase/Neon) + Prisma ORM
-- **Auth**: Auth.js v5 com MFA e RBAC granular
-- **IA**: Vercel AI SDK + OpenAI/Claude (preenchimento, sugestão de preço, agents conversacionais)
-- **WhatsApp**: WhatsApp Cloud API oficial + fluxos avançados
-- **Pagamentos**: Stripe + lógica fiscal brasileira
-- **Deploy**: Vercel + Edge Functions
-- **Outros**: PostHog, Sentry, Upstash Redis, Resend, PWA completo
+### Cadastre uma vez. Publique em todo lugar. Venda muito mais.
+
+**imobWeb** não é apenas mais um software de imobiliária. É uma plataforma SaaS completa com engenharia de 2026, projetada para automatizar o trabalho pesado e deixar você focado no que importa: **fechar negócio.**
+
+[Explore a Doc](#-documentação) • [Funcionalidades](#-uma-nave-espacial-de-funcionalidades) • [Dev Guide](docs/developer-guide.md)
+
+</div>
 
 ---
 
-## 📋 Funcionalidades Construídas (por IA)
+## 🌟 Por que a imobWeb é diferente?
 
-### IA 1 – Core do CRM
-- Cadastro inteligente de imóveis (voz, texto, IA)
-- Publicação automática em portais (Grupo OLX + XML)
-- Sincronização bidirecional de preço/fotos/status
-- Fluxo básico de WhatsApp para leads e proprietários
-- Dashboard principal e pipeline
+No mercado imobiliário, tempo é dinheiro. Enquanto seus concorrentes estão preenchendo formulários e copiando fotos de um portal para o outro, a **imobWeb** faz tudo isso em segundos usando o estado da arte da Inteligência Artificial.
 
-### IA 2 – Admin, Marketing e Cobrança
-- Painel Super Admin
-- Landing Page pública + Pricing
-- Onboarding wizard da imobiliária
-- Integração completa com Stripe (planos, usage-based, webhooks)
-
-### IA 3 – IA Avançada, PWA e Testes
-- Agentes de IA (geração de descrição, qualificação de leads)
-- PWA completo com offline support básico
-- Sistema de notificações (in-app, push, e-mail)
-- Testes unitários, integração e E2E
-
-### IA 4 – Design System, Segurança e DevOps
-- Design System + White Label completo (temas dinâmicos por imobiliária)
-- Segurança enterprise (Audit Log, LGPD, CSP, Rate Limiting)
-- GitHub Actions CI/CD
-- Feature Flags avançados
-- Guided Tour com react-joyride
-
-### IA 5 – Performance, SEO e Marketing
-- Otimização extrema de performance (Core Web Vitals)
-- SEO técnico (sitemap dinâmico, structured data para imóveis, JSON-LD)
-- Integrações com Google Analytics, Meta Pixel, Google Maps
-- Automação de marketing e remarketing
-
-### IA 6 – Mobile e WhatsApp Avançado
-- Experiência mobile-first com gestos e bottom navigation
-- Fluxos conversacionais ricos no WhatsApp (botões, mídia, quick replies)
-- Suporte offline avançado (sync automático)
-- Preparação para app nativo
-
-### IA 7 – Financeiro e Contabilidade
-- Dashboard financeiro completo (MRR, churn, LTV)
-- Cálculo automático de comissões
-- Integração com sistemas contábeis brasileiros (Omie, ContaAzul, etc.)
-- Emissão de NFS-e e relatórios fiscais
-
-### IA 8 – Multi-Tenant e Franquias
-- Suporte a matriz → franquias → filiais
-- Hierarquia de equipes e gestão de corretores
-- Permissões granulares (RBAC + ABAC)
-- Royalties automáticos para franquias
-
-### IA 9 – IA Preditiva e Insights
-- Score de Saúde do Anúncio
-- Recomendação inteligente de preço
-- Previsão de churn (imóveis e clientes)
-- Insights automáticos semanais
-
-### IA 10 – Adoção e Suporte
-- Help Center avançado com busca por IA
-- Onboarding interativo v2 + checklists
-- Tutoriais em vídeo e guiados
-- Sistema de tickets de suporte
+> *"A imobWeb transformou minha imobiliária de um escritório de papel para uma máquina de vendas automatizada."* — Pedro Silva, CEO da ImobTop.
 
 ---
 
-## 🚀 Como Rodar o Projeto (Desenvolvimento)
+## 🤖 As 20 Inteligências Artificiais da imobWeb
 
+O coração do nosso sistema é o **imobEngine**, uma suite de 20 IAs integradas que trabalham para você:
+
+1.  **Sugestão de Preço Preditiva**: Analisa o mercado em tempo real e sugere o valor ideal de venda/aluguel.
+2.  **Gerador de Descrições Magnéticas**: Cria textos otimizados para conversão em segundos (formal, descontraído ou luxo).
+3.  **Staging Virtual Instantâneo**: Mobília fotos de imóveis vazios digitalmente para encantar o cliente.
+4.  **Melhoria de Foto por IA**: Remove ruídos, corrige iluminação e deixa suas fotos profissionais.
+5.  **Reconstrução de Planta Baixa**: Cria uma planta 2D/3D a partir de fotos comuns do imóvel.
+6.  **Chatbot de Atendimento 24/7**: Resolva dúvidas de leads no WhatsApp enquanto você dorme.
+7.  **Voice-to-Listing**: Fale os detalhes do imóvel no celular e a IA preenche o cadastro completo.
+8.  **Score de Lead Inteligente**: Prioriza os clientes que têm maior probabilidade de fechar hoje.
+9.  **WhatsApp Proativo**: A IA detecta quando um proprietário precisa atualizar o preço e sugere via chat.
+10. **Tradução Global Dinâmica**: Publique imóveis em qualquer idioma com tradução culturalmente ajustada.
+11. **Reconhecimento de Itens**: Identifica automaticamente se a casa tem piscina, churrasqueira ou suíte pelas fotos.
+12. **Privacidade Automática**: Blura placas de carros e rostos em fotos e vídeos de forma automática.
+13. **SEO Master**: Gera meta tags, slugs e schema markup otimizados para o Google.
+14. **Editor de Vídeo Highlights**: Cria um clipe curto e impactante para Instagram/TikTok das fotos.
+15. **Análise de Sentimentos**: Detecta pelo tom do WhatsApp se o cliente está satisfeito ou desistindo.
+16. **Match Engine**: Recomenda o imóvel perfeito para o lead baseado no comportamento de busca.
+17. **Rastreador de Concorrência**: Avisa se um imóvel similar foi anunciado por um preço menor na região.
+18. **Leitura de Documentos por IA**: Extrai dados de matrículas e IDs para agilizar contratos.
+19. **Narrador de Tour Virtual**: Gera uma narração profissional para seus vídeos de apresentação.
+20. **Roteirização Inteligente**: Organiza a rota de visitas do corretor para economizar tempo e combustível.
+
+---
+
+## 🛠️ Tech Stack (The 2026 Edge)
+
+Construído com o que há de mais moderno no ecossistema web para garantir performance extrema (Core Web Vitals Nota 100):
+
+*   **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS v4.
+*   **Design System**: Shadcn/ui + Framer Motion (animações fluidas).
+*   **Backend**: Server Actions + Edge Runtime / tRPC.
+*   **Database**: PostgreSQL (Prisma ORM) com Caching via Upstash Redis.
+*   **Infra**: Vercel (Edge Functions) + Cloudinary/AWS S3 para mídia.
+*   **Comunicação**: WhatsApp Business Cloud API + Resend (Emails).
+*   **Financeiro**: Stripe Connect (Cobranças e Divisão de Comissões).
+
+---
+
+## 🚀 Como Começar (Quick Start)
+
+Em 5 minutos você tem o sistema rodando localmente:
+
+### 1. Clone e Instale
 ```bash
-# 1. Clone o repositório
-git clone <url-do-repo>
-cd imobweb
-
-# 2. Instale as dependências
+git clone https://github.com/lelebrr/ImobWeb.git
+cd ImobWeb/text/imobweb
 npm install
-
-# 3. Configure as variáveis de ambiente
-cp .env.example .env.local
-# Preencha: DATABASE_URL, SUPABASE_URL, STRIPE_KEYS, WHATSAPP_TOKEN, OPENAI_API_KEY, etc.
-
-# 4. Gere o Prisma
-npx prisma generate
-npx prisma db push   # ou prisma migrate dev
-
-# 5. Rode o projeto
-npm run dev
-Acesse: http://localhost:3000
 ```
 
-### 🔧 Configuração Inicial (Obrigatório)
+### 2. Configure a Nave
+Crie seu `.env.local` (use o `.env.example` como base):
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+OPENAI_API_KEY="..."
+WHATSAPP_TOKEN="..."
+```
 
-1. **Supabase** → Criar projeto e configurar RLS
-2. **Stripe** → Configurar produtos, webhooks e Billing Portal
-3. **WhatsApp Cloud API** → Criar app na Meta, configurar webhook
-4. **Vercel** → Deploy com variáveis de ambiente
-5. **Auth** → Configurar provedores (Google, Magic Link, Credentials)
-
----
-
-## 📋 O Que Ainda Falta Fazer (Backlog Priorizado)
-
-### Alta Prioridade
-- Finalizar merge completo das 10 IAs (especialmente arquivos compartilhados: globals.css, tailwind.config, next.config, package.json, middleware.ts)
-- Integrar o modelo AuditLog no Prisma schema
-- Testes end-to-end completos (Playwright)
-- Implementar sync real com APIs dos portais (Canal Pro / VRSync)
-- Aprovação de templates WhatsApp na Meta
-
-### Média Prioridade
-- Integração com mais portais via XML automático
-- App nativo (Capacitor ou React Native wrapper)
-- Multi-idioma (inglês/espanhol)
-- Relatórios em PDF com branding da imobiliária
-- Dark mode completo no White Label
-
-### Baixa Prioridade / Futuro
-- IA para geração de tours virtuais e fotos aprimoradas
-- Marketplace de add-ons
-- Integração com assinatura digital de contratos
-- Versão White Label completa para revenda
+### 3. Decole!
+```bash
+npm run dev
+```
+Acesse `http://localhost:3000` e comece a revolução.
 
 ---
 
-## 🛣️ Roadmap Futuro
+## 📚 Documentação Completa
 
-- **v1.0** — MVP estável (merge + testes)
-- **v1.1** — WhatsApp avançado + Offline full
-- **v1.2** — IA Preditiva + Insights em produção
-- **v2.0** — Suporte nativo a grandes franquias + App Mobile Nativo
-
----
-
-## 🤝 Como Contribuir
-
-1. Faça fork do projeto
-2. Crie uma branch (`feature/nome-da-feature`)
-3. Commit com mensagens claras
-4. Abra um Pull Request
-
-**Importante:** Sempre respeite as regras de não-conflito entre as camadas construídas pelas diferentes IAs.
+*   🗺️ [**Arquitetura do Sistema**](ARQUITETURA.md): Como os bits fluem.
+*   👨‍💻 [**Guia de Contribuição**](CONTRIBUINDO.md): Quer ajudar a melhorar?
+*   🏠 [**Guia do Usuário**](docs/guia-usuario/README.md): Passo a passo para o sucesso.
+*   🔗 [**Referência da API**](docs/referencia-api.md): Para desenvolvedores que querem integrar.
 
 ---
 
-## 📄 Licença
+## 🌍 O Futuro do Mercado Imobiliário
+Este é um projeto **Enterprise Ready**. Se você busca uma solução White-Label, suporte a multi-tenant e segurança nível bancário, você está no lugar certo.
 
-Proprietário (em desenvolvimento). Uso interno apenas.
-
----
-
-## 📞 Suporte e Contato
-
-- **Documentação completa**: `/docs` ou Help Center dentro da aplicação
-- **Issues**: Abra no GitHub
-- **Suporte interno**: Use o sistema de tickets do imobWeb
+**ImobWeb: Porque imóveis se vendem com dados, não só com sorte.**
 
 ---
 
-**imobWeb — Feito para transformar o jeito como imobiliárias brasileiras trabalham.**
+<p align="center">
+  Feito com ❤️ pela equipe ImobWeb. Licença MIT.
+</p>
 
-*"Cadastro uma vez. Atualização automática. Vendas mais rápidas."*

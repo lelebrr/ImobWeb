@@ -1,108 +1,99 @@
 import sharp from 'sharp';
-import { PropertyImage } from '../../types/property';
 
 /**
- * imobWeb Media Engine - Advanced Image Processor
- * High-performance image optimization using Sharp (2026 Edition)
+ * IMAGE PROCESSOR ENGINE - IMOBWEB 2026
+ * Handles high-performance image optimization, AI enhancement placeholders,
+ * and multi-format generation (WebP, AVIF).
  */
 
-export interface OptimizationOptions {
+export interface OptimizeOptions {
   width?: number;
   height?: number;
   quality?: number;
-  format?: 'webp' | 'avif';
-  watermarkPath?: string;
-  autoCrop?: boolean;
+  format?: 'webp' | 'avif' | 'jpeg';
+  effort?: number; // CPU effort for compression (0-9)
 }
 
 export class ImageProcessor {
   /**
-   * Optimizes a raw image buffer
+   * Optimizes an image buffer for production delivery
    */
   static async optimize(
     buffer: Buffer,
-    options: OptimizationOptions = {}
+    options: OptimizeOptions = {}
   ): Promise<{ buffer: Buffer; info: sharp.OutputInfo }> {
     const {
-      width = 1200,
-      height = 800,
+      width,
+      height,
       quality = 80,
       format = 'webp',
-      autoCrop = true,
-      watermarkPath
+      effort = 4
     } = options;
 
     let pipeline = sharp(buffer);
 
-    // 1. Metadata Handling (Auto-rotate based on EXIF)
-    pipeline = pipeline.rotate();
-
-    // 2. Resizing & Cropping
-    if (autoCrop) {
+    // Resize if needed (maintains aspect ratio by default)
+    if (width || height) {
       pipeline = pipeline.resize(width, height, {
         fit: 'cover',
-        position: 'center',
+        withoutEnlargement: true
       });
-    } else {
-      pipeline = pipeline.resize(width, null, { fit: 'inside', withoutEnlargement: true });
     }
 
-    // 3. Watermarking (If provided)
-    if (watermarkPath) {
-      pipeline = pipeline.composite([
-        {
-          input: watermarkPath,
-          gravity: 'southeast',
-          blend: 'over',
-        },
-      ]);
-    }
+    // Auto-rotate based on EXIF
+    pipeline = pipeline.rotate();
 
-    // 4. Advanced Compression
-    if (format === 'avif') {
-      pipeline = pipeline.avif({ quality, effort: 4 });
-    } else {
-      pipeline = pipeline.webp({ quality, effort: 4 });
+    // Convert to requested format
+    switch (format) {
+      case 'avif':
+        pipeline = pipeline.avif({ quality, effort: effort as any });
+        break;
+      case 'webp':
+        pipeline = pipeline.webp({ quality, effort });
+        break;
+      default:
+        pipeline = pipeline.jpeg({ quality, mozjpeg: true });
     }
 
     const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
-
+    
     return { buffer: data, info };
   }
 
   /**
-   * Generates a high-quality blur placeholder (Base64)
+   * Generates a tiny blur placeholder base64 string
    */
   static async generateBlurPlaceholder(buffer: Buffer): Promise<string> {
-    const placeholder = await sharp(buffer)
-      .resize(20, 20, { fit: 'cover' })
-      .blur(5)
-      .webp({ quality: 20 })
+    const { data } = await sharp(buffer)
+      .resize(12, 12, { fit: 'inside' })
+      .blur(2)
+      .toBuffer({ resolveWithObject: true });
+
+    return `data:image/webp;base64,${data.toString('base64')}`;
+  }
+
+  /**
+   * AI ENHANCEMENT PLACEHOLDER
+   * In a real 2026 scenario, this would call specialized ML models.
+   */
+  static async aiEnhance(buffer: Buffer): Promise<Buffer> {
+    // Simulated AI Enhancement: Adjusting brightness, contrast, and sharpening
+    return await sharp(buffer)
+      .modulate({ brightness: 1.05, saturation: 1.1 })
+      .sharpen()
       .toBuffer();
-
-    return `data:image/webp;base64,${placeholder.toString('base64')}`;
   }
 
   /**
-   * AI-Simulated Quality Assessment
-   * In production, this would call a vision model (e.g., OpenAI or Custom)
+   * Detects property type or room type from image
    */
-  static async assessQuality(buffer: Buffer): Promise<number> {
-    const stats = await sharp(buffer).stats();
-    
-    // Simple heuristic: complexity + sharpness estimation
-    const entropy = stats.channels[0].stdev; 
-    const score = Math.min(100, Math.max(0, (entropy / 64) * 100));
-    
-    return Math.round(score);
-  }
-
-  /**
-   * Auto-detection of Property Type from images (Placeholder)
-   */
-  static async detectPropertyType(buffer: Buffer): Promise<string[]> {
-    // This is where integration with CLIP or similar models happens
-    // For now, return placeholders
-    return ['RESIDENTIAL', 'MODERN_KITCHEN', 'HIGH_CEILING'];
+  static async aiAnalyze(buffer: Buffer) {
+    // Placeholder for vision model analysis (OpenAI / Gemini / Custom)
+    return {
+      detectedType: 'Living Room',
+      qualityScore: 0.95,
+      labels: ['modern', 'well-lit', 'spacious'],
+      description: 'A modern living room with large windows and hardwood floors.'
+    };
   }
 }
