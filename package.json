@@ -20,7 +20,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:seed:users": "tsx scripts/create-test-users.ts",
+    "db:seed:users": "tsx -r dotenv/config scripts/create-test-users.ts",
     "analyze": "ANALYZE=true next build",
     "postbuild": "next-sitemap --config next-sitemap.config.js"
   },
@@ -59,6 +59,7 @@
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
     "dexie": "^4.4.2",
+    "dotenv": "^16.4.0",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",

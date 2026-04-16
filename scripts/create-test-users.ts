@@ -1,4 +1,8 @@
+import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
+
+console.log("URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20));
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -8,6 +12,7 @@ async function createTestUsers() {
     console.error(
       "❌ Variables NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required",
     );
+    console.log("ENV file loaded:", process.env.ENV_LOADED);
     process.exit(1);
   }
 
