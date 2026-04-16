@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Clock, 
-  Tag, 
+import {
+  ArrowLeft,
+  Clock,
+  Tag,
   ChevronRight,
   ThumbsUp,
   ThumbsDown,
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { HelpCenterEngine } from '@/lib/help/help-center';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { ImageOptimized } from '@/components/performance/ImageOptimized';
 
 /**
  * Página de Detalhe do Artigo de Ajuda.
@@ -55,9 +56,9 @@ export default function ArticleDetailPage() {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Navigation Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => router.back()}
             className="p-0 hover:bg-transparent text-slate-400 hover:text-white"
           >
@@ -96,7 +97,7 @@ export default function ArticleDetailPage() {
 
         {/* Article Content (Mock MDX Rendering) */}
         <article className="prose prose-invert prose-indigo max-w-none">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="space-y-6 text-slate-300 leading-relaxed text-lg"
@@ -104,23 +105,29 @@ export default function ArticleDetailPage() {
             <p className="text-xl text-slate-100 font-medium italic">
               {article.excerpt}
             </p>
-            
+
             <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-4">
-               <h3 className="text-white font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-indigo-400" />
-                  O que você vai aprender
-               </h3>
-               <ul className="list-disc list-inside space-y-2 text-sm text-slate-400">
-                  <li>Configuração visual da sua marca</li>
-                  <li>Integração de domínios customizados</li>
-                  <li>Atribuição de corretores por região</li>
-               </ul>
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-indigo-400" />
+                O que você vai aprender
+              </h3>
+              <ul className="list-disc list-inside space-y-2 text-sm text-slate-400">
+                <li>Configuração visual da sua marca</li>
+                <li>Integração de domínios customizados</li>
+                <li>Atribuição de corretores por região</li>
+              </ul>
             </div>
 
             <p>{article.content}</p>
-            
+
             <div className="aspect-video bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center overflow-hidden">
-               <img src={`https://placehold.co/800x450/0f172a/6366f1?text=Tutorial+${article.slug}`} alt="Placeholder" className="w-full h-full object-cover opacity-50" />
+              <ImageOptimized
+                src={`https://placehold.co/800x450/0f172a/6366f1?text=Tutorial+${article.slug}`}
+                alt="Placeholder"
+                width={800}
+                height={450}
+                className="object-cover opacity-50"
+              />
             </div>
 
             <p>
@@ -137,16 +144,16 @@ export default function ArticleDetailPage() {
               <p className="text-sm text-slate-500">Ajude-nos a melhorar nossa base de conhecimento.</p>
             </div>
             <div className="flex gap-4">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => { setLiked(true); toast.success('Obrigado pelo feedback!'); }}
                 className={`border-slate-800 gap-2 h-12 px-6 ${liked === true ? 'bg-emerald-500/10 border-emerald-500' : ''}`}
               >
                 <ThumbsUp className={`w-4 h-4 ${liked === true ? 'text-emerald-500' : ''}`} />
                 Sim
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => { setLiked(false); toast.error('Lamentamos. Vamos melhorar este conteúdo.'); }}
                 className={`border-slate-800 gap-2 h-12 px-6 ${liked === false ? 'bg-rose-500/10 border-rose-500' : ''}`}
               >

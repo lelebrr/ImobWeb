@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { 
-  Users, 
-  User, 
-  ChevronDown, 
-  ChevronRight, 
-  Mail, 
-  Phone, 
+import {
+  Users,
+  User,
+  ChevronDown,
+  ChevronRight,
+  Mail,
+  Phone,
   Building2,
   Award,
   TrendingUp,
@@ -16,6 +16,7 @@ import {
   Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ImageOptimized } from '@/components/performance/ImageOptimized';
 
 interface TeamMember {
   id: string;
@@ -45,12 +46,12 @@ interface TeamHierarchyProps {
   className?: string;
 }
 
-export function TeamHierarchy({ 
-  members, 
+export function TeamHierarchy({
+  members,
   onMemberClick,
   onInviteClick,
   onManageClick,
-  className 
+  className
 }: TeamHierarchyProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
@@ -100,10 +101,10 @@ export function TeamHierarchy({
               )}
             </button>
           )}
-          
+
           {!hasChildren && <div className="w-6" />}
 
-          <div 
+          <div
             onClick={() => handleMemberClick(member)}
             className="flex items-center gap-3 flex-1 min-w-0"
           >
@@ -115,7 +116,20 @@ export function TeamHierarchy({
               member.level === 3 && "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
             )}>
               {member.avatar ? (
-                <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                <ImageOptimized
+                  src={member.avatar}
+                  alt={member.name}
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                  containerClassName={cn(
+                    "bg-transparent",
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
+                    "hover:bg-muted/50",
+                    isSelected && "bg-primary/10 border border-primary/30",
+                    index === 0 && "ml-0"
+                  )}
+                />
               ) : (
                 member.name.charAt(0).toUpperCase()
               )}
@@ -187,11 +201,11 @@ export function TeamHierarchy({
   const stats = useMemo(() => {
     const total = members.length;
     const active = members.filter(m => m.status === 'active').length;
-    const topPerformer = members.reduce((best, m) => 
-      (!best.performance || (m.performance && m.performance.score > best.performance.score)) ? m : best, 
+    const topPerformer = members.reduce((best, m) =>
+      (!best.performance || (m.performance && m.performance.score > best.performance.score)) ? m : best,
       members[0]
     );
-    
+
     return { total, active, topPerformer };
   }, [members]);
 
@@ -250,7 +264,7 @@ export function TeamHierarchy({
 
 export function TeamMemberCard({ member, onClick }: { member: TeamMember; onClick?: () => void }) {
   return (
-    <div 
+    <div
       onClick={onClick}
       className="p-4 border rounded-lg hover:border-primary/50 transition-all cursor-pointer bg-card"
     >
@@ -263,9 +277,31 @@ export function TeamMemberCard({ member, onClick }: { member: TeamMember; onClic
           member.level === 3 && "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
         )}>
           {member.avatar ? (
-            <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+            <ImageOptimized
+              src={member.avatar}
+              alt={member.name}
+              width={48}
+              height={48}
+              className="object-cover"
+              containerClassName={cn(
+                "bg-transparent",
+                "w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold",
+                member.level === 0 && "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+                member.level === 1 && "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+                member.level === 2 && "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+                member.level === 3 && "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+              )}
+            />
           ) : (
-            member.name.charAt(0).toUpperCase()
+            <div className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold",
+              member.level === 0 && "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+              member.level === 1 && "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+              member.level === 2 && "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+              member.level === 3 && "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+            )}>
+              {member.name.charAt(0).toUpperCase()}
+            </div>
           )}
         </div>
 
@@ -280,7 +316,7 @@ export function TeamMemberCard({ member, onClick }: { member: TeamMember; onClic
               </div>
             )}
           </div>
-          
+
           <p className="text-sm text-muted-foreground">{member.role}</p>
 
           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -321,11 +357,11 @@ export function TeamMemberCard({ member, onClick }: { member: TeamMember; onClic
 export function TeamStatsGrid({ members }: { members: TeamMember[] }) {
   const stats = useMemo(() => {
     const active = members.filter(m => m.status === 'active');
-    
+
     const totalProperties = active.reduce((sum, m) => sum + (m.performance?.propertiesCreated || 0), 0);
     const totalLeads = active.reduce((sum, m) => sum + (m.performance?.leadsConverted || 0), 0);
-    const avgScore = active.length > 0 
-      ? active.reduce((sum, m) => sum + (m.performance?.score || 0), 0) / active.length 
+    const avgScore = active.length > 0
+      ? active.reduce((sum, m) => sum + (m.performance?.score || 0), 0) / active.length
       : 0;
     const totalRevenue = active.reduce((sum, m) => sum + (m.performance?.revenue || 0), 0);
 

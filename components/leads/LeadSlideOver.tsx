@@ -5,6 +5,7 @@ import { X, Phone, Mail, MessageSquare, History, Tag, User, MapPin } from 'lucid
 import { Button } from '@/components/design-system/button'
 import { Badge } from '@/components/design-system/badge'
 import { InboxPreview } from './InboxPreview'
+import { ImageOptimized } from '@/components/performance/ImageOptimized'
 
 interface LeadSlideOverProps {
   isOpen: boolean
@@ -24,7 +25,7 @@ export function LeadSlideOver({ isOpen, onClose, lead }: LeadSlideOverProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      
+
       <div className="absolute inset-y-0 right-0 flex max-w-full">
         <div className="w-screen max-w-4xl transform transition duration-500 ease-in-out">
           <div className="flex h-full flex-col bg-slate-900/90 backdrop-blur-3xl shadow-2xl border-l border-white/5">
@@ -39,7 +40,7 @@ export function LeadSlideOver({ isOpen, onClose, lead }: LeadSlideOverProps) {
             {/* Content Container */}
             <div className="flex-1 overflow-y-auto p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-                
+
                 {/* Profile Info */}
                 <div className="space-y-8">
                   <div className="flex flex-col items-center p-8 bg-white/5 rounded-3xl border border-white/5 text-center">
@@ -57,33 +58,38 @@ export function LeadSlideOver({ isOpen, onClose, lead }: LeadSlideOverProps) {
                   <div className="space-y-4">
                     <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground ml-1">Informações de Contato</h4>
                     <div className="grid grid-cols-1 gap-3">
-                       <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
-                          <Phone className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
-                          <span className="font-bold">{lead.phone || 'Não informado'}</span>
-                       </Button>
-                       <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
-                          <Mail className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
-                          <span className="font-bold">{lead.email || 'Não informado'}</span>
-                       </Button>
-                       <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
-                          <MessageSquare className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
-                          <span className="font-bold">Chat WhatsApp Ativo</span>
-                       </Button>
+                      <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
+                        <Phone className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                        <span className="font-bold">{lead.phone || 'Não informado'}</span>
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
+                        <Mail className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                        <span className="font-bold">{lead.email || 'Não informado'}</span>
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start h-14 glass border-none rounded-2xl group">
+                        <MessageSquare className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                        <span className="font-bold">Chat WhatsApp Ativo</span>
+                      </Button>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground ml-1">Imóvel de Interesse</h4>
                     <div className="p-5 bg-white/5 rounded-3xl border border-white/5 flex gap-4 items-center">
-                       <div className="w-16 h-16 rounded-2xl bg-muted overflow-hidden">
-                          <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=200" alt="Imovel" className="w-full h-full object-cover" />
-                       </div>
-                       <div>
-                          <p className="font-black text-sm leading-tight">{lead.propertyInterest}</p>
-                          <p className="text-muted-foreground text-[10px] font-bold mt-1 uppercase flex items-center gap-1">
-                             <MapPin className="w-3 h-3" /> Itaim Bibi, SP
-                          </p>
-                       </div>
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden">
+                        <ImageOptimized
+                          src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=200"
+                          alt="Imovel"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div>
+                        <p className="font-black text-sm leading-tight">{lead.propertyInterest}</p>
+                        <p className="text-muted-foreground text-[10px] font-bold mt-1 uppercase flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> Itaim Bibi, SP
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -98,11 +104,11 @@ export function LeadSlideOver({ isOpen, onClose, lead }: LeadSlideOverProps) {
 
               </div>
             </div>
-            
+
             {/* Footer Actions */}
             <div className="p-6 border-t border-white/5 bg-white/5 flex gap-3">
-               <Button variant="outline" className="glass border-none h-14 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest">Descartar Lead</Button>
-               <Button className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">Avançar para Visita</Button>
+              <Button variant="outline" className="glass border-none h-14 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest">Descartar Lead</Button>
+              <Button className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">Avançar para Visita</Button>
             </div>
           </div>
         </div>

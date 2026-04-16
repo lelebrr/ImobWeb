@@ -133,8 +133,8 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' https://app.posthog.com https://us.i.posthog.com https://va.vercel-scripts.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
+              "style-src 'self' 'unsafe-inline'",
+              "font-src 'self'",
               "img-src 'self' blob: data: https: https://app.posthog.com",
               "media-src 'self' blob:",
               "connect-src 'self' https://*.supabase.co https://api.stripe.com https://api.openai.com https://app.posthog.com https://us.i.posthog.com https://va.vercel-scripts.com",

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 interface ImageOptimizedProps extends Omit<ImageProps, "onLoad" | "onError"> {
   fallbackSrc?: string;
   containerClassName?: string;
+  fill?: boolean;
 }
 
 export function ImageOptimized({
@@ -24,6 +25,7 @@ export function ImageOptimized({
   containerClassName,
   fallbackSrc = "/images/property-placeholder.jpg",
   priority = false,
+  fill = false,
   ...props
 }: ImageOptimizedProps) {
   const [isLoading, setLoading] = useState(true);
@@ -40,8 +42,9 @@ export function ImageOptimized({
       <Image
         src={error ? fallbackSrc : src}
         alt={alt}
-        width={width}
-        height={height}
+        width={fill ? undefined : width}
+        height={fill ? undefined : height}
+        fill={fill}
         className={cn(
           "duration-700 ease-in-out",
           isLoading ? "scale-105 blur-lg grayscale" : "scale-100 blur-0 grayscale-0",
@@ -55,7 +58,7 @@ export function ImageOptimized({
         quality={props.quality || 85}
         {...props}
       />
-      
+
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100/10 backdrop-blur-sm">
           {/* Otimização visual durante o carregamento */}

@@ -191,6 +191,18 @@ export default function ExecutiveDashboard() {
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Activity className="h-8 w-8 text-muted-foreground opacity-20" />
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground opacity-40">Nenhum dado disponível</p>
+        <Button variant="outline" className="text-xs" onClick={fetchStatsAndConfig}>
+          <RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+
   const activeKpis = DASHBOARD_WIDGETS.filter(w => w.type === 'stat' && visibleWidgets.includes(w.id));
   const activeCharts = DASHBOARD_WIDGETS.filter(w => w.type !== 'stat' && visibleWidgets.includes(w.id));
 

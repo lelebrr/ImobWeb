@@ -11,6 +11,7 @@ import { UserRole } from '@/types/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSidebarStore } from '@/hooks/use-sidebar';
+import { ImageOptimized } from '@/components/performance/ImageOptimized';
 
 interface SidebarProps {
   role: UserRole;
@@ -70,7 +71,15 @@ export function Sidebar({ role, logoUrl, tenantName = 'ImobWeb' }: SidebarProps)
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
           <Link href="/" className="flex items-center gap-3 overflow-hidden">
             {logoUrl ? (
-              <img src={logoUrl} alt={tenantName} className="h-8 w-auto shrink-0" />
+              <ImageOptimized
+                src={logoUrl}
+                alt={tenantName}
+                width={32}
+                height={32}
+                className="h-8 w-auto shrink-0"
+                containerClassName=""
+                priority={true}
+              />
             ) : (
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold font-heading">
                 {tenantName.substring(0, 1).toUpperCase()}
@@ -99,37 +108,37 @@ export function Sidebar({ role, logoUrl, tenantName = 'ImobWeb' }: SidebarProps)
                     <div className="h-px w-8 bg-border" />
                   </div>
                 )}
-                
+
                 <div className="flex flex-col gap-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                    
+
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
                         className={cn(
                           "relative flex items-center justify-center lg:justify-start gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                          isActive 
-                            ? "bg-primary/10 text-primary" 
+                          isActive
+                            ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                           isCollapsed ? "justify-center" : "justify-start"
                         )}
                         title={isCollapsed ? item.title : undefined}
                       >
                         {isActive && (
-                          <motion.div 
+                          <motion.div
                             layoutId="activeNav"
                             className="absolute left-0 w-1 h-full bg-primary rounded-r-full"
                           />
                         )}
                         <Icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary")} />
-                        
+
                         {!isCollapsed && (
                           <span className="flex-1 truncate">{item.title}</span>
                         )}
-                        
+
                         {item.badge && !isCollapsed && (
                           <span className="ml-auto flex h-5 items-center justify-center rounded-full bg-primary/20 px-2 text-[10px] font-semibold text-primary">
                             {item.badge}
@@ -156,12 +165,12 @@ export function Sidebar({ role, logoUrl, tenantName = 'ImobWeb' }: SidebarProps)
           </Button>
         </div>
       </motion.aside>
-      
+
       {/* Mobile Trigger overlay inside global Topbar typically, kept here for standalone functionality if needed */}
       <div className="lg:hidden fixed bottom-4 right-4 z-50">
-          <Button size="icon" className="rounded-full shadow-lg" onClick={() => setIsMobileOpen(true)}>
-             <Menu />
-          </Button>
+        <Button size="icon" className="rounded-full shadow-lg" onClick={() => setIsMobileOpen(true)}>
+          <Menu />
+        </Button>
       </div>
     </>
   );
