@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/design-system/button";
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, loading: authLoading, isAuthenticated } = useAuth();
@@ -32,7 +32,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("User authenticated, redirecting to:", redirectTo);
       router.push(redirectTo);
     }
   }, [isAuthenticated, redirectTo, router]);
@@ -43,11 +42,8 @@ export default function LoginPage() {
     setError("");
 
     try {
-      console.log("Attempting login with:", email);
       await signIn({ email, password });
-      console.log("Login successful");
     } catch (err: any) {
-      console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
     } finally {
       setIsLoading(false);
@@ -56,12 +52,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-dashboard-gradient">
-      {/* Decorative Backglow */}
       <div className="hero-glow top-[-10%] left-[-10%] scale-150" />
       <div className="hero-glow bottom-[-10%] right-[-10%] scale-150 opacity-30" />
 
       <div className="w-full max-w-[1100px] grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-        {/* Branding Side */}
         <div className="hidden lg:flex flex-col space-y-8 p-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/20">
@@ -92,17 +86,6 @@ export default function LoginPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold text-lg">WhatsApp IA Automático</p>
-                <p className="text-muted-foreground font-medium">
-                  Nossa IA atende seus leads em segundos, 24/7.
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="pt-8 flex items-center gap-2 text-sm font-bold text-muted-foreground opacity-60">
@@ -111,8 +94,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Login Form Side */}
-        <Card className="glass border-none shadow-2xl overflow-hidden animate-in fade-in slide-in-from-right-8 duration-700">
+        <Card className="glass border-none shadow-2xl overflow-hidden">
           <CardContent className="p-8 md:p-12">
             <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -133,7 +115,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold animate-shake">
+              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold">
                 {error}
               </div>
             )}
@@ -211,22 +193,38 @@ export default function LoginPage() {
                   </>
                 )}
               </Button>
-            </form>
 
-            <div className="mt-8 pt-8 border-t border-border/50 text-center">
-              <p className="text-sm text-muted-foreground font-medium">
-                Novo na plataforma?{" "}
+              <div className="text-center pt-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Não tem conta?{" "}
+                </span>
                 <Link
                   href="/register"
-                  className="text-primary font-black hover:underline"
+                  className="text-sm font-black text-primary hover:underline"
                 >
-                  Criar Conta Elite
+                  Cadastre-se
                 </Link>
-              </p>
-            </div>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+function LoginLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-dashboard-gradient">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginForm />
+    </Suspense>
   );
 }
