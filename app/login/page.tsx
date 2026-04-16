@@ -2,9 +2,8 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader2, Building2, ShieldCheck, ArrowRight } from "lucide-react";
+import { Loader2, Building2, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,10 +31,10 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Credenciais inválidas");
+        setError(result.error || "Credenciais inválidas");
         setIsLoading(false);
         return;
       }
@@ -51,94 +50,52 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden">
+      {/* LEFT SIDE - ILLUSTRATION */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(at_center,#10b98120_0%,transparent_70%)]" />
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="absolute inset-0 flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1 }}
+          className="relative z-10 text-center"
         >
-          <div className="relative w-[520px] h-[520px]">
-            <motion.div
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute left-12 top-12 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl w-96 h-[520px] overflow-hidden"
-            >
-              <div className="bg-emerald-600 h-10 flex items-center px-4 text-white text-xs font-medium">
-                imobWeb • Dashboard
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="h-8 bg-white/10 rounded-2xl" />
-                <div className="grid grid-cols-3 gap-3">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="h-24 bg-white/10 rounded-3xl" />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+          <div className="flex justify-center mb-8">
+            <div className="w-24 h-24 bg-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl">
+              <span className="text-white text-5xl font-bold">iW</span>
+            </div>
+          </div>
 
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="absolute -top-6 -right-6 text-emerald-400"
-            >
-              <Building2 size={80} />
-            </motion.div>
+          <h1 className="text-5xl font-bold text-white leading-tight max-w-md">
+            O CRM que <span className="text-emerald-400">realmente</span> vende
+            imóveis
+          </h1>
+          <p className="mt-6 text-xl text-white/70 max-w-xs mx-auto">
+            Cadastro único • WhatsApp automático • Vendas mais rápidas
+          </p>
 
-            <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute bottom-12 left-12 text-white"
-            >
-              <ShieldCheck size={64} className="drop-shadow-2xl" />
-            </motion.div>
+          <div className="mt-16 flex justify-center gap-8 text-white/60">
+            <div className="flex items-center gap-2">
+              <Building2 size={28} />
+              <span className="text-sm">Imobiliárias</span>
+            </div>
           </div>
         </motion.div>
-
-        <div className="absolute bottom-12 left-12 text-white max-w-xs">
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-5xl font-bold leading-tight"
-          >
-            O CRM que <span className="text-emerald-400">realmente</span> vende
-            imóveis.
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
-            className="mt-4 text-lg text-white/70"
-          >
-            Cadastro único. WhatsApp automático. Vendas mais rápidas.
-          </motion.p>
-        </div>
-
-        <div className="absolute top-8 left-8 flex items-center gap-3 text-white">
-          <div className="w-9 h-9 bg-emerald-600 rounded-2xl flex items-center justify-center">
-            <span className="font-bold text-xl">iW</span>
-          </div>
-          <span className="text-2xl font-semibold tracking-tight">imobWeb</span>
-        </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
+      {/* RIGHT SIDE - FORM */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-white">
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
           className="w-full max-w-md"
         >
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-slate-900">
-              Olá, seja bem-vindo!
+          <div className="mb-10">
+            <h2 className="text-3xl font-semibold text-slate-900">
+              Bem-vindo de volta
             </h2>
-            <p className="text-slate-600 mt-2">
-              Faça login para acessar sua conta
-            </p>
+            <p className="text-slate-600 mt-2">Faça login para continuar</p>
           </div>
 
           {error && (
@@ -148,36 +105,32 @@ function LoginForm() {
           )}
 
           <form onSubmit={onSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail profissional</Label>
+            <div>
+              <Label htmlFor="email" className="text-slate-700">
+                E-mail
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-14 text-base"
+                className="h-14 mt-2 text-base"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password">Senha</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-emerald-600 hover:underline"
-                >
-                  Esqueceu?
-                </Link>
-              </div>
+            <div>
+              <Label htmlFor="password" className="text-slate-700">
+                Senha
+              </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-14 text-base"
+                className="h-14 mt-2 text-base"
                 required
               />
             </div>
@@ -185,7 +138,7 @@ function LoginForm() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-500/30"
+              className="w-full h-14 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 shadow-lg"
             >
               {isLoading ? (
                 <>
@@ -194,21 +147,20 @@ function LoginForm() {
                 </>
               ) : (
                 <>
-                  Acessar meu Dashboard
+                  Acessar Dashboard
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
             </Button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-slate-500">
-            Ainda não tem conta?{" "}
-            <Link
+          <div className="mt-8 text-center">
+            <a
               href="/register"
-              className="font-medium text-emerald-600 hover:underline"
+              className="text-emerald-600 hover:underline text-sm"
             >
-              Criar conta gratuita
-            </Link>
+              Ainda não tem conta? Criar conta gratuita
+            </a>
           </div>
         </motion.div>
       </div>
