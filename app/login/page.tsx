@@ -2,9 +2,6 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 function LoginForm() {
   const router = useRouter();
@@ -32,72 +29,64 @@ function LoginForm() {
 
       if (!res.ok) {
         setError(data.error || "Login falhou");
-        setIsLoading(false);
         return;
       }
 
+      alert("Login realizado com sucesso! Redirecionando...");
       router.push(redirectTo);
+      router.refresh();
     } catch (err) {
-      setError("Falha na conexão");
+      setError("Erro de conexão com o servidor");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl"
-      >
-        <h1 className="text-3xl font-bold text-center mb-8">Login imobWeb</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center mb-8">imobWeb Login</h1>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <Label>E-mail</Label>
-            <Input
+            <label className="block text-sm font-medium mb-1">E-mail</label>
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1"
-              required
+              className="w-full p-4 border rounded-xl"
             />
           </div>
 
           <div>
-            <Label>Senha</Label>
-            <Input
+            <label className="block text-sm font-medium mb-1">Senha</label>
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1"
-              required
+              className="w-full p-4 border rounded-xl"
             />
           </div>
 
-          <Button
+          {error && <p className="text-red-500 text-center">{error}</p>}
+
+          <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 text-lg"
+            className="w-full bg-emerald-600 text-white py-4 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50"
           >
             {isLoading ? "Entrando..." : "Acessar Dashboard"}
-          </Button>
-        </div>
-      </form>
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-lg">Carregando...</div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div>Carregando...</div>
     </div>
   );
 }
