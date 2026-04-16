@@ -65,12 +65,18 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
   const isPublic = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route))
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   // Redirecionar para login se não autenticado e tentando acessar rota protegida
-  // Nota: A verificação de sessão foi removida devido a problemas com o Supabase SSR
-  if (isProtected) {
+  if (isProtected && !user) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Redirecionar para dashboard se já autenticado e tentando acessar login/register
+  if ((pathname === '/login' || pathname === '/register') && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Redirecionar para dashboard se já autenticado e tentando acessar login/register
