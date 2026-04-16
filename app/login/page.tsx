@@ -8,15 +8,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
-  const [email, setEmail] = useState("admin@imobweb.com.br");
-  const [password, setPassword] = useState("admin123");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [email] = useState("admin@imobweb.com.br");
+  const [password] = useState("admin123");
+  const [status, setStatus] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+  const handleLogin = async () => {
+    setStatus("Enviando requisição...");
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -26,72 +23,39 @@ function LoginForm() {
       });
 
       const data = await res.json();
+      console.log("Resposta da API:", data);
 
-      if (!res.ok) {
-        setError(data.error || "E-mail ou senha incorretos");
-        return;
+      if (res.ok) {
+        setStatus("Login OK - Redirecionando agora...");
+        window.location.href = redirectTo;
+      } else {
+        setStatus(`Erro: ${data.error || "Falha no login"}`);
       }
-
-      console.log("Login OK - Redirecionando para:", redirectTo);
-
-      window.location.href = redirectTo;
     } catch (err) {
-      console.error(err);
-      setError("Erro ao conectar com o servidor");
-    } finally {
-      setIsLoading(false);
+      console.error("Erro no fetch:", err);
+      setStatus("Erro de conexão com o servidor");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-slate-900">imobWeb</h1>
-          <p className="text-slate-600 mt-2">Faça login para continuar</p>
-        </div>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full text-center">
+        <h1 className="text-4xl font-bold mb-8">imobWeb Login</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Senha
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500"
-              required
-            />
-          </div>
-
-          {error && <p className="text-red-500 text-center text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-4 rounded-2xl transition-all"
-          >
-            {isLoading ? "Entrando..." : "Entrar no Dashboard"}
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-slate-500 mt-8">
-          Teste: admin@imobweb.com.br / admin123
+        <p className="mb-6 text-gray-600">
+          Tentando login com:
+          <br />
+          <strong>admin@imobweb.com.br</strong> / <strong>admin123</strong>
         </p>
+
+        <button
+          onClick={handleLogin}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-medium text-lg"
+        >
+          CLICAR PARA FAZER LOGIN
+        </button>
+
+        <p className="mt-8 text-sm text-gray-500">Status: {status}</p>
       </div>
     </div>
   );
@@ -99,7 +63,7 @@ function LoginForm() {
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div>Carregando...</div>
     </div>
   );
