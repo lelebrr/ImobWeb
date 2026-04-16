@@ -1,32 +1,26 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { Loader2, Building2, ShieldCheck, ArrowRight } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Mail,
-  Lock,
-  ArrowRight,
-  Loader2,
-  Zap,
-  ShieldCheck,
-  Globe,
-} from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
   const [email, setEmail] = useState("admin@imobweb.com.br");
   const [password, setPassword] = useState("admin123");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -41,177 +35,182 @@ function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        setError(data.error || "Credenciais inválidas");
+        setIsLoading(false);
+        return;
       }
 
-      // Reload to pick up new session
-      window.location.href = "/dashboard";
+      router.push(redirectTo);
+      router.refresh();
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Credenciais inválidas. Tente novamente.");
+      setError("Erro ao conectar. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-dashboard-gradient">
-      <div className="hero-glow top-[-10%] left-[-10%] scale-150" />
-      <div className="hero-glow bottom-[-10%] right-[-10%] scale-150 opacity-30" />
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(at_center,#10b98120_0%,transparent_70%)]" />
 
-      <div className="w-full max-w-[1100px] grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-        <div className="hidden lg:flex flex-col space-y-8 p-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/20">
-              <Zap className="w-7 h-7 text-white fill-white" />
-            </div>
-            <span className="text-4xl font-black tracking-tighter text-gradient">
-              imobWeb
-            </span>
-          </div>
-
-          <h1 className="text-5xl font-black tracking-tighter leading-none">
-            A Inteligência que seu <br />
-            <span className="text-primary italic">
-              Negócio Imobiliário
-            </span>{" "}
-            merece.
-          </h1>
-
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-primary" />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="relative w-[520px] h-[520px]">
+            <motion.div
+              animate={{ y: [0, -15, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute left-12 top-12 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl w-96 h-[520px] overflow-hidden"
+            >
+              <div className="bg-emerald-600 h-10 flex items-center px-4 text-white text-xs font-medium">
+                imobWeb • Dashboard
               </div>
-              <div>
-                <p className="font-bold text-lg">Multi-Portal Sync</p>
-                <p className="text-muted-foreground font-medium">
-                  Cadastre 1x e publique em todos os portais automaticamente.
-                </p>
+              <div className="p-6 space-y-6">
+                <div className="h-8 bg-white/10 rounded-2xl" />
+                <div className="grid grid-cols-3 gap-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-24 bg-white/10 rounded-3xl" />
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="pt-8 flex items-center gap-2 text-sm font-bold text-muted-foreground opacity-60">
-            <ShieldCheck className="w-4 h-4" />
-            Plataforma Blindada & LGPD Compliant
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-6 -right-6 text-emerald-400"
+            >
+              <Building2 size={80} />
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute bottom-12 left-12 text-white"
+            >
+              <ShieldCheck size={64} className="drop-shadow-2xl" />
+            </motion.div>
           </div>
+        </motion.div>
+
+        <div className="absolute bottom-12 left-12 text-white max-w-xs">
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-5xl font-bold leading-tight"
+          >
+            O CRM que <span className="text-emerald-400">realmente</span> vende
+            imóveis.
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="mt-4 text-lg text-white/70"
+          >
+            Cadastro único. WhatsApp automático. Vendas mais rápidas.
+          </motion.p>
         </div>
 
-        <Card className="glass border-none shadow-2xl overflow-hidden">
-          <CardContent className="p-8 md:p-12">
-            <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white fill-white" />
-              </div>
-              <span className="text-2xl font-black tracking-tighter">
-                imobWeb
-              </span>
+        <div className="absolute top-8 left-8 flex items-center gap-3 text-white">
+          <div className="w-9 h-9 bg-emerald-600 rounded-2xl flex items-center justify-center">
+            <span className="font-bold text-xl">iW</span>
+          </div>
+          <span className="text-2xl font-semibold tracking-tight">imobWeb</span>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-md"
+        >
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-3xl font-bold text-slate-900">
+              Olá, seja bem-vindo!
+            </h2>
+            <p className="text-slate-600 mt-2">
+              Faça login para acessar sua conta
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail profissional</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-14 text-base"
+                required
+              />
             </div>
 
-            <div className="mb-8 text-center lg:text-left">
-              <h2 className="text-3xl font-black tracking-tighter">
-                Login de Acesso
-              </h2>
-              <p className="text-muted-foreground font-medium">
-                Insira suas credenciais para gerenciar sua carteira.
-              </p>
-            </div>
-
-            {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="font-black uppercase text-[10px] tracking-widest ml-1 text-muted-foreground"
-                >
-                  Email Profissional
-                </Label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="nome@empresa.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
-                    required
-                    disabled={isLoading}
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center ml-1">
-                  <Label
-                    htmlFor="password"
-                    className="font-black uppercase text-[10px] tracking-widest text-muted-foreground"
-                  >
-                    Senha Secreta
-                  </Label>
-                  <Link
-                    href="/forgot-password"
-                    title="Recuperar senha"
-                    className="text-[10px] font-black uppercase text-primary hover:underline"
-                  >
-                    Esqueceu?
-                  </Link>
-                </div>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
-                    required
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                  />
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-14 text-lg font-black shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Autenticando...
-                  </>
-                ) : (
-                  <>
-                    Acessar Dashboard
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-
-              <div className="text-center pt-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Não tem conta?{" "}
-                </span>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Senha</Label>
                 <Link
-                  href="/register"
-                  className="text-sm font-black text-primary hover:underline"
+                  href="/forgot-password"
+                  className="text-sm text-emerald-600 hover:underline"
                 >
-                  Cadastre-se
+                  Esqueceu?
                 </Link>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-14 text-base"
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-14 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-500/30"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                  Entrando na plataforma...
+                </>
+              ) : (
+                <>
+                  Acessar meu Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-8 text-center text-sm text-slate-500">
+            Ainda não tem conta?{" "}
+            <Link
+              href="/register"
+              className="font-medium text-emerald-600 hover:underline"
+            >
+              Criar conta gratuita
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -219,8 +218,8 @@ function LoginForm() {
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dashboard-gradient">
-      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
     </div>
   );
 }
