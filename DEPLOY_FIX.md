@@ -18,6 +18,11 @@
 - **Problema:** Versão 20.x vs 22.x
 - **Solução:** Atualizado para Node.js 22.x
 
+### 5. Warnings de Dependências Desatualizadas
+- **Problema:** Warnings sobre `rimraf`, `glob`, `lodash.isequal`, `inflight`, `fstream`
+- **Status:** Os warnings não afetam a funcionalidade do build
+- **Nota:** São dependências indiretas que podem ser atualizadas no futuro se necessário
+
 ## Arquivos Modificados
 
 - `app/page.tsx` - Simplificado para usar wrapper
