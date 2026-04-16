@@ -8,54 +8,79 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
-  const [email] = useState("admin@imobweb.com.br");
-  const [password] = useState("admin123");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("Pronto para testar");
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const addLog = (message: string) => {
+    console.log(message);
+    setLogs((prev) => [...prev, message]);
+  };
 
   const handleLogin = async () => {
-    setStatus("Enviando requisição...");
+    setStatus("Enviando requisição para /api/auth/login...");
+    addLog("Iniciando fetch para /api/auth/login");
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: "admin@imobweb.com.br",
+          password: "admin123",
+        }),
       });
 
+      addLog(`Resposta recebida - Status: ${res.status}`);
+
       const data = await res.json();
-      console.log("Resposta da API:", data);
+      addLog(`Dados recebidos: ${JSON.stringify(data)}`);
 
       if (res.ok) {
-        setStatus("Login OK - Redirecionando agora...");
+        setStatus("Login OK! Redirecionando...");
+        addLog("Redirecionando para " + redirectTo);
         window.location.href = redirectTo;
       } else {
-        setStatus(`Erro: ${data.error || "Falha no login"}`);
+        setStatus(`Erro ${res.status}: ${data.error || "Falha desconhecida"}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro no fetch:", err);
-      setStatus("Erro de conexão com o servidor");
+      setStatus("Erro de conexão: " + err.message);
+      addLog("ERRO: " + err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md w-full text-center">
-        <h1 className="text-4xl font-bold mb-8">imobWeb Login</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-10">
+        <h1 className="text-4xl font-bold text-center mb-8 text-slate-900">
+          Debug Login
+        </h1>
 
-        <p className="mb-6 text-gray-600">
-          Tentando login com:
-          <br />
-          <strong>admin@imobweb.com.br</strong> / <strong>admin123</strong>
-        </p>
+        <div className="bg-slate-800 text-white p-6 rounded-2xl mb-8 font-mono text-sm">
+          <p>Tentando login com:</p>
+          <p className="font-bold">admin@imobweb.com.br / admin123</p>
+        </div>
 
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-medium text-lg"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl text-xl font-medium mb-8 transition"
         >
-          CLICAR PARA FAZER LOGIN
+          CLICAR PARA FAZER LOGIN (DEBUG)
         </button>
 
-        <p className="mt-8 text-sm text-gray-500">Status: {status}</p>
+        <div className="bg-slate-100 p-6 rounded-2xl">
+          <p className="font-medium mb-2">Status atual:</p>
+          <p className="text-lg font-semibold text-emerald-600">{status}</p>
+        </div>
+
+        <div className="mt-8">
+          <p className="font-medium mb-3">Logs:</p>
+          <div className="bg-black text-green-400 p-4 rounded-xl font-mono text-xs h-80 overflow-auto">
+            {logs.length === 0
+              ? "Nenhum log ainda..."
+              : logs.map((log, i) => <div key={i}>{log}</div>)}
+          </div>
+        </div>
       </div>
     </div>
   );
