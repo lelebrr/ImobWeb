@@ -1,12 +1,6 @@
-"use client";
-
-import React from "react";
-import { MarketplaceGrid } from "@/components/marketplace/MarketplaceGrid";
+// Este arquivo foi movido para evitar conflito de rotas
+// A página principal do marketplace está em app/(marketplace)/page.tsx
 
 export default function MarketplacePage() {
-  return (
-    <div className="space-y-12">
-      <MarketplaceGrid />
-    </div>
-  );
+    return null; // Página redirecionada
 }

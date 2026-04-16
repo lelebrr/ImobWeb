@@ -21,7 +21,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "analyze": "ANALYZE=true next build",
-    "postbuild": "next-sitemap"
+    "postbuild": "next-sitemap --config next-sitemap.config.js"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.52",
