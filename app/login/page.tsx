@@ -16,12 +16,10 @@ import {
   ShieldCheck,
   Globe,
 } from "lucide-react";
-import { useAuth } from "@/providers/auth-provider";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, loading: authLoading, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState("admin@imobweb.com.br");
   const [password, setPassword] = useState("admin123");
@@ -34,7 +32,20 @@ function LoginForm() {
     setError("");
 
     try {
-      await signIn({ email, password });
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
+      // Reload to pick up new session
+      window.location.href = "/dashboard";
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
@@ -42,13 +53,6 @@ function LoginForm() {
       setIsLoading(false);
     }
   };
-
-  // Redirect if authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace("/dashboard");
-    }
-  }, [isAuthenticated, router]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-dashboard-gradient">
@@ -138,7 +142,7 @@ function LoginForm() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
                     required
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="email"
                   />
                 </div>
@@ -170,7 +174,7 @@ function LoginForm() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-12 h-14 glass border-none focus-visible:ring-1 focus-visible:ring-primary shadow-inner text-base font-medium"
                     required
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="current-password"
                   />
                 </div>
@@ -179,7 +183,7 @@ function LoginForm() {
               <Button
                 type="submit"
                 className="w-full h-14 text-lg font-black shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                disabled={isLoading || authLoading}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <>
