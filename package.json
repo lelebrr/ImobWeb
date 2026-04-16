@@ -121,8 +121,6 @@
   },
   "overrides": {
     "formidable": "^3.5.2",
-    "superagent": "^10.2.2",
-    "glob": "^10.4.0",
-    "rimraf": "^5.0.0"
+    "superagent": "^10.2.2"
   }
 }
