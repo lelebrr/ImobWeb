@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Filtra por portalId nos metadados se fornecido
     const filtered = portalId
-      ? logs.filter((log) => {
+      ? logs.filter((log: any) => {
           const meta = log.metadata as Record<string, unknown> | null;
           return meta && meta['portalId'] === portalId;
         })

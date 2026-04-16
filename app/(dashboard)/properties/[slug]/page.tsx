@@ -145,7 +145,7 @@ export default function PropertyDetailPage() {
                 { icon: Bath, label: 'Banheiros', value: property.metrics.bathrooms || '-' },
                 { icon: Maximize, label: 'Área Total', value: `${property.metrics.totalArea}m²` },
                 { icon: Calendar, label: 'Publicado', value: property.publishedAt ? new Date(property.publishedAt).toLocaleDateString() : 'Recente' },
-              ].map((stat, i) => (
+              ].map((stat: any, i: number) => (
                 <div key={i} className="glass p-4 rounded-3xl border-none flex flex-col items-center justify-center text-center">
                   <stat.icon className="w-5 h-5 mb-2 text-primary" />
                   <p className="text-lg font-black">{stat.value}</p>
@@ -175,7 +175,7 @@ export default function PropertyDetailPage() {
 
                 <TabsContent value="amenidades" className="mt-6">
                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {['Piscina Aquecida', 'Área Gourmet', 'Portaria 24h', 'Academia Premium', 'Vaga com Carregador', 'Pet Friendly', 'Automação Full', 'Varanda Integrada'].map((item) => (
+                      {['Piscina Aquecida', 'Área Gourmet', 'Portaria 24h', 'Academia Premium', 'Vaga com Carregador', 'Pet Friendly', 'Automação Full', 'Varanda Integrada'].map((item: string) => (
                         <div key={item} className="flex items-center gap-3 p-4 glass border-none rounded-2xl">
                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                               <ShieldCheck className="w-4 h-4 text-primary" />

@@ -18,6 +18,13 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  transpilePackages: [
+    "swagger-ui-react",
+    "swagger-client",
+    "@swagger-api/apidom-core",
+    "@swagger-api/apidom-ns-openapi-3-1",
+    "@swagger-api/apidom-error",
+  ],
 
   // ============================================
   // IA 1 - IMAGES CONFIG
@@ -371,6 +378,18 @@ const nextConfig = {
       ...config.module,
       exprContextCritical: false,
     };
+
+    // ============================================
+    // FIX SWAGGER MJS RESOLUTION
+    // ============================================
+    config.module.rules.push({
+      test: /\.mjs$/,
+      include: /node_modules/,
+      type: "javascript/auto",
+      resolve: {
+        fullySpecified: false,
+      },
+    });
 
     // ============================================
     // IA 4 - MONITORING PLUGINS

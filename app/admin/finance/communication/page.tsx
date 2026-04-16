@@ -32,7 +32,7 @@ export default async function CommunicationAdminPage() {
     historyMap[dateStr] = { name: dateStr, emails: 0, sms: 0 };
   }
 
-  usageHistory.forEach((u) => {
+  usageHistory.forEach((u: any) => {
     const dateStr = u.createdAt.toISOString().split('T')[0];
     if (historyMap[dateStr]) {
       if (u.type === 'EMAIL') historyMap[dateStr].emails += u._count;
@@ -51,8 +51,8 @@ export default async function CommunicationAdminPage() {
     },
   });
 
-  const orgStats = quotas.reduce((acc: any[], curr) => {
-    const existing = acc.find((a) => a.orgName === curr.organization.name);
+  const orgStats = quotas.reduce((acc: any[], curr: any) => {
+    const existing = acc.find((a: any) => a.orgName === curr.organization.name);
     if (existing) {
       existing.totalSpent += Number(curr.estimatedCost);
       existing.usageCount += curr.used;

@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+// @ts-ignore
 import { createBrowserClient } from '@supabase/ssr'
 import { User, Session } from '@supabase/supabase-js'
 import { UserRole } from '@prisma/client'

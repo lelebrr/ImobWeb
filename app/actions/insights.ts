@@ -39,7 +39,7 @@ export async function getStagnantProperties() {
       take: 5
     })
 
-    return stagnant.map(p => ({
+    return stagnant.map((p: any) => ({
       ...p,
       daysStagnant: Math.floor((new Date().getTime() - p.updatedAt.getTime()) / (1000 * 60 * 60 * 24)),
       suggestion: p.price ? "Redução sugerida de 5% no valor" : "Renovação de fotos e descrição"
@@ -76,12 +76,12 @@ export async function getAtRiskAgents() {
     const now = new Date()
     const thirtyDaysAgo = subDays(now, 30)
 
-    const atRisk = agents.map(agent => {
-      const recentLeads = agent.assignedLeads.filter(l => l.createdAt >= thirtyDaysAgo)
-      const previousLeads = agent.assignedLeads.filter(l => l.createdAt < thirtyDaysAgo)
+    const atRisk = agents.map((agent: any) => {
+      const recentLeads = agent.assignedLeads.filter((l: any) => l.createdAt >= thirtyDaysAgo)
+      const previousLeads = agent.assignedLeads.filter((l: any) => l.createdAt < thirtyDaysAgo)
 
-      const recentConv = recentLeads.filter(l => l.status === 'CONVERTIDO').length
-      const previousConv = previousLeads.filter(l => l.status === 'CONVERTIDO').length
+      const recentConv = recentLeads.filter((l: any) => l.status === 'CONVERTIDO').length
+      const previousConv = previousLeads.filter((l: any) => l.status === 'CONVERTIDO').length
 
       const recentRate = recentLeads.length > 0 ? (recentConv / recentLeads.length) * 100 : 0
       const previousRate = previousLeads.length > 0 ? (previousConv / previousLeads.length) * 100 : 0
@@ -95,7 +95,7 @@ export async function getAtRiskAgents() {
         previousRate,
         status: drop > 20 ? 'CRITICAL' : drop > 10 ? 'WARNING' : 'STABLE'
       }
-    }).filter(a => a.status !== 'STABLE')
+    }).filter((a: any) => a.status !== 'STABLE')
 
     return atRisk
   } catch (error) {
@@ -131,7 +131,7 @@ export async function getForgottenLeads() {
       orderBy: { updatedAt: 'asc' }
     })
 
-    return forgotten.map(l => ({
+    return forgotten.map((l: any) => ({
       ...l,
       daysForgotten: Math.floor((new Date().getTime() - l.updatedAt.getTime()) / (1000 * 60 * 60 * 24))
     }))

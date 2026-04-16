@@ -75,7 +75,7 @@ export async function getRichAnalyticsStats() {
     ])
 
     // Convert leadsBySource to easier format
-    const sources = leadsBySource.map(s => ({
+    const sources = leadsBySource.map((s: any) => ({
       name: s.source,
       value: s._count._all
     }))

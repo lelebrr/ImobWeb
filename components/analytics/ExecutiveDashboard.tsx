@@ -295,11 +295,11 @@ export default function ExecutiveDashboard() {
             title={widget.title}
             icon={<widget.icon className="h-6 w-6" />}
             value={
-              widget.id === 'total_leads' ? stats.totalLeads :
-              widget.id === 'active_properties' ? stats.activeProperties :
-              widget.id === 'monthly_revenue' ? 185000 : 
-              widget.id === 'total_revenue' ? stats.totalProperties * 10000 :
-              stats.totalLeads * 0.1
+              widget.id === 'total_leads' ? (stats?.totalLeads || 0) :
+              widget.id === 'active_properties' ? (stats?.activeProperties || 0) :
+              widget.id === 'monthly_revenue' ? (stats?.monthlyRevenue || 185000) : 
+              widget.id === 'total_revenue' ? ((stats?.totalProperties || 0) * 10000) :
+              (stats?.totalLeads || 0) * 0.1
             }
             trend="up"
             trendPercentage={12.4}
@@ -356,7 +356,7 @@ export default function ExecutiveDashboard() {
                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
                   />
                   <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={24}>
-                    {stats.leadsFunnel.map((entry: any, index: number) => (
+                    {(stats?.leadsFunnel || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
@@ -374,7 +374,7 @@ export default function ExecutiveDashboard() {
                  <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
                        <Pie
-                          data={stats.sources}
+                          data={stats?.sources || []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -384,7 +384,7 @@ export default function ExecutiveDashboard() {
                           dataKey="value"
                           paddingAngle={5}
                        >
-                          {stats.sources.map((entry: any, index: number) => (
+                          {(stats?.sources || []).map((entry: any, index: number) => (
                              <Cell key={`cell-${index}`} fill={['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981', '#6366f1'][index % 5]} />
                           ))}
                        </Pie>
@@ -399,7 +399,7 @@ export default function ExecutiveDashboard() {
         {visibleWidgets.includes('top_agents') && (
           <ChartCard title="Ranking de Performance Humana">
             <div className="space-y-4 mt-4">
-               {stats.topAgents.map((agent: any, i: number) => (
+               {(stats?.topAgents || []).map((agent: any, i: number) => (
                  <div key={agent.name} className="flex items-center justify-between p-4 rounded-3xl bg-white/40 hover:bg-white/80 transition-all border border-transparent hover:border-primary/10 group">
                     <div className="flex items-center gap-4">
                        <span className={cn(

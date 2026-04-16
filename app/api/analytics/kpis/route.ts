@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const kpisByCategory = kpiValues.reduce((acc, kpi) => {
+    const kpisByCategory = kpiValues.reduce((acc: any, kpi: any) => {
       if (!acc[kpi.category]) {
         acc[kpi.category] = [];
       }

@@ -8,9 +8,10 @@ import { locales, defaultLocale } from './settings';
 export default getRequestConfig(async ({ locale }) => {
   // Em Next.js 15+, o locale é passado diretamente como parâmetro
   // Validação de segurança para o locale
-  const activeLocale = locales.includes(locale as any) ? locale : defaultLocale;
+  const activeLocale = (locales.includes(locale as any) ? locale : defaultLocale) as string;
 
   return {
+    locale: activeLocale,
     messages: (await import(`../locales/${activeLocale}.json`)).default,
     now: new Date(),
     timeZone: activeLocale === 'pt-BR' ? 'America/Sao_Paulo' : 'UTC',

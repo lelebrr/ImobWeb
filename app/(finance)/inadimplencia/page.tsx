@@ -85,7 +85,7 @@ export default function InadimplenciaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {list.map((item) => (
+                {list.map((item: any) => (
                   <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                     <td className="px-6 py-4 font-black">{item.client}</td>
                     <td className="px-6 py-4 text-slate-900 dark:text-slate-100 font-bold">R$ {item.amount.toLocaleString('pt-BR')}</td>

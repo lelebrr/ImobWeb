@@ -89,7 +89,7 @@ export default async function ContratosPage() {
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aguardando Assinatura</p>
                <h3 className="text-2xl font-black tracking-tighter text-orange-600">
-                  {contracts.filter(c => c.status !== 'signed').length}
+                  {contracts.filter((c: any) => c.status !== 'signed').length}
                </h3>
             </div>
          </div>
@@ -100,7 +100,7 @@ export default async function ContratosPage() {
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Finalizados 100%</p>
                <h3 className="text-2xl font-black tracking-tighter">
-                  {contracts.filter(c => c.status === 'signed').length}
+                  {contracts.filter((c: any) => c.status === 'signed').length}
                </h3>
             </div>
          </div>
@@ -119,7 +119,7 @@ export default async function ContratosPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contracts.map((contract) => (
+            {contracts.map((contract: any) => (
               <TableRow key={contract.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
                 <TableCell className="px-8 py-6">
                   <div className="flex items-center gap-4">
@@ -137,7 +137,7 @@ export default async function ContratosPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex -space-x-2">
-                    {contract.parties.map((party) => (
+                    {contract.parties.map((party: any) => (
                       <div 
                         key={party.id} 
                         className={cn(

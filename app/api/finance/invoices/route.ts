@@ -19,12 +19,12 @@ export async function GET(req: NextRequest) {
 
   let filtered = mockInvoices;
   if (status) {
-    filtered = mockInvoices.filter(i => i.status === status);
+    filtered = mockInvoices.filter((i: any) => i.status === status);
   }
 
   return NextResponse.json({
     data: filtered,
-    total: filtered.reduce((acc, curr) => acc + curr.value, 0)
+    total: filtered.reduce((acc: number, curr: any) => acc + curr.value, 0)
   });
 }
 

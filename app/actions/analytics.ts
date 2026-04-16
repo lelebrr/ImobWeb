@@ -24,7 +24,7 @@ export async function getSalesAnalytics(timeRange: string = 'month') {
       }
     })
 
-    const vgvTotal = contracts.reduce((sum, c) => sum + (Number(c.totalValue) || 0), 0)
+    const vgvTotal = contracts.reduce((sum: number, c: any) => sum + (Number(c.totalValue) || 0), 0)
     
     // Average Sales Cycle
     const convertedLeads = await prisma.lead.findMany({
@@ -39,7 +39,7 @@ export async function getSalesAnalytics(timeRange: string = 'month') {
     })
 
     let totalCycleDays = 0
-    convertedLeads.forEach(l => {
+    convertedLeads.forEach((l: any) => {
       const diff = l.updatedAt.getTime() - l.createdAt.getTime()
       totalCycleDays += diff / (1000 * 60 * 60 * 24)
     })
@@ -82,14 +82,14 @@ export async function getTeamAnalytics() {
       }
     })
 
-    const ranking = agents.map(agent => ({
+    const ranking = agents.map((agent: any) => ({
       name: agent.name,
       leads: agent.assignedLeads.length,
-      conversions: agent.assignedLeads.filter(l => l.status === 'CONVERTIDO').length,
+      conversions: agent.assignedLeads.filter((l: any) => l.status === 'CONVERTIDO').length,
       conversionRate: agent.assignedLeads.length > 0 
-        ? (agent.assignedLeads.filter(l => l.status === 'CONVERTIDO').length / agent.assignedLeads.length) * 100 
+        ? (agent.assignedLeads.filter((l: any) => l.status === 'CONVERTIDO').length / agent.assignedLeads.length) * 100 
         : 0
-    })).sort((a, b) => b.conversions - a.conversions)
+    })).sort((a: any, b: any) => b.conversions - a.conversions)
 
     return { ranking }
   } catch (error) {
@@ -109,7 +109,7 @@ export async function getMarketingAnalytics() {
       _count: { _all: true }
     })
 
-    const sources = leadsBySource.map(s => ({
+    const sources = leadsBySource.map((s: any) => ({
       name: s.source,
       value: s._count._all
     }))
@@ -138,12 +138,12 @@ export async function getPortfolioAnalytics() {
       }
     })
 
-    const byType = properties.reduce((acc: any, p) => {
+    const byType = properties.reduce((acc: any, p: any) => {
       acc[p.type] = (acc[p.type] || 0) + 1
       return acc
     }, {})
 
-    const portfolioStats = Object.keys(byType).map(type => ({
+    const portfolioStats = Object.keys(byType).map((type: string) => ({
       name: type,
       value: byType[type]
     }))
@@ -167,7 +167,7 @@ export async function getFinancialAnalytics() {
       select: { totalValue: true, type: true }
     })
 
-    const totalRevenue = contracts.reduce((sum, c) => sum + (Number(c.totalValue) || 0), 0)
+    const totalRevenue = contracts.reduce((sum: number, c: any) => sum + (Number(c.totalValue) || 0), 0)
 
     return { totalRevenue }
   } catch (error) {

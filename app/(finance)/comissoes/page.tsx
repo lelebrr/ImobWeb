@@ -37,7 +37,7 @@ export default function CommissionsPage() {
           { label: "Repasses Pendentes", value: "R$ 15.200", sub: "7 corretores aguardando", color: "text-amber-600" },
           { label: "Retenção IRRF", value: "R$ 862,50", sub: "Pronto para DIRF", color: "text-slate-500" },
           { label: "Eficiência Payout", value: "98.2%", sub: "Delay de 1.2 dias", color: "text-green-600" },
-        ].map((stat, i) => (
+        ].map((stat: any, i: number) => (
           <Card key={i} className="border-none shadow-sm">
             <CardHeader className="p-4 pb-0">
                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{stat.label}</span>
@@ -64,7 +64,7 @@ export default function CommissionsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {commissions.map((item) => (
+            {commissions.map((item: any) => (
               <div key={item.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border rounded-xl hover:border-blue-500/50 transition-all group">
                 <div className="flex items-center gap-4">
                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">

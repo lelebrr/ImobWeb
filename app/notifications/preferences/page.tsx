@@ -147,7 +147,7 @@ function NotificationPreferencesCenter({ userId, onSave }: NotificationPreferenc
           <CardDescription>Selecione os canais que deseja utilizar</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {channelItems.map((item) => (
+          {channelItems.map((item: any) => (
             <div key={item.key} className="flex items-center justify-between rounded-lg border p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
@@ -186,7 +186,7 @@ function NotificationPreferencesCenter({ userId, onSave }: NotificationPreferenc
           <CardDescription>Escolha quais notificações deseja receber</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {typeItems.map((item) => (
+          {typeItems.map((item: any) => (
             <div key={item.key} className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="font-medium text-gray-900">{item.label}</p>

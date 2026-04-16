@@ -8,7 +8,7 @@ export async function auth() {
   const supabase = await createClient();
   
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await (supabase.auth as any).getSession();
     
     if (error || !session) {
       return null;

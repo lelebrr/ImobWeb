@@ -116,7 +116,7 @@ export default function SalesDashboard() {
         </div>
 
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {kpiCards.map((kpi, index) => (
+          {kpiCards.map((kpi: any, index: number) => (
             <Card key={index} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -238,7 +238,7 @@ export default function SalesDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {SALES_FUNNEL.map((stage, index) => {
+                {SALES_FUNNEL.map((stage: any, index: number) => {
                   const percentage = (stage.value / SALES_FUNNEL[0].value) * 100;
                   return (
                     <div key={stage.stage}>
@@ -276,7 +276,7 @@ export default function SalesDashboard() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {SALES_BY_TYPE.map((entry, index) => (
+                      {SALES_BY_TYPE.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -308,7 +308,7 @@ export default function SalesDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {TOP_DEALS.map((deal) => (
+                    {TOP_DEALS.map((deal: any) => (
                       <tr key={deal.id} className="border-b last:border-0">
                         <td className="py-3">
                           <div>
@@ -381,7 +381,7 @@ export default function SalesDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {DEAL_STAGES.map((stage) => (
+                {DEAL_STAGES.map((stage: any) => (
                   <div key={stage.stage} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-3 w-3 rounded-full" style={{ backgroundColor: stage.color }} />
@@ -396,7 +396,7 @@ export default function SalesDashboard() {
                 <div className="border-t pt-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-900">Total</span>
-                    <span className="font-bold text-gray-900">{formatCurrency(DEAL_STAGES.reduce((sum, s) => sum + s.value, 0))}</span>
+                    <span className="font-bold text-gray-900">{formatCurrency(DEAL_STAGES.reduce((sum: number, s: any) => sum + s.value, 0))}</span>
                   </div>
                 </div>
               </div>

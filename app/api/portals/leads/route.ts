@@ -56,17 +56,17 @@ export async function GET(request: NextRequest) {
     let leads = mockLeads;
 
     if (portalId) {
-      leads = leads.filter(l => l.portalId === portalId);
+      leads = leads.filter((l: any) => l.portalId === portalId);
     }
 
     if (since) {
       const sinceDate = new Date(since);
-      leads = leads.filter(l => new Date(l.receivedAt) > sinceDate);
+      leads = leads.filter((l: any) => new Date(l.receivedAt) > sinceDate);
     }
 
     leads = leads.slice(0, limit);
 
-    const leadsByPortal = leads.reduce((acc, lead) => {
+    const leadsByPortal = leads.reduce((acc: any, lead: any) => {
       if (!acc[lead.portalId]) {
         acc[lead.portalId] = [];
       }
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       leads,
       total: leads.length,
-      byPortal: Object.entries(leadsByPortal).map(([portal, leadList]) => ({
+      byPortal: Object.entries(leadsByPortal).map(([portal, leadList]: [string, any]) => ({
         portalId: portal as PortalId,
         count: leadList.length,
         leads: leadList

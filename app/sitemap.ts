@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/sobre",
     "/planos",
     "/blog",
-  ].map((route) => ({
+  ].map((route: string) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: "daily",
@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // For now, providing a scalable structure:
   const properties: any[] = []; // Injected via DB in production
   
-  const propertyRoutes: MetadataRoute.Sitemap = properties.map((p) => ({
+  const propertyRoutes: MetadataRoute.Sitemap = properties.map((p: any) => ({
     url: `${baseUrl}/imovel/${p.slug}`,
     lastModified: p.updatedAt,
     changeFrequency: "weekly",
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 3. Blog Posts
   const blogPosts: any[] = [];
-  const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+  const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post: any) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: post.updatedAt,
     changeFrequency: "monthly",

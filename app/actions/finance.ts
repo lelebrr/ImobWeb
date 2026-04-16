@@ -1,4 +1,4 @@
-'use client';
+'use server';
 
 // Note: In a real app, these would be server actions with 'use server'
 // But for the sake of this implementation, I'll create the structure
@@ -74,7 +74,7 @@ export async function processPaymentSplit(invoiceId: string, paymentMethod: stri
   const ownerAmount = amount - agencyAmount;
 
   // Find the owner party
-  const owner = invoice.contract.parties.find(p => p.type === 'landlord');
+  const owner = invoice.contract.parties.find((p: any) => p.type === 'landlord');
 
   // Create distributions
   await prisma.$transaction([

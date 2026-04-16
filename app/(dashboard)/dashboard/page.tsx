@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: stats.totalLeads > 0 ? `${(step.value / stats.totalLeads) * 100}%` : '0%' }}
+                      animate={{ width: (stats?.totalLeads || 0) > 0 ? `${(step.value / (stats?.totalLeads || 0)) * 100}%` : '0%' }}
                       transition={{ duration: 1, delay: idx * 0.1 }}
                       className={`h-full ${step.color} shadow-lg shadow-indigo-500/20`}
                     />
@@ -230,7 +230,7 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentProperties.map((property) => (
+            {(recentProperties || []).map((property) => (
               <div key={property.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10">
                 <div className="flex items-center gap-4">
                   <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-xl">
@@ -267,7 +267,7 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentLeads.map((lead) => (
+            {(recentLeads || []).map((lead) => (
               <div key={lead.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">

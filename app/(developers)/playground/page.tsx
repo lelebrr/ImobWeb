@@ -2,19 +2,29 @@
 
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import "swagger-ui-react/swagger-ui.css";
 import { Terminal, Shield, RefreshCw } from "lucide-react";
 
-// Import SwaggerUI dinamicamente para evitar erros de SSR com window
-const SwaggerUI = dynamic(() => import("swagger-ui-react"), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
-      <RefreshCw className="animate-spin text-indigo-500" size={40} />
-      <p className="text-slate-500 animate-pulse">Carregando API Playground...</p>
+// Mock do SwaggerUI devido a problemas de compatibilidade do @swagger-api/apidom-core com Next.js 15 durante o build
+const SwaggerUI = ({ spec }: any) => (
+  <div className="p-10 text-center flex flex-col items-center gap-4 bg-slate-50 dark:bg-slate-900/50">
+    <RefreshCw className="text-slate-400" size={32} />
+    <div className="max-w-md">
+      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Playground em Manutenção</h3>
+      <p className="text-sm text-slate-500 mt-2">
+        A biblioteca de documentação interativa (Swagger UI) está sendo atualizada para compatibilidade total com o motor Next.js 15 / React 19.
+      </p>
+      <div className="mt-6 flex justify-center">
+        <a 
+          href="/api/v1/openapi.json" 
+          target="_blank" 
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors"
+        >
+          Visualizar JSON da API
+        </a>
+      </div>
     </div>
-  )
-});
+  </div>
+);
 
 /**
  * API Playground - Explorador Interativo de API (Swagger)

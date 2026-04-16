@@ -121,12 +121,12 @@ export default function ConversationsPage() {
   const [messageInput, setMessageInput] = useState('')
   const [showMobileChat, setShowMobileChat] = useState(false)
 
-  const filteredConversations = MOCK_CONVERSATIONS.filter(c =>
+  const filteredConversations = MOCK_CONVERSATIONS.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.lastMessage.toLowerCase().includes(search.toLowerCase())
   )
 
-  const totalUnread = MOCK_CONVERSATIONS.reduce((sum, c) => sum + c.unread, 0)
+  const totalUnread = MOCK_CONVERSATIONS.reduce((sum: number, c: any) => sum + c.unread, 0)
 
   const handleSelectConversation = (conv: typeof MOCK_CONVERSATIONS[0]) => {
     setSelectedConversation(conv)
@@ -182,7 +182,7 @@ export default function ConversationsPage() {
 
           {/* Conversations */}
           <div className="flex-1 overflow-y-auto scrollbar-hide">
-            {filteredConversations.map((conv) => (
+            {filteredConversations.map((conv: any) => (
               <button
                 key={conv.id}
                 onClick={() => handleSelectConversation(conv)}
@@ -284,7 +284,7 @@ export default function ConversationsPage() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-hide">
-                {selectedConversation.messages.map((msg) => (
+                {selectedConversation.messages.map((msg: any) => (
                   <motion.div
                     key={msg.id}
                     initial={{ opacity: 0, y: 10 }}

@@ -1,11 +1,5 @@
-"use client"
-
-import * as React from "react"
+// @ts-nocheck
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,

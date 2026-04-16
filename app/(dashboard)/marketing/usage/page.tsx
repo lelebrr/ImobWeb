@@ -32,7 +32,7 @@ export default async function AgencyCommunicationPage() {
     },
   });
 
-  const formattedQuotas = quotas.map((q) => ({
+  const formattedQuotas = quotas.map((q: any) => ({
     type: q.type as 'EMAIL' | 'SMS',
     used: q.used,
     limit: q.limit,
@@ -71,7 +71,7 @@ export default async function AgencyCommunicationPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                recentUsage.map((usage) => (
+                recentUsage.map((usage: any) => (
                   <TableRow key={usage.id}>
                     <TableCell className="text-xs">
                       {format(new Date(usage.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
