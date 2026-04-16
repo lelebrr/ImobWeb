@@ -41,6 +41,6 @@ export async function POST(request: Request) {
     success: true,
     user: data.user,
     role: userRole,
-    redirectTo: isSuperAdmin ? "/admin/dashboard" : "/dashboard",
+    redirectTo: isSuperAdmin ? "/admin" : "/dashboard",
   });
 }
