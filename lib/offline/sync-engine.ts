@@ -9,15 +9,26 @@ import { db, type SyncAction } from "../offline-db";
 
 export class SyncEngine {
   private static isProcessing = false;
+  private static isInitialized = false;
+  private static lastSyncTime = 0;
+  private static readonly MIN_SYNC_INTERVAL = 30000; // 30 segundos
 
   /**
    * Tenta sincronizar todas as ações pendentes
    */
-  static async syncAll() {
+  static async syncAll(force = false) {
     if (this.isProcessing) return;
     if (!navigator.onLine) return;
 
+    // Throttle: Evita sincronizações excessivas se não for forçado
+    const now = Date.now();
+    if (!force && now - this.lastSyncTime < this.MIN_SYNC_INTERVAL) {
+      console.log("[SyncEngine] Sync ignorado por throttle (intervalo mínimo não atingido)");
+      return;
+    }
+
     this.isProcessing = true;
+    this.lastSyncTime = now;
     console.log("[SyncEngine] Iniciando sincronização...");
 
     try {
@@ -26,9 +37,16 @@ export class SyncEngine {
         .equals("pending")
         .toArray();
 
+      if (pendingActions.length === 0) {
+        console.log("[SyncEngine] Nenhuma ação pendente encontrada.");
+        return;
+      }
+
       for (const action of pendingActions) {
         await this.processAction(action);
       }
+    } catch (error) {
+      console.error("[SyncEngine] Erro crítico durante sincronização:", error);
     } finally {
       this.isProcessing = false;
     }
@@ -70,14 +88,28 @@ export class SyncEngine {
   }
 
   /**
-   * Registra listeners de rede
+   * Registra listeners de rede e inicializa o motor
+   * Retorna uma função de cleanup
    */
   static init() {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return () => {};
+    if (this.isInitialized) return () => {};
 
-    window.addEventListener("online", () => {
+    console.log("[SyncEngine] Inicializando serviço de sincronização...");
+    
+    const handleOnline = () => {
       console.log("[SyncEngine] Voltamos online! Iniciando sync...");
-      this.syncAll();
-    });
+      this.syncAll(true);
+    };
+
+    window.addEventListener("online", handleOnline);
+    this.isInitialized = true;
+
+    // Retorna função de limpeza para evitar múltiplos listeners
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      this.isInitialized = false;
+      console.log("[SyncEngine] Serviço de sincronização desativado.");
+    };
   }
 }

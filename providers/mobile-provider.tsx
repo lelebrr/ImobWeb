@@ -27,8 +27,12 @@ export function MobileProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // 1. Inicializa o motor de sincronização
-    SyncEngine.init();
-    SyncEngine.syncAll();
+    const cleanupSync = SyncEngine.init();
+    
+    // Pequeno delay para evitar processamento pesado durante o mount da aplicação
+    const timer = setTimeout(() => {
+      SyncEngine.syncAll();
+    }, 2000);
 
     // 2. Monitora status de rede
     const updateOnline = () => setIsOnline(navigator.onLine);
@@ -43,6 +47,8 @@ export function MobileProvider({ children }: { children: React.ReactNode }) {
     checkNative();
 
     return () => {
+      cleanupSync();
+      clearTimeout(timer);
       window.removeEventListener("online", updateOnline);
       window.removeEventListener("offline", updateOnline);
     };

@@ -92,7 +92,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-slate-50">
       {/* ====================== LADO ESQUERDO - ILUSTRAÇÃO PREMIUM ====================== */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center">
         {/* Background sutil */}
@@ -184,12 +184,12 @@ function LoginForm() {
       </div>
 
       {/* ====================== LADO DIREITO - FORMULÁRIO ====================== */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white min-h-screen">
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg"
         >
           <div className="mb-10 text-center lg:text-left">
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter">
@@ -204,7 +204,7 @@ function LoginForm() {
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="font-bold text-xs uppercase tracking-widest opacity-70"
+                className="font-bold text-xs uppercase tracking-widest text-slate-700"
               >
                 E-mail profissional
               </Label>
@@ -213,7 +213,7 @@ function LoginForm() {
                 type="email"
                 placeholder="seu@email.com"
                 {...register("email")}
-                className="h-14 text-base rounded-2xl border-slate-200 focus:ring-emerald-500"
+                className="h-14 text-base rounded-2xl border-slate-300 bg-white text-slate-900 focus:ring-emerald-500"
               />
               {errors.email && (
                 <p className="text-red-500 text-xs font-bold mt-1">
@@ -226,7 +226,7 @@ function LoginForm() {
               <div className="flex items-center justify-between">
                 <Label
                   htmlFor="password"
-                  className="font-bold text-xs uppercase tracking-widest opacity-70"
+                  className="font-bold text-xs uppercase tracking-widest text-slate-700"
                 >
                   Senha
                 </Label>
@@ -242,7 +242,7 @@ function LoginForm() {
                 type="password"
                 placeholder="••••••••"
                 {...register("password")}
-                className="h-14 text-base rounded-2xl border-slate-200 focus:ring-emerald-500"
+                className="h-14 text-base rounded-2xl border-slate-300 bg-white text-slate-900 focus:ring-emerald-500"
               />
               {errors.password && (
                 <p className="text-red-500 text-xs font-bold mt-1">
