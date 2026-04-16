@@ -16,9 +16,20 @@ function LoginForm() {
     setLogs((prev) => [...prev, message]);
   };
 
-  const handleLogin = async () => {
-    setStatus("Enviando requisição para /api/auth/login...");
-    addLog("Iniciando fetch para /api/auth/login");
+  const handleLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setStatus("Iniciando...");
+    addLog("Botão clicado!");
+
+    doLogin();
+  };
+
+  const doLogin = async () => {
+    addLog("doLogin iniciada");
+    setStatus("Enviando requisição...");
+    addLog("Enviando fetch para /api/auth/login");
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -30,56 +41,42 @@ function LoginForm() {
         }),
       });
 
-      addLog(`Resposta recebida - Status: ${res.status}`);
-
+      addLog(`Status: ${res.status}`);
       const data = await res.json();
-      addLog(`Dados recebidos: ${JSON.stringify(data)}`);
+      addLog(`Data: ${JSON.stringify(data)}`);
 
       if (res.ok) {
         setStatus("Login OK! Redirecionando...");
-        addLog("Redirecionando para " + redirectTo);
+        addLog("Redirecting...");
         window.location.href = redirectTo;
       } else {
-        setStatus(`Erro ${res.status}: ${data.error || "Falha desconhecida"}`);
+        setStatus(`Erro: ${data.error}`);
       }
     } catch (err: any) {
-      console.error("Erro no fetch:", err);
-      setStatus("Erro de conexão: " + err.message);
+      setStatus("Erro: " + err.message);
       addLog("ERRO: " + err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-10">
-        <h1 className="text-4xl font-bold text-center mb-8 text-slate-900">
-          Debug Login
-        </h1>
-
-        <div className="bg-slate-800 text-white p-6 rounded-2xl mb-8 font-mono text-sm">
-          <p>Tentando login com:</p>
-          <p className="font-bold">admin@imobweb.com.br / admin123</p>
-        </div>
-
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-lg mx-auto">
         <button
+          type="button"
           onClick={handleLogin}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl text-xl font-medium mb-8 transition"
+          className="w-full bg-blue-600 text-white py-8 text-2xl font-bold rounded-2xl"
         >
-          CLICAR PARA FAZER LOGIN (DEBUG)
+          CLIQUE AQUI PARA LOGIN
         </button>
 
-        <div className="bg-slate-100 p-6 rounded-2xl">
-          <p className="font-medium mb-2">Status atual:</p>
-          <p className="text-lg font-semibold text-emerald-600">{status}</p>
+        <div className="mt-4 p-4 bg-white rounded-xl">
+          <p>Status: {status}</p>
         </div>
 
-        <div className="mt-8">
-          <p className="font-medium mb-3">Logs:</p>
-          <div className="bg-black text-green-400 p-4 rounded-xl font-mono text-xs h-80 overflow-auto">
-            {logs.length === 0
-              ? "Nenhum log ainda..."
-              : logs.map((log, i) => <div key={i}>{log}</div>)}
-          </div>
+        <div className="mt-4 p-4 bg-black text-green-400 font-mono text-xs rounded-xl max-h-60 overflow-auto">
+          {logs.map((l, i) => (
+            <div key={i}>{l}</div>
+          ))}
         </div>
       </div>
     </div>
@@ -89,7 +86,7 @@ function LoginForm() {
 function LoginLoading() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div>Carregando...</div>
+      Carregando...
     </div>
   );
 }
