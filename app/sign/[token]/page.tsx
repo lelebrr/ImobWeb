@@ -4,8 +4,8 @@ import { AlertTriangle, Home } from 'lucide-react';
 import { Button } from '@/components/design-system/button';
 import Link from 'next/link';
 
-export default async function SignPage({ params }: { params: { token: string } }) {
-  const { token } = params;
+export default async function SignPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const { party, error } = await getSigningSession(token);
 
   if (error || !party) {

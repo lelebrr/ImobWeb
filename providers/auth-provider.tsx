@@ -146,10 +146,27 @@ export function useHasRole(requiredRole: UserRole): boolean {
     if (!role) return false
 
     const roleHierarchy: Record<UserRole, number> = {
-        [UserRole.ADMIN]: 4,
-        [UserRole.GERENTE]: 3,
-        [UserRole.CORRETOR]: 2,
-        [UserRole.ASSISTENTE]: 1,
+        // PLATORMA (MASTER CONTROL)
+        [UserRole.PLATFORM_MASTER]: 1000,
+        [UserRole.PLATFORM_FINANCE]: 900,
+        [UserRole.PLATFORM_MARKETING]: 800,
+        [UserRole.PLATFORM_SUPPORT]: 700,
+
+        // AGÊNCIA (ADMIN)
+        [UserRole.AGENCY_MASTER]: 100,
+        [UserRole.ADMIN]: 100, // Legado
+
+        // AGÊNCIA (DEPARTAMENTOS / GESTÃO)
+        [UserRole.AGENCY_FINANCE]: 80,
+        [UserRole.AGENCY_MARKETING]: 70,
+        [UserRole.AGENCY_HR]: 60,
+        [UserRole.GERENTE]: 50, // Legado
+
+        // AGÊNCIA (OPERACIONAL)
+        [UserRole.AGENCY_SUPPORT]: 40,
+        [UserRole.AGENCY_SALES]: 20,
+        [UserRole.CORRETOR]: 20, // Legado
+        [UserRole.ASSISTENTE]: 10, // Legado
     }
 
     return roleHierarchy[role] >= roleHierarchy[requiredRole]

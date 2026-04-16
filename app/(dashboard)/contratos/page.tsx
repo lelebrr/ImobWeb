@@ -10,7 +10,9 @@ import {
   User, 
   MoreVertical,
   Search,
-  Plus
+  Plus,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   Table, 
@@ -22,6 +24,7 @@ import {
 } from '@/components/design-system/table';
 import { notifySigners } from '@/app/actions/signing';
 import { revalidatePath } from 'next/cache';
+import { cn } from '@/lib/utils';
 
 export default async function ContratosPage() {
   const session = await auth();

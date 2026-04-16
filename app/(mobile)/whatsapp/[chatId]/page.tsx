@@ -20,13 +20,14 @@ import {
   CheckCheck,
   X
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import FlowPreview from "@/components/whatsapp/FlowPreview";
 import { sendPriceAdjustmentFlow, sendPhotoRequestFlow } from "@/lib/whatsapp/advanced-flows";
 import { cn } from "@/lib/utils";
 
-export default async function DirectChatPage({ params }: { params: Promise<{ chatId: string }> }) {
-  const { chatId } = await params;
+export default function DirectChatPage() {
+  const params = useParams();
+  const chatId = params?.chatId as string;
   const router = useRouter();
   const [showFlowMenu, setShowFlowMenu] = useState(false);
   const [activeFlow, setActiveFlow] = useState<{ text: string, buttons: any[] } | null>(null);

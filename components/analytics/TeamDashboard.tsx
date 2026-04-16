@@ -128,7 +128,7 @@ export default function TeamDashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                           <PolarGrid stroke="#E2E8F0" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontWeight: 'black', textTransform: 'uppercase', fill: '#94A3B8' }} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontWeight: 'black', fill: '#94A3B8' }} />
                           <Radar
                              name="Equipe"
                              dataKey="A"
