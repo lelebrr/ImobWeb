@@ -13,6 +13,7 @@ interface AIContextType {
     generateDescription: (propertyData: any) => Promise<string>
     suggestPrice: (propertyData: any, marketData: any) => Promise<number>
     chatWithOwner: (conversationHistory: any[], message: string) => Promise<string>
+    chatWithCopilot: (conversationHistory: any[], message: string) => Promise<string>
 }
 
 const AIContext = React.createContext<AIContextType | undefined>(undefined)
@@ -170,6 +171,51 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         return response.choices[0]?.message?.content || ''
     }, [openai])
 
+    /**
+     * Chat com o Copilot da plataforma (Suporte ao Broker)
+     */
+    const chatWithCopilot = React.useCallback(async (
+        conversationHistory: any[],
+        message: string
+    ) => {
+        if (!openai) throw new Error('OpenAI não está configurado')
+
+        const systemPrompt = `
+      Você é o "imobWeb Copilot", um assistente de IA de elite integrado à plataforma ImobWeb 2026.
+      Seu objetivo é ajudar corretores de imóveis e administradores a extrair o máximo da plataforma.
+      
+      Conhecimento da Plataforma:
+      - Dashboard: Visão geral de performance, leads quentes e tarefas.
+      - Properties: Gestão completa de inventário com IA.
+      - Leads: Funil de vendas inteligente com score de intenção.
+      - IA: Sugestão de preço, geração de descrição e chat com proprietário.
+      
+      Regras de Resposta:
+      - Seja extremamente proativo, profissional e focado em resultados.
+      - Use um tom de "parceiro de negócios".
+      - Se o usuário perguntar sobre o mercado, mencione que a imobWeb usa análise de tempo real.
+      - Não invente funcionalidades se não tiver certeza.
+    `
+
+        const messages = [
+            { role: 'system' as const, content: systemPrompt },
+            ...conversationHistory.map((msg) => ({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+            })),
+            { role: 'user' as const, content: message },
+        ]
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages,
+            max_tokens: 500,
+            temperature: 0.7,
+        })
+
+        return response.choices[0]?.message?.content || ''
+    }, [openai])
+
     return (
         <AIContext.Provider
             value={{
@@ -178,6 +224,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
                 generateDescription,
                 suggestPrice,
                 chatWithOwner,
+                chatWithCopilot,
             }}
         >
             {children}

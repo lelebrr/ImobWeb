@@ -27,45 +27,12 @@ const CATEGORIES = [
   { id: 'reports', label: 'Relatórios' },
 ];
 
+import { MOCK_ADDONS } from "@/lib/data/mock-addons";
+
 export const MarketplaceGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const addons = [
-    {
-      id: "addon_photo_ai_pro",
-      name: "IA - Otimização de Fotos",
-      desc: "Tratamento de luz e correção de perspectiva via IA.",
-      price: 49.90,
-      badge: "Popular",
-      category: "ia",
-      icon: "✨"
-    },
-    {
-      id: "addon_whatsapp_automation_ultra",
-      name: "WhatsApp Ultra",
-      desc: "Chatbots e agendamento de visitas direto no App.",
-      price: 89.90,
-      badge: "Novo",
-      category: "marketing",
-      icon: "💬"
-    },
-    {
-      id: "addon_tour_virtual_360",
-      name: "Tour Virtual 360º",
-      desc: "Criação de imersões 3D para imóveis de luxo.",
-      price: 129.00,
-      category: "ia",
-      icon: "🪐"
-    },
-    {
-      id: "addon_global_portal_bridge",
-      name: "Global Bridge",
-      desc: "Sincronização em portais internacionais.",
-      price: 199.00,
-      category: "portals",
-      icon: "🌍"
-    }
-  ];
+  const addons = MOCK_ADDONS;
 
   return (
     <div className="space-y-8 p-1">

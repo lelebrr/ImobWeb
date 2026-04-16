@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   PercentCircle,
   FileSignature,
+  FileText,
   Megaphone,
   Briefcase,
   Store,
@@ -73,6 +74,7 @@ export const MENU_CONFIG: Record<UserRole, NavSection[]> = {
       title: 'Operacional',
       items: [
         { title: 'Contratos', href: '/dashboard/contracts', icon: FileSignature, roles: ['MANAGER'] },
+        { title: 'Contratos e Operação', href: '/dashboard/contratos', icon: FileText, roles: ['MANAGER'] },
         { title: 'Marketing & Portais', href: '/dashboard/marketing', icon: Megaphone, roles: ['MANAGER'] },
         { title: 'Comissões', href: '/dashboard/commissions', icon: PercentCircle, roles: ['MANAGER'] },
       ]
@@ -97,6 +99,7 @@ export const MENU_CONFIG: Record<UserRole, NavSection[]> = {
       title: 'Negócios',
       items: [
         { title: 'Propostas & Contratos', href: '/dashboard/contracts', icon: FileSignature, roles: ['BROKER'] },
+        { title: 'Contratos e Operação', href: '/dashboard/contratos', icon: FileText, roles: ['BROKER'] },
         { title: 'Minhas Comissões', href: '/dashboard/commissions', icon: PercentCircle, roles: ['BROKER'] },
       ]
     }

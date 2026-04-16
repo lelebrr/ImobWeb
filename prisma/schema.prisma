@@ -1,10 +1,10 @@
 // ============================================
-// SCHEMA PRISMA - CRM IMOBILIÁRIO IMOBWEB
+// SCHEMA PRISMA - CRM IMOBILIÃ�RIO IMOBWEB
 // ============================================
-// Arquitetura multi-tenant com organização (imobiliária)
-// Suporte a integrações com portais de imóveis
+// Arquitetura multi-tenant com organizaÃ§Ã£o (imobiliÃ¡ria)
+// Suporte a integraÃ§Ãµes com portais de imÃ³veis
 // Sistema de conversas WhatsApp com IA
-// Gestão completa de leads e proprietários
+// GestÃ£o completa de leads e proprietÃ¡rios
 // ============================================
 
 generator client {
@@ -24,72 +24,72 @@ datasource db {
 enum EntityStatus {
   ATIVO // Entidade ativa no sistema
   INATIVO // Entidade desativada
-  ARQUIVADO // Entidade arquivada (não mais em uso)
+  ARQUIVADO // Entidade arquivada (nÃ£o mais em uso)
 }
 
-/// Status de imóvel
+/// Status de imÃ³vel
 enum PropertyStatus {
-  DISPONIVEL // Imóvel disponível para venda/locação
-  VENDIDO // Imóvel vendido
-  ALUGADO // Imóvel alugado
-  RESERVADO // Imóvel reservado
-  DESATUALIZADO // Imóvel com dados desatualizados
-  SUSPENSO // Imóvel suspenso por pendências
-  RASCUNHO // Imóvel em rascunho (não publicado)
+  DISPONIVEL // ImÃ³vel disponÃ­vel para venda/locaÃ§Ã£o
+  VENDIDO // ImÃ³vel vendido
+  ALUGADO // ImÃ³vel alugado
+  RESERVADO // ImÃ³vel reservado
+  DESATUALIZADO // ImÃ³vel com dados desatualizados
+  SUSPENSO // ImÃ³vel suspenso por pendÃªncias
+  RASCUNHO // ImÃ³vel em rascunho (nÃ£o publicado)
 }
 
-/// Tipo de imóvel
+/// Tipo de imÃ³vel
 enum PropertyType {
   APARTAMENTO // Apartamento
   CASA // Casa
   TERRENO // Terreno
-  COMERCIAL // Imóvel comercial
+  COMERCIAL // ImÃ³vel comercial
   COMERCIAL_LOJA // Loja comercial
   COMERCIAL_GARAGEM // Garagem comercial
   COMERCIAL_LOTE // Lote comercial
   COMERCIAL_OUTRO // Outro comercial
-  SITIO // Sítio
-  CHACARA // Chácara
+  SITIO // SÃ­tio
+  CHACARA // ChÃ¡cara
   FAZENDA // Fazenda
-  CONDOMINIO // Condomínio fechado
+  CONDOMINIO // CondomÃ­nio fechado
   GARAGEM // Garagem
   CABINE // Cabine
   QUADRA // Quadra
   TERRENO_RESIDENCIAL // Terreno residencial
-  SITIO_RESIDENCIAL // Sítio residencial
-  CHACARA_RESIDENCIAL // Chácara residencial
+  SITIO_RESIDENCIAL // SÃ­tio residencial
+  CHACARA_RESIDENCIAL // ChÃ¡cara residencial
   OUTRO // Outro tipo
 }
 
-/// Tipo de negócio
+/// Tipo de negÃ³cio
 enum BusinessType {
   VENDA // Venda
-  LOCAÇÃO // Locação
+  LOCACAO // Locação
   VENDA_LOCACAO // Venda e locação
 }
 
-/// Situação do imóvel
+/// SituaÃ§Ã£o do imÃ³vel
 enum PropertySituation {
-  NOVO // Imóvel novo
-  SEM_NOVO // Imóvel usado
-  NA_MAO // Imóvel na mão
-  EM_CONSTRUCAO // Em construção
+  NOVO // ImÃ³vel novo
+  SEM_NOVO // ImÃ³vel usado
+  NA_MAO // ImÃ³vel na mÃ£o
+  EM_CONSTRUCAO // Em construÃ§Ã£o
   TERMINADO // Terminado
 }
 
-/// Situação do proprietário
+/// SituaÃ§Ã£o do proprietÃ¡rio
 enum OwnerSituation {
-  DISPONIVEL // Disponível para contato
+  DISPONIVEL // DisponÃ­vel para contato
   OCULTO // Oculto no sistema
   INATIVO // Inativo
-  VENDIDO // Já vendeu
-  ALUGADO // Já alugou
+  VENDIDO // JÃ¡ vendeu
+  ALUGADO // JÃ¡ alugou
 }
 
 /// Status do lead
 enum LeadStatus {
   NOVO // Lead novo
-  CONTATADO // Já foi contatado
+  CONTATADO // JÃ¡ foi contatado
   INTERESSADO // Mostrou interesse
   AGUARDANDO // Aguardando resposta
   PERDIDO // Lead perdido
@@ -109,15 +109,15 @@ enum ConversationStatus {
   ERRO // Erro no envio
 }
 
-/// Status do anúncio
+/// Status do anÃºncio
 enum AnnouncementStatus {
-  RASCUNHO // Anúncio em rascunho
-  PUBLICADO // Anúncio publicado
-  ATIVO // Anúncio ativo
-  INATIVO // Anúncio inativo
-  SUSPENSO // Anúncio suspenso
-  EXPIRADO // Anúncio expirado
-  RENOVADO // Anúncio renovado
+  RASCUNHO // AnÃºncio em rascunho
+  PUBLICADO // AnÃºncio publicado
+  ATIVO // AnÃºncio ativo
+  INATIVO // AnÃºncio inativo
+  SUSPENSO // AnÃºncio suspenso
+  EXPIRADO // AnÃºncio expirado
+  RENOVADO // AnÃºncio renovado
 }
 
 /// Status do pacote
@@ -130,19 +130,19 @@ enum PackageStatus {
 
 /// Tipo de plano
 enum PackageType {
-  BASICO // Plano básico
+  BASICO // Plano bÃ¡sico
   DESTAQUE // Plano destaque
   PREMIUM // Plano premium
   CORPORATIVO // Plano corporativo
   CUSTOMIZADO // Plano customizado
 }
 
-/// Status da integração com portal
+/// Status da integraÃ§Ã£o com portal
 enum PortalIntegrationStatus {
-  ATIVO // Integração ativa
-  INATIVO // Integração inativa
-  SUSPENSO // Integração suspensa
-  ERRO // Erro na integração
+  ATIVO // IntegraÃ§Ã£o ativa
+  INATIVO // IntegraÃ§Ã£o inativa
+  SUSPENSO // IntegraÃ§Ã£o suspensa
+  ERRO // Erro na integraÃ§Ã£o
 }
 
 /// Tipo de portal
@@ -156,37 +156,68 @@ enum PortalType {
   CUSTOM
 }
 
-/// Tipo de usuário
-enum UserRole {
-  ADMIN // Administrador do sistema
-  GERENTE // Gerente da imobiliária
-  CORRETOR // Corretor de imóveis
-  ASSISTENTE // Assistente administrativo
+/// Tipo de comunicação
+enum CommunicationType {
+  EMAIL
+  SMS
 }
 
-/// Tipo de notificação
+/// Status do envio de comunicação
+enum CommunicationStatus {
+  PENDENTE
+  ENVIADO
+  ENTREGUE
+  LIDO
+  FALHOU
+  CANCELADO
+}
+
+/// Tipo de usuÃ¡rio
+enum UserRole {
+  // Roles de Plataforma (Equipe ImobWeb)
+  PLATFORM_MASTER // Super Admin com acesso total
+  PLATFORM_MARKETING // Marketing da plataforma
+  PLATFORM_FINANCE // Financeiro da plataforma
+  PLATFORM_SUPPORT // Suporte da plataforma
+
+  // Roles de Agência (Imobiliária)
+  AGENCY_MASTER // Dono/Administrador da Imobiliária
+  AGENCY_SALES // Corretor / Vendas
+  AGENCY_HR // RH / Gestão de Equipe
+  AGENCY_MARKETING // Marketing da Imobiliária
+  AGENCY_FINANCE // Financeiro da Imobiliária
+  AGENCY_SUPPORT // Suporte da Imobiliária
+
+  // Legado (Para compatibilidade/Migração)
+  ADMIN
+  GERENTE
+  CORRETOR
+  ASSISTENTE
+}
+
+/// Tipo de notificaÃ§Ã£o
 enum NotificationType {
-  INFO // Informação geral
+  INFO // InformaÃ§Ã£o geral
   WARNING // Aviso importante
   ERROR // Erro do sistema
   SUCCESS // Sucesso operacional
-  LEAD // Notificação de lead
-  PROPERTY // Notificação de imóvel
-  PAYMENT // Notificação de pagamento
-  SYSTEM // Notificação do sistema
+  LEAD // NotificaÃ§Ã£o de lead
+  PROPERTY // NotificaÃ§Ã£o de imÃ³vel
+  PAYMENT // NotificaÃ§Ã£o de pagamento
+  SYSTEM // NotificaÃ§Ã£o do sistema
 }
 
-/// Tipo de método de pagamento
+/// Tipo de mÃ©todo de pagamento
 enum PaymentMethod {
-  CREDIT_CARD // Cartão de crédito
-  DEBIT_CARD // Cartão de débito
-  BOLETO // Boleto bancário
+  CREDIT_CARD // CartÃ£o de crÃ©dito
+  DEBIT_CARD // CartÃ£o de dÃ©bito
+  BOLETO // Boleto bancÃ¡rio
   PIX // PIX
-  TRANSFER // Transferência bancária
+  TRANSFER // TransferÃªncia bancÃ¡ria
   CASH // Dinheiro
 }
 
-/// Direção da mensagem WhatsApp
+/// DireÃ§Ã£o da mensagem WhatsApp
 enum MessageDirection {
   INCOMING // Mensagem recebida
   OUTGOING // Mensagem enviada
@@ -194,10 +225,10 @@ enum MessageDirection {
 
 /// Fonte do lead
 enum LeadSource {
-  WEBSITE // Site da imobiliária
-  PORTAL // Portal de imóveis
-  INDICATION // Indicação
-  REFERRAL // Indicação de cliente
+  WEBSITE // Site da imobiliÃ¡ria
+  PORTAL // Portal de imÃ³veis
+  INDICATION // IndicaÃ§Ã£o
+  REFERRAL // IndicaÃ§Ã£o de cliente
   SOCIAL // Rede social
   PHONE // Telefone direto
   WALK_IN // Cliente que chegou na loja
@@ -208,132 +239,138 @@ enum LeadSource {
 // MODELOS PRINCIPAIS
 // ============================================
 
-/// Modelo de Usuários do Sistema (Corretores, Gerentes, Admin)
+/// Modelo de UsuÃ¡rios do Sistema (Corretores, Gerentes, Admin)
 model User {
   id             String       @id @default(cuid())
-  name           String // Nome completo do usuário
-  email          String       @unique // Email único para login
+  name           String // Nome completo do usuÃ¡rio
+  email          String       @unique // Email Ãºnico para login
   phone          String? // Telefone de contato
   whatsapp       String? // WhatsApp para contato profissional
   password       String // Senha criptografada
-  role           UserRole // Papel do usuário no sistema
-  status         EntityStatus @default(ATIVO) // Status do usuário
-  lastLogin      DateTime? // Último login do usuário
-  avatar         String? // URL do avatar do usuário
-  bio            String? // Biografia ou descrição do usuário
-  department     String? // Departamento ou área de atuação
-  specialization String? // Especialização do usuário
-  createdAt      DateTime     @default(now()) // Data de criação
-  updatedAt      DateTime     @updatedAt // Data de atualização
+  role           UserRole // Papel do usuÃ¡rio no sistema
+  permissions    Json? // Overrides de permissão por usuário (ex: { "denied": ["billing:view"] })
+  status         EntityStatus @default(ATIVO) // Status do usuÃ¡rio
+  lastLogin      DateTime? // Ãšltimo login do usuÃ¡rio
+  avatar         String? // URL do avatar do usuÃ¡rio
+  bio            String? // Biografia ou descriÃ§Ã£o do usuÃ¡rio
+  department     String? // Departamento ou Ã¡rea de atuaÃ§Ã£o
+  specialization String? // EspecializaÃ§Ã£o do usuÃ¡rio
+  createdAt      DateTime     @default(now()) // Data de criaÃ§Ã£o
+  updatedAt      DateTime     @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   organizationId String // Chave estrangeira para multi-tenant
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Relacionamentos com entidades principais
-  properties    Property[] // Imóveis criados/gerenciados pelo usuário
-  leads         Lead[] // Leads atribuídos ao usuário
-  conversations Conversation[] // Conversas do usuário
-  notifications Notification[] // Notificações do usuário
-  assignedLeads Lead[]         @relation("AssignedLeads") // Leads atribuídos explicitamente
+  properties    Property[] // ImÃ³veis criados/gerenciados pelo usuÃ¡rio
+  leads         Lead[] // Leads atribuÃ­dos ao usuÃ¡rio
+  conversations Conversation[] // Conversas do usuÃ¡rio
+  notifications Notification[] // NotificaÃ§Ãµes do usuÃ¡rio
+  assignedLeads Lead[]         @relation("AssignedLeads") // Leads atribuÃ­dos explicitamente
   auditLogs     AuditLog[]
+  communicationUsage CommunicationUsage[]
 
-  // Comentários
-  /// Usuário do sistema com diferentes níveis de permissão
-  /// Suporta multi-tenant através da organização
+  // ComentÃ¡rios
+  /// UsuÃ¡rio do sistema com diferentes nÃ­veis de permissÃ£o
+  /// Suporta multi-tenant atravÃ©s da organizaÃ§Ã£o
   propertyVersions PropertyVersion[]
 
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([email])
   @@index([phone])
   @@index([whatsapp])
 }
 
-/// Modelo de Organizações (Multi-tenant - Imobiliárias)
+/// Modelo de OrganizaÃ§Ãµes (Multi-tenant - ImobiliÃ¡rias)
 model Organization {
   id             String       @id @default(cuid())
-  name           String // Nome da imobiliária
-  cnpj           String?      @unique // CNPJ único
+  name           String // Nome da imobiliÃ¡ria
+  cnpj           String?      @unique // CNPJ Ãºnico
   phone          String? // Telefone principal
   email          String?      @unique // Email corporativo
-  website        String? // Website da imobiliária
+  website        String? // Website da imobiliÃ¡ria
   logo           String? // URL do logo da empresa
-  address        String? // Endereço completo
+  address        String? // EndereÃ§o completo
   neighborhood   String? // Bairro
   city           String? // Cidade
   state          String? // Estado
   cep            String? // CEP
-  country        String?      @default("Brasil") // País
-  status         EntityStatus @default(ATIVO) // Status da organização
+  country        String?      @default("Brasil") // PaÃ­s
+  status         EntityStatus @default(ATIVO) // Status da organizaÃ§Ã£o
   planType       PackageType? // Tipo de plano atual
-  maxUsers       Int? // Limite de usuários
-  maxProperties  Int? // Limite de imóveis
+  maxUsers       Int? // Limite de usuÃ¡rios
+  maxProperties  Int? // Limite de imÃ³veis
   maxLeads       Int? // Limite de leads
-  features       Json? // Recursos disponíveis no plano
-  settings       Json? // Configurações personalizadas
-  primaryColor   String? // Cor primária da marca (White Label)
-  secondaryColor String? // Cor secundária da marca (White Label)
-  subDomain      String?      @unique // Subdomínio exclusivo da imobiliária
-  createdAt      DateTime     @default(now()) // Data de criação
-  updatedAt      DateTime     @updatedAt // Data de atualização
+  features       Json? // Recursos disponÃ­veis no plano
+  settings       Json? // ConfiguraÃ§Ãµes personalizadas
+  primaryColor   String? // Cor primÃ¡ria da marca (White Label)
+  secondaryColor String? // Cor secundÃ¡ria da marca (White Label)
+  isPlatform     Boolean      @default(false) // Indica se é a organização gestora (ImobWeb)
+  roleQuotas     Json? // Limites de usuários por papel (ex: {"AGENCY_SALES": 10})
+  subDomain      String?      @unique // SubdomÃ­nio exclusivo da imobiliÃ¡ria
+  createdAt      DateTime     @default(now()) // Data de criaÃ§Ã£o
+  updatedAt      DateTime     @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
-  users              User[] // Usuários da organização
-  properties         Property[] // Imóveis da organização
-  leads              Lead[] // Leads da organização
-  subscriptions      Subscription[] // Assinaturas da organização
-  apiKeys            ApiKey[] // Chaves de API da organização
+  users              User[] // UsuÃ¡rios da organizaÃ§Ã£o
+  properties         Property[] // ImÃ³veis da organizaÃ§Ã£o
+  leads              Lead[] // Leads da organizaÃ§Ã£o
+  subscriptions      Subscription[] // Assinaturas da organizaÃ§Ã£o
+  apiKeys            ApiKey[] // Chaves de API da organizaÃ§Ã£o
   auditLogs          AuditLog[]
-  contracts          Contract[] // Contratos da organização
-  portalIntegrations PortalIntegration[] // Integrações com portais
+  contracts          Contract[] // Contratos da organizaÃ§Ã£o
+  portalIntegrations PortalIntegration[] // IntegraÃ§Ã£o com portais
+  communicationUsage  CommunicationUsage[]
+  communicationQuota  CommunicationQuota[]
 
-  // Comentários
-  /// Organização principal para suporte multi-tenant
-  /// Cada organização representa uma imobiliária diferente
+  // ComentÃ¡rios
+  /// OrganizaÃ§Ã£o principal para suporte multi-tenant
+  /// Cada organizaÃ§Ã£o representa uma imobiliÃ¡ria diferente
 
-  // Índices
+  // Ã�ndices
   @@index([cnpj])
   @@index([email])
   @@index([city])
 }
 
-/// Modelo de Imóveis (com +80 campos detalhados)
+/// Modelo de ImÃ³veis (com +80 campos detalhados)
 model Property {
   id               String             @id @default(cuid())
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  title            String // Título do imóvel
-  description      String? // Descrição detalhada do imóvel
-  code             String? // Código interno do imóvel
-  status           PropertyStatus     @default(RASCUNHO) // Status do imóvel
-  type             PropertyType // Tipo do imóvel
-  businessType     BusinessType // Tipo de negócio (venda/locação)
-  situation        PropertySituation? // Situação do imóvel
-  price            Decimal? // Preço do imóvel
-  priceRent        Decimal? // Preço do aluguel
-  priceCondominium Decimal? // Valor do condomínio
+  title            String // TÃ­tulo do imÃ³vel
+  description      String? // DescriÃ§Ã£o detalhada do imÃ³vel
+  code             String? // CÃ³digo interno do imÃ³vel
+  status           PropertyStatus     @default(RASCUNHO) // Status do imÃ³vel
+  type             PropertyType // Tipo do imÃ³vel
+  businessType     BusinessType // Tipo de negÃ³cio (venda/locaÃ§Ã£o)
+  situation        PropertySituation? // SituaÃ§Ã£o do imÃ³vel
+  price            Decimal? // PreÃ§o do imÃ³vel
+  priceRent        Decimal? // PreÃ§o do aluguel
+  priceCondominium Decimal? // Valor do condomÃ­nio
   priceIptu        Decimal? // Valor do IPTU
   priceTax         Decimal? // Valor de taxas
   currency         String?            @default("BRL") // Moeda
 
-  // Medidas e dimensões
-  areaPrivate      Float? // Área privativa (m²)
-  areaCommon       Float? // Área comum (m²)
-  areaUseful       Float? // Área útil (m²)
-  areaTotal        Float? // Área total (m²)
-  areaLand         Float? // Área do terreno (m²)
-  areaConstruction Float? // Área de construção (m²)
+  // Medidas e dimensÃµes
+  areaPrivate      Float? // Ã�rea privativa (mÂ²)
+  areaCommon       Float? // Ã�rea comum (mÂ²)
+  areaUseful       Float? // Ã�rea Ãºtil (mÂ²)
+  areaTotal        Float? // Ã�rea total (mÂ²)
+  areaLand         Float? // Ã�rea do terreno (mÂ²)
+  areaConstruction Float? // Ã�rea de construÃ§Ã£o (mÂ²)
 
   // Quartos e banheiros
-  bedrooms         Int? // Número de quartos
-  bedroomsSuites   Int? // Número de suítes
-  bathrooms        Int? // Número de banheiros
-  bathroomsSocial  Int? // Número de banheiros sociais
-  bathroomsService Int? // Número de banheiros de serviço
+  bedrooms         Int? // NÃºmero de quartos
+  bedroomsSuites   Int? // NÃºmero de suÃ­tes
+  bathrooms        Int? // NÃºmero de banheiros
+  bathroomsSocial  Int? // NÃºmero de banheiros sociais
+  bathroomsService Int? // NÃºmero de banheiros de serviÃ§o
 
   // Vagas e garagens
-  garages          Int? // Número de vagas na garagem
+  garages          Int? // NÃºmero de vagas na garagem
   garagesCovered   Int? // Vagas cobertas
   garagesOpen      Int? // Vagas abertas
   garagesDependent Int? // Vagas para dependentes
@@ -344,34 +381,34 @@ model Property {
   hasElevator  Boolean @default(false) // Tem elevador
   hasConcierge Boolean @default(false) // Tem porteiro
 
-  // Características do imóvel
+  // CaracterÃ­sticas do imÃ³vel
   hasPool             Boolean @default(false) // Tem piscina
   hasGarden           Boolean @default(false) // Tem jardim
   hasBarbecue         Boolean @default(false) // Tem churrasqueira
   hasPlayground       Boolean @default(false) // Tem playground
-  hasSecurity         Boolean @default(false) // Tem segurança
+  hasSecurity         Boolean @default(false) // Tem seguranÃ§a
   hasAlarm            Boolean @default(false) // Tem alarme
   hasInternet         Boolean @default(false) // Tem internet
   hasCableTV          Boolean @default(false) // Tem TV a cabo
-  hasGas              Boolean @default(false) // Tem gás
-  hasWater            Boolean @default(false) // Tem água
-  hasElectricity      Boolean @default(false) // Tem energia elétrica
+  hasGas              Boolean @default(false) // Tem gÃ¡s
+  hasWater            Boolean @default(false) // Tem Ã¡gua
+  hasElectricity      Boolean @default(false) // Tem energia elÃ©trica
   hasSewerage         Boolean @default(false) // Tem esgoto
   hasPhone            Boolean @default(false) // Tem telefone
   hasIntercom         Boolean @default(false) // Tem interfone
   hasParking          Boolean @default(false) // Tem estacionamento
   hasCoveredParking   Boolean @default(false) // Tem estacionamento coberto
   hasOpenParking      Boolean @default(false) // Tem estacionamento aberto
-  hasDependent        Boolean @default(false) // Tem dependência
-  hasServiceArea      Boolean @default(false) // Tem área de serviço
+  hasDependent        Boolean @default(false) // Tem dependÃªncia
+  hasServiceArea      Boolean @default(false) // Tem Ã¡rea de serviÃ§o
   hasKitchen          Boolean @default(false) // Tem cozinha
   hasBalcony          Boolean @default(false) // Tem varanda
-  hasTerrace          Boolean @default(false) // Tem terraço
-  hasGourmetArea      Boolean @default(false) // Tem área gourmet
+  hasTerrace          Boolean @default(false) // Tem terraÃ§o
+  hasGourmetArea      Boolean @default(false) // Tem Ã¡rea gourmet
   hasHomeOffice       Boolean @default(false) // Tem home office
   hasStorageRoom      Boolean @default(false) // Tem despensa
   hasLaundry          Boolean @default(false) // Tem lavanderia
-  hasServiceEntrance  Boolean @default(false) // Tem entrada de serviço
+  hasServiceEntrance  Boolean @default(false) // Tem entrada de serviÃ§o
   hasWheelchairAccess Boolean @default(false) // Tem acessibilidade
   hasFireplace        Boolean @default(false) // Tem lareira
   hasAirConditioning  Boolean @default(false) // Tem ar condicionado
@@ -379,104 +416,104 @@ model Property {
   hasSolarHeating     Boolean @default(false) // Tem aquecedor solar
 
   // Infraestrutura
-  hasWaterTank           Boolean @default(false) // Tanque d'água
-  hasWell                Boolean @default(false) // Poço
-  hasArtesianWell        Boolean @default(false) // Poço artesiano
-  hasSepticTank          Boolean @default(false) // Fossa séptica
-  hasRainwaterHarvesting Boolean @default(false) // Captação de água da chuva
-  hasSolarPanels         Boolean @default(false) // Painéis solares
-  hasWindTurbine         Boolean @default(false) // Turbina eólica
+  hasWaterTank           Boolean @default(false) // Tanque d'Ã¡gua
+  hasWell                Boolean @default(false) // PoÃ§o
+  hasArtesianWell        Boolean @default(false) // PoÃ§o artesiano
+  hasSepticTank          Boolean @default(false) // Fossa sÃ©ptica
+  hasRainwaterHarvesting Boolean @default(false) // CaptaÃ§Ã£o de Ã¡gua da chuva
+  hasSolarPanels         Boolean @default(false) // PainÃ©is solares
+  hasWindTurbine         Boolean @default(false) // Turbina eÃ³lica
   hasPhotovoltaic        Boolean @default(false) // Fotovoltaico
-  hasGeothermal          Boolean @default(false) // Geotérmico
+  hasGeothermal          Boolean @default(false) // GeotÃ©rmico
   hasBiomass             Boolean @default(false) // Biomassa
-  hasCogeneration        Boolean @default(false) // Cogeração
+  hasCogeneration        Boolean @default(false) // CogeraÃ§Ã£o
   hasMicrogrid           Boolean @default(false) // Microgrid
   hasSmartHome           Boolean @default(false) // Casa inteligente
-  hasHomeAutomation      Boolean @default(false) // Automação residencial
+  hasHomeAutomation      Boolean @default(false) // AutomaÃ§Ã£o residencial
 
-  // Segurança
-  hasSecurityCameras  Boolean @default(false) // Câmeras de segurança
+  // SeguranÃ§a
+  hasSecurityCameras  Boolean @default(false) // CÃ¢meras de seguranÃ§a
   hasAccessControl    Boolean @default(false) // Controle de acesso
-  hasBiometricAccess  Boolean @default(false) // Acesso biométrico
-  hasVideoIntercom    Boolean @default(false) // Interfone com vídeo
-  hasGateControl      Boolean @default(false) // Controle de portão
+  hasBiometricAccess  Boolean @default(false) // Acesso biomÃ©trico
+  hasVideoIntercom    Boolean @default(false) // Interfone com vÃ­deo
+  hasGateControl      Boolean @default(false) // Controle de portÃ£o
   hasFence            Boolean @default(false) // Cerca
   hasWall             Boolean @default(false) // Muro
-  hasGate             Boolean @default(false) // Portão
-  hasSecurityGuard    Boolean @default(false) // Segurança 24h
-  hasSecurityDog      Boolean @default(false) // Cão de guarda
-  hasSecurityLighting Boolean @default(false) // Iluminação de segurança
+  hasGate             Boolean @default(false) // PortÃ£o
+  hasSecurityGuard    Boolean @default(false) // SeguranÃ§a 24h
+  hasSecurityDog      Boolean @default(false) // CÃ£o de guarda
+  hasSecurityLighting Boolean @default(false) // IluminaÃ§Ã£o de seguranÃ§a
   hasAlarmSystem      Boolean @default(false) // Sistema de alarme
 
-  // Segurança contra incêndio
-  hasSmokeDetector          Boolean? @default(false) // Detector de fumaça
-  hasCarbonMonoxideDetector Boolean? @default(false) // Detector de monóxido de carbono
-  hasFireExtinguisher       Boolean  @default(false) // Extintor de incêndio
+  // SeguranÃ§a contra incÃªndio
+  hasSmokeDetector          Boolean? @default(false) // Detector de fumaÃ§a
+  hasCarbonMonoxideDetector Boolean? @default(false) // Detector de monÃ³xido de carbono
+  hasFireExtinguisher       Boolean  @default(false) // Extintor de incÃªndio
   hasFirstAidKit            Boolean  @default(false) // Kit de primeiros socorros
-  hasEmergencyExit          Boolean  @default(false) // Saída de emergência
-  hasFireAlarm              Boolean  @default(false) // Alarme de incêndio
+  hasEmergencyExit          Boolean  @default(false) // SaÃ­da de emergÃªncia
+  hasFireAlarm              Boolean  @default(false) // Alarme de incÃªndio
   hasFireSprinkler          Boolean  @default(false) // Sprinkler
   hasFireHydrant            Boolean  @default(false) // Hidrante
-  hasFireLadder             Boolean  @default(false) // Escada de incêndio
-  hasFireHose               Boolean  @default(false) // Mangueira incêndio
-  hasFireBlanket            Boolean  @default(false) // Cobertor incêndio
+  hasFireLadder             Boolean  @default(false) // Escada de incÃªndio
+  hasFireHose               Boolean  @default(false) // Mangueira incÃªndio
+  hasFireBlanket            Boolean  @default(false) // Cobertor incÃªndio
 
-  // Localização
-  address      String? // Endereço completo
+  // LocalizaÃ§Ã£o
+  address      String? // EndereÃ§o completo
   neighborhood String? // Bairro
   city         String? // Cidade
   state        String? // Estado
   cep          String? // CEP
   latitude     Float? // Latitude
   longitude    Float? // Longitude
-  location     Json? // Dados de localização detalhados
+  location     Json? // Dados de localizaÃ§Ã£o detalhados
 
   // Detalhes adicionais
-  yearBuilt         Int? // Ano de construção
+  yearBuilt         Int? // Ano de construÃ§Ã£o
   renovationYear    Int? // Ano de reforma
   furnished         Boolean @default(false) // Mobiliado
   semiFurnished     Boolean @default(false) // Semi mobiliado
-  unfurnished       Boolean @default(false) // Não mobiliado
-  newConstruction   Boolean @default(false) // Construção nova
-  underConstruction Boolean @default(false) // Em construção
-  toBeBuilt         Boolean @default(false) // A ser construído
+  unfurnished       Boolean @default(false) // NÃ£o mobiliado
+  newConstruction   Boolean @default(false) // ConstruÃ§Ã£o nova
+  underConstruction Boolean @default(false) // Em construÃ§Ã£o
+  toBeBuilt         Boolean @default(false) // A ser construÃ­do
 
-  // Visitação e disponibilidade
-  availableForVisit   Boolean @default(true) // Disponível para visita
-  visitSchedule       Json? // Horário de visita
+  // VisitaÃ§Ã£o e disponibilidade
+  availableForVisit   Boolean @default(true) // DisponÃ­vel para visita
+  visitSchedule       Json? // HorÃ¡rio de visita
   requiresAppointment Boolean @default(false) // Requer agendamento
-  visitInstructions   String? // Instruções para visita
+  visitInstructions   String? // InstruÃ§Ãµes para visita
 
   // Documentos e legal
-  registration     String? // Matrícula do imóvel
-  registrationDate DateTime? // Data da matrícula
-  notary           String? // Cartório
+  registration     String? // MatrÃ­cula do imÃ³vel
+  registrationDate DateTime? // Data da matrÃ­cula
+  notary           String? // CartÃ³rio
   registry         String? // Registro
-  condoName        String? // Nome do condomínio
-  condoRegistry    String? // Registro do condomínio
+  condoName        String? // Nome do condomÃ­nio
+  condoRegistry    String? // Registro do condomÃ­nio
 
   // Valores adicionais
   iptuValue     Decimal? // Valor do IPTU
-  condoFee      Decimal? // Taxa de condomínio
-  iptuExemption Boolean  @default(false) // Isenção de IPTU
-  taxExemption  Boolean  @default(false) // Isenção de taxas
+  condoFee      Decimal? // Taxa de condomÃ­nio
+  iptuExemption Boolean  @default(false) // IsenÃ§Ã£o de IPTU
+  taxExemption  Boolean  @default(false) // IsenÃ§Ã£o de taxas
 
-  // Observações e informações
-  observations String? // Observações gerais
-  restrictions String? // Restrições do imóvel
-  privileges   String? // Privilégios do imóvel
+  // ObservaÃ§Ãµes e informaÃ§Ãµes
+  observations String? // ObservaÃ§Ãµes gerais
+  restrictions String? // RestriÃ§Ãµes do imÃ³vel
+  privileges   String? // PrivilÃ©gios do imÃ³vel
   warnings     String? // Avisos importantes
 
   // Metadados
-  views     Int? @default(0) // Número de visualizações
-  favorites Int? @default(0) // Número de favoritos
-  shares    Int? @default(0) // Número de compartilhamentos
-  clicks    Int? @default(0) // Número de cliques
+  views     Int? @default(0) // NÃºmero de visualizaÃ§Ãµes
+  favorites Int? @default(0) // NÃºmero de favoritos
+  shares    Int? @default(0) // NÃºmero de compartilhamentos
+  clicks    Int? @default(0) // NÃºmero de cliques
 
   // Status e datas
-  publishedAt DateTime? // Data de publicação
-  expiresAt   DateTime? // Data de expiração
-  featured    Boolean   @default(false) // Imóvel em destaque
+  publishedAt DateTime? // Data de publicaÃ§Ã£o
+  expiresAt   DateTime? // Data de expiraÃ§Ã£o
+  featured    Boolean   @default(false) // ImÃ³vel em destaque
   priority    Int?      @default(0) // Prioridade de destaque
 
   // Relacionamentos multi-tenant
@@ -484,28 +521,28 @@ model Property {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Relacionamentos principais
-  ownerId String? // Proprietário do imóvel
+  ownerId String? // ProprietÃ¡rio do imÃ³vel
   owner   Owner?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
-  // Relacionamentos secundários
-  photos        PropertyPhoto[] // Fotos do imóvel
-  versions      PropertyVersion[] // Histórico de alterações
-  leads         Lead[] // Leads relacionados ao imóvel
-  announcements Announcement[] // Anúncios do imóvel
-  features      PropertyFeature[] // Características do imóvel
-  contracts     Contract[] // Contratos relacionados ao imóvel
+  // Relacionamentos secundÃ¡rios
+  photos        PropertyPhoto[] // Fotos do imÃ³vel
+  versions      PropertyVersion[] // HistÃ³rico de alteraÃ§Ãµes
+  leads         Lead[] // Leads relacionados ao imÃ³vel
+  announcements Announcement[] // AnÃºncios do imÃ³vel
+  features      PropertyFeature[] // CaracterÃ­sticas do imÃ³vel
+  contracts     Contract[] // Contratos relacionados ao imÃ³vel
 
-  // Comentários
-  /// Modelo principal de imóveis com +80 campos detalhados
-  /// Suporta todos os tipos de imóveis e situações
-  /// Sistema de versionamento para histórico de alterações
-  /// Integração com portais de imóveis
+  // ComentÃ¡rios
+  /// Modelo principal de imÃ³veis com +80 campos detalhados
+  /// Suporta todos os tipos de imÃ³veis e situaÃ§Ãµes
+  /// Sistema de versionamento para histÃ³rico de alteraÃ§Ãµes
+  /// IntegraÃ§Ã£o com portais de imÃ³veis
   user            User?             @relation(fields: [userId], references: [id])
   userId          String?
   PropertyHistory PropertyHistory[]
 
   @@unique([code])
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([status])
   @@index([type])
@@ -518,116 +555,116 @@ model Property {
   @@index([code])
 }
 
-/// Modelo de Fotos de Imóveis
+/// Modelo de Fotos de ImÃ³veis
 model PropertyPhoto {
   id         String   @id @default(cuid())
-  propertyId String // ID do imóvel
+  propertyId String // ID do imÃ³vel
   url        String // URL da imagem
   caption    String? // Legenda da foto
-  order      Int      @default(0) // Ordem de exibição
-  isPrimary  Boolean  @default(false) // É a foto principal
+  order      Int      @default(0) // Ordem de exibiÃ§Ã£o
+  isPrimary  Boolean  @default(false) // Ã‰ a foto principal
   altText    String? // Texto alternativo para acessibilidade
   width      Int? // Largura da imagem
   height     Int? // Altura da imagem
   size       Int? // Tamanho em bytes
   format     String? // Formato da imagem (jpg, png, etc.)
   metadata   Json? // Metadados adicionais da imagem
-  createdAt  DateTime @default(now()) // Data de criação
-  updatedAt  DateTime @updatedAt // Data de atualização
+  createdAt  DateTime @default(now()) // Data de criaÃ§Ã£o
+  updatedAt  DateTime @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Fotos dos imóveis com suporte a metadados
-  /// Sistema de ordenação e foto principal
-  /// Metadados para otimização de performance
+  // ComentÃ¡rios
+  /// Fotos dos imÃ³veis com suporte a metadados
+  /// Sistema de ordenaÃ§Ã£o e foto principal
+  /// Metadados para otimizaÃ§Ã£o de performance
 
-  // Índices
+  // Ã�ndices
   @@index([propertyId])
   @@index([isPrimary])
   @@index([order])
 }
 
-/// Modelo de Histórico de Alterações de Imóveis
+/// Modelo de HistÃ³rico de AlteraÃ§Ãµes de ImÃ³veis
 model PropertyVersion {
   id         String   @id @default(cuid())
-  propertyId String // ID do imóvel
+  propertyId String // ID do imÃ³vel
   field      String // Campo alterado
   oldValue   String? // Valor antigo
   newValue   String? // Valor novo
-  changedBy  String // ID do usuário que alterou
-  reason     String? // Motivo da alteração
-  createdAt  DateTime @default(now()) // Data da alteração
+  changedBy  String // ID do usuÃ¡rio que alterou
+  reason     String? // Motivo da alteraÃ§Ã£o
+  createdAt  DateTime @default(now()) // Data da alteraÃ§Ã£o
 
   // Relacionamentos
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [changedBy], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Histórico completo de alterações nos imóveis
-  /// Auditoria de todas as modificações
-  /// Rastreabilidade de responsáveis
+  // ComentÃ¡rios
+  /// HistÃ³rico completo de alteraÃ§Ãµes nos imÃ³veis
+  /// Auditoria de todas as modificaÃ§Ãµes
+  /// Rastreabilidade de responsÃ¡veis
 
-  // Índices
+  // Ã�ndices
   @@index([propertyId])
   @@index([field])
   @@index([createdAt])
   @@index([changedBy])
 }
 
-/// Modelo de Proprietários
+/// Modelo de ProprietÃ¡rios
 model Owner {
   id            String         @id @default(cuid())
-  name          String // Nome completo do proprietário
-  document      String? // CPF/CNPJ do proprietário
+  name          String // Nome completo do proprietÃ¡rio
+  document      String? // CPF/CNPJ do proprietÃ¡rio
   phone         String? // Telefone de contato
   email         String? // Email de contato
   whatsapp      String? // WhatsApp para contato
-  status        EntityStatus   @default(ATIVO) // Status do proprietário
-  situation     OwnerSituation @default(DISPONIVEL) // Situação do proprietário
+  status        EntityStatus   @default(ATIVO) // Status do proprietÃ¡rio
+  situation     OwnerSituation @default(DISPONIVEL) // SituaÃ§Ã£o do proprietÃ¡rio
   birthDate     DateTime? // Data de nascimento
-  gender        String? // Gênero
+  gender        String? // GÃªnero
   maritalStatus String? // Estado civil
-  profession    String? // Profissão
+  profession    String? // ProfissÃ£o
   income        Decimal? // Renda mensal
-  creditScore   Int? // Score de crédito
+  creditScore   Int? // Score de crÃ©dito
 
-  // Endereço
-  address      String? // Endereço completo
+  // EndereÃ§o
+  address      String? // EndereÃ§o completo
   neighborhood String? // Bairro
   city         String? // Cidade
   state        String? // Estado
   cep          String? // CEP
 
-  // Informações profissionais
+  // InformaÃ§Ãµes profissionais
   company   String? // Empresa onde trabalha
   position  String? // Cargo na empresa
   workPhone String? // Telefone comercial
   workEmail String? // Email corporativo
 
-  // Preferências
-  contactPreference String? @default("whatsapp") // Preferência de contato
-  contactHours      Json? // Horários preferenciais para contato
+  // PreferÃªncias
+  contactPreference String? @default("whatsapp") // PreferÃªncia de contato
+  contactHours      Json? // HorÃ¡rios preferenciais para contato
   language          String? @default("pt-BR") // Idioma preferido
 
   // Metadados
-  notes        String? // Observações sobre o proprietário
-  tags         Json? // Tags para categorização
+  notes        String? // ObservaÃ§Ãµes sobre o proprietÃ¡rio
+  tags         Json? // Tags para categorizaÃ§Ã£o
   customFields Json? // Campos personalizados
-  lastContact  DateTime? // Último contato
-  nextContact  DateTime? // Próximo contato agendado
+  lastContact  DateTime? // Ãšltimo contato
+  nextContact  DateTime? // PrÃ³ximo contato agendado
 
   // Relacionamentos
-  properties Property[] // Imóveis do proprietário
+  properties Property[] // ImÃ³veis do proprietÃ¡rio
 
-  // Comentários
-  /// Proprietários de imóveis com suporte a WhatsApp
-  /// Sistema de categorização e tags
-  /// Histórico de contato e preferências
+  // ComentÃ¡rios
+  /// ProprietÃ¡rios de imÃ³veis com suporte a WhatsApp
+  /// Sistema de categorizaÃ§Ã£o e tags
+  /// HistÃ³rico de contato e preferÃªncias
 
   @@unique([document])
-  // Índices
+  // Ã�ndices
   @@index([phone])
   @@index([email])
   @@index([whatsapp])
@@ -646,55 +683,55 @@ model Lead {
   whatsapp     String? // WhatsApp do lead
   status       LeadStatus    @default(NOVO) // Status do lead
   source       LeadSource    @default(WALK_IN) // Fonte do lead
-  budget       Decimal? // Orçamento do lead
-  budgetRent   Decimal? // Orçamento de aluguel
-  propertyType PropertyType? // Tipo de imóvel desejado
-  businessType BusinessType? // Tipo de negócio desejado
-  bedrooms     Int? // Número de quartos desejado
-  bathrooms    Int? // Número de banheiros desejado
-  maxPrice     Decimal? // Preço máximo desejado
-  maxRent      Decimal? // Aluguel máximo desejado
-  minArea      Float? // Área mínima desejada
-  maxArea      Float? // Área máxima desejada
+  budget       Decimal? // OrÃ§amento do lead
+  budgetRent   Decimal? // OrÃ§amento de aluguel
+  propertyType PropertyType? // Tipo de imÃ³vel desejado
+  businessType BusinessType? // Tipo de negÃ³cio desejado
+  bedrooms     Int? // NÃºmero de quartos desejado
+  bathrooms    Int? // NÃºmero de banheiros desejado
+  maxPrice     Decimal? // PreÃ§o mÃ¡ximo desejado
+  maxRent      Decimal? // Aluguel mÃ¡ximo desejado
+  minArea      Float? // Ã�rea mÃ­nima desejada
+  maxArea      Float? // Ã�rea mÃ¡xima desejada
   neighborhood String? // Bairro preferido
   city         String? // Cidade preferida
   state        String? // Estado preferido
 
-  // Informações adicionais
+  // InformaÃ§Ãµes adicionais
   company     String? // Empresa do lead
   position    String? // Cargo do lead
-  profession  String? // Profissão do lead
+  profession  String? // ProfissÃ£o do lead
   income      Decimal? // Renda do lead
-  creditScore Int? // Score de crédito
+  creditScore Int? // Score de crÃ©dito
 
   // Metadados
-  notes         String? // Observações sobre o lead
-  tags          Json? // Tags para categorização
+  notes         String? // ObservaÃ§Ãµes sobre o lead
+  tags          Json? // Tags para categorizaÃ§Ã£o
   customFields  Json? // Campos personalizados
   sourceDetails Json? // Detalhes da fonte do lead
-  referralCode  String? // Código de indicação
+  referralCode  String? // CÃ³digo de indicaÃ§Ã£o
 
   // Relacionamentos
   organizationId String // Chave estrangeira para multi-tenant
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  propertyId String? // Imóvel de interesse
+  propertyId String? // ImÃ³vel de interesse
   property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
-  assignedToId String? // Usuário responsável pelo lead
+  assignedToId String? // UsuÃ¡rio responsÃ¡vel pelo lead
   assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   conversations Conversation[] // Conversas do lead
   campaigns     WhatsAppCampaign[] // Campanhas do lead
 
-  // Comentários
-  /// Leads potenciais com sistema de atribuição
-  /// Suporte a múltiplos canais de contato
-  /// Integração com WhatsApp e campanhas
+  // ComentÃ¡rios
+  /// Leads potenciais com sistema de atribuiÃ§Ã£o
+  /// Suporte a mÃºltiplos canais de contato
+  /// IntegraÃ§Ã£o com WhatsApp e campanhas
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([status])
   @@index([source])
@@ -711,29 +748,29 @@ model Conversation {
   id          String             @id @default(cuid())
   leadId      String // ID do lead
   externalId  String?            @unique // ID da mensagem no WhatsApp
-  message     String // Conteúdo da mensagem
-  direction   MessageDirection // Direção da mensagem
+  message     String // ConteÃºdo da mensagem
+  direction   MessageDirection // DireÃ§Ã£o da mensagem
   status      ConversationStatus @default(ATIVA) // Status da conversa
   messageType String?            @default("text") // Tipo de mensagem
-  mediaUrl    String? // URL de mídia (imagem, áudio, etc.)
-  mediaType   String? // Tipo de mídia
+  mediaUrl    String? // URL de mÃ­dia (imagem, Ã¡udio, etc.)
+  mediaType   String? // Tipo de mÃ­dia
   metadata    Json? // Metadados adicionais
   readAt      DateTime? // Data de leitura
   deliveredAt DateTime? // Data de entrega
-  createdAt   DateTime           @default(now()) // Data de criação
-  updatedAt   DateTime           @updatedAt // Data de atualização
+  createdAt   DateTime           @default(now()) // Data de criaÃ§Ã£o
+  updatedAt   DateTime           @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   lead   Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  userId String? // Usuário responsável pela conversa
+  userId String? // UsuÃ¡rio responsÃ¡vel pela conversa
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  // Comentários
+  // ComentÃ¡rios
   /// Sistema de conversas WhatsApp com IA
-  /// Histórico completo de interações
-  /// Suporte a mensagens de texto e mídia
+  /// HistÃ³rico completo de interaÃ§Ãµes
+  /// Suporte a mensagens de texto e mÃ­dia
 
-  // Índices
+  // Ã�ndices
   @@index([leadId])
   @@index([direction])
   @@index([status])
@@ -741,42 +778,42 @@ model Conversation {
   @@index([userId])
 }
 
-/// Modelo de Anúncios por Portal
+/// Modelo de AnÃºncios por Portal
 model Announcement {
   id          String             @id @default(cuid())
-  propertyId  String // ID do imóvel
-  portalId    String // ID da integração do portal
-  title       String // Título do anúncio
-  description String? // Descrição do anúncio
-  url         String? // URL do anúncio no portal
-  externalId  String? // ID externo do anúncio
-  status      AnnouncementStatus @default(RASCUNHO) // Status do anúncio
+  propertyId  String // ID do imÃ³vel
+  portalId    String // ID da integraÃ§Ã£o do portal
+  title       String // TÃ­tulo do anÃºncio
+  description String? // DescriÃ§Ã£o do anÃºncio
+  url         String? // URL do anÃºncio no portal
+  externalId  String? // ID externo do anÃºncio
+  status      AnnouncementStatus @default(RASCUNHO) // Status do anÃºncio
   portalType  PortalType // Tipo de portal
-  publishedAt DateTime? // Data de publicação
-  expiresAt   DateTime? // Data de expiração
-  views       Int?               @default(0) // Visualizações
+  publishedAt DateTime? // Data de publicaÃ§Ã£o
+  expiresAt   DateTime? // Data de expiraÃ§Ã£o
+  views       Int?               @default(0) // VisualizaÃ§Ãµes
   clicks      Int?               @default(0) // Cliques
   likes       Int?               @default(0) // Curtidas
   shares      Int?               @default(0) // Compartilhamentos
-  price       Decimal? // Preço no portal
+  price       Decimal? // PreÃ§o no portal
   currency    String?            @default("BRL") // Moeda
-  lastSync    DateTime? // Última sincronização
-  syncErrors  Json? // Erros de sincronização
+  lastSync    DateTime? // Ãšltima sincronizaÃ§Ã£o
+  syncErrors  Json? // Erros de sincronizaÃ§Ã£o
   metadata    Json? // Metadados adicionais
-  createdAt   DateTime           @default(now()) // Data de criação
-  updatedAt   DateTime           @updatedAt // Data de atualização
+  createdAt   DateTime           @default(now()) // Data de criaÃ§Ã£o
+  updatedAt   DateTime           @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   property          Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   portalIntegration PortalIntegration @relation(fields: [portalId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Integração com portais de imóveis
-  /// Sincronização automática de dados
-  /// Métricas de desempenho dos anúncios
+  // ComentÃ¡rios
+  /// IntegraÃ§Ã£o com portais de imÃ³veis
+  /// SincronizaÃ§Ã£o automÃ¡tica de dados
+  /// MÃ©tricas de desempenho dos anÃºncios
 
   @@unique([externalId, portalId])
-  // Índices
+  // Ã�ndices
   @@index([propertyId])
   @@index([portalId])
   @@index([status])
@@ -789,95 +826,95 @@ model Announcement {
 model Package {
   id          String        @id @default(cuid())
   name        String // Nome do pacote
-  description String? // Descrição do pacote
+  description String? // DescriÃ§Ã£o do pacote
   type        PackageType // Tipo de pacote
-  price       Decimal // Preço do pacote
-  duration    Int // Duração em dias
+  price       Decimal // PreÃ§o do pacote
+  duration    Int // DuraÃ§Ã£o em dias
   features    Json? // Recursos do pacote
   limits      Json? // Limites do pacote
   status      PackageStatus @default(ATIVO) // Status do pacote
-  isPopular   Boolean       @default(false) // É pacote popular
-  isDefault   Boolean       @default(false) // É pacote padrão
+  isPopular   Boolean       @default(false) // Ã‰ pacote popular
+  isDefault   Boolean       @default(false) // Ã‰ pacote padrÃ£o
   trialDays   Int? // Dias de teste gratuitos
   setupFee    Decimal? // Taxa de setup
   currency    String        @default("BRL") // Moeda
   metadata    Json? // Metadados adicionais
-  createdAt   DateTime      @default(now()) // Data de criação
-  updatedAt   DateTime      @updatedAt // Data de atualização
+  createdAt   DateTime      @default(now()) // Data de criaÃ§Ã£o
+  updatedAt   DateTime      @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   subscriptions Subscription[] // Assinaturas do pacote
 
-  // Comentários
+  // ComentÃ¡rios
   /// Pacotes de assinatura da plataforma
-  /// Diferentes níveis de serviço
+  /// Diferentes nÃ­veis de serviÃ§o
   /// Sistema de limites e recursos
 
-  // Índices
+  // Ã�ndices
   @@index([type])
   @@index([status])
   @@index([price])
   @@index([createdAt])
 }
 
-/// Modelo de Chaves de API para Integrações Externas
+/// Modelo de Chaves de API para IntegraÃ§Ãµes Externas
 model ApiKey {
   id         String    @id @default(cuid())
   keyHash    String    @unique // Hash SHA-256 da chave
   name       String // Nome descritivo da chave
-  preview    String // Primeiros/últimos caracteres para exibição
-  enabled    Boolean   @default(true) // Se a chave está ativa
+  preview    String // Primeiros/Ãºltimos caracteres para exibiÃ§Ã£o
+  enabled    Boolean   @default(true) // Se a chave estÃ¡ ativa
   scopes     Json      @default("[]") // Escopos de acesso
-  lastUsedAt DateTime? // Último uso da chave
-  createdAt  DateTime  @default(now()) // Data de criação
-  updatedAt  DateTime  @updatedAt // Data de atualização
+  lastUsedAt DateTime? // Ãšltimo uso da chave
+  createdAt  DateTime  @default(now()) // Data de criaÃ§Ã£o
+  updatedAt  DateTime  @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Chaves de API para acesso programático de terceiros
-  /// Armazena apenas o hash da chave por segurança
+  // ComentÃ¡rios
+  /// Chaves de API para acesso programÃ¡tico de terceiros
+  /// Armazena apenas o hash da chave por seguranÃ§a
 
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([keyHash])
 }
 
-/// Modelo de Integrações com Portais
+/// Modelo de IntegraÃ§Ãµes com Portais
 model PortalIntegration {
   id         String                  @id @default(cuid())
-  name       String // Nome da integração
+  name       String // Nome da integraÃ§Ã£o
   type       PortalType // Tipo de portal
-  apiKey     String? // API key da integração
-  apiSecret  String? // API secret da integração
+  apiKey     String? // API key da integraÃ§Ã£o
+  apiSecret  String? // API secret da integraÃ§Ã£o
   baseUrl    String? // URL base da API
-  authType   String?                 @default("api_key") // Tipo de autenticação
-  authData   Json? // Dados de autenticação
-  status     PortalIntegrationStatus @default(ATIVO) // Status da integração
-  lastSync   DateTime? // Última sincronização
-  syncCount  Int?                    @default(0) // Contador de sincronizações
+  authType   String?                 @default("api_key") // Tipo de autenticaÃ§Ã£o
+  authData   Json? // Dados de autenticaÃ§Ã£o
+  status     PortalIntegrationStatus @default(ATIVO) // Status da integraÃ§Ã£o
+  lastSync   DateTime? // Ãšltima sincronizaÃ§Ã£o
+  syncCount  Int?                    @default(0) // Contador de sincronizaÃ§Ãµes
   errorCount Int?                    @default(0) // Contador de erros
   metadata   Json? // Metadados adicionais
-  settings   Json? // Configurações personalizadas
-  createdAt  DateTime                @default(now()) // Data de criação
-  updatedAt  DateTime                @updatedAt // Data de atualização
+  settings   Json? // ConfiguraÃ§Ãµes personalizadas
+  createdAt  DateTime                @default(now()) // Data de criaÃ§Ã£o
+  updatedAt  DateTime                @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   organizationId String // Chave estrangeira para multi-tenant
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Relacionamentos
-  announcements Announcement[] // Anúncios da integração
+  announcements Announcement[] // AnÃºncios da integraÃ§Ã£o
 
-  // Comentários
-  /// Integrações com portais de imóveis externos
-  /// Suporte a múltiplos portais
-  /// Sistema de sincronização automática
+  // ComentÃ¡rios
+  /// IntegraÃ§Ãµes com portais de imÃ³veis externos
+  /// Suporte a mÃºltiplos portais
+  /// Sistema de sincronizaÃ§Ã£o automÃ¡tica
 
   @@unique([apiKey, type])
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([type])
   @@index([status])
@@ -889,7 +926,7 @@ model WhatsAppCampaign {
   id             String    @id @default(cuid())
   name           String // Nome da campanha
   message        String // Mensagem da campanha
-  targetAudience Json? // Público alvo da campanha
+  targetAudience Json? // PÃºblico alvo da campanha
   status         String    @default("draft") // Status da campanha
   scheduledAt    DateTime? // Data agendada
   sentAt         DateTime? // Data de envio
@@ -900,18 +937,18 @@ model WhatsAppCampaign {
   totalClicked   Int       @default(0) // Total clicado
   errorCount     Int       @default(0) // Contador de erros
   metadata       Json? // Metadados adicionais
-  createdAt      DateTime  @default(now()) // Data de criação
-  updatedAt      DateTime  @updatedAt // Data de atualização
+  createdAt      DateTime  @default(now()) // Data de criaÃ§Ã£o
+  updatedAt      DateTime  @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   leads Lead[] // Leads da campanha
 
-  // Comentários
+  // ComentÃ¡rios
   /// Sistema de campanhas WhatsApp em massa
-  /// Agendamento e métricas de envio
-  /// Segmentação de público alvo
+  /// Agendamento e mÃ©tricas de envio
+  /// SegmentaÃ§Ã£o de pÃºblico alvo
 
-  // Índices
+  // Ã�ndices
   @@index([status])
   @@index([scheduledAt])
   @@index([sentAt])
@@ -921,36 +958,36 @@ model WhatsAppCampaign {
 /// Modelo de Assinaturas
 model Subscription {
   id                 String        @id @default(cuid())
-  organizationId     String // ID da organização
+  organizationId     String // ID da organizaÃ§Ã£o
   packageId          String // ID do pacote
   status             PackageStatus @default(ATIVO) // Status da assinatura
-  startDate          DateTime // Data de início
-  endDate            DateTime? // Data de término
-  nextBillingDate    DateTime? // Próxima data de cobrança
-  billingCycle       String?       @default("monthly") // Ciclo de cobrança
-  trialEndsAt        DateTime? // Fim do período de teste
+  startDate          DateTime // Data de inÃ­cio
+  endDate            DateTime? // Data de tÃ©rmino
+  nextBillingDate    DateTime? // PrÃ³xima data de cobranÃ§a
+  billingCycle       String?       @default("monthly") // Ciclo de cobranÃ§a
+  trialEndsAt        DateTime? // Fim do perÃ­odo de teste
   canceledAt         DateTime? // Data de cancelamento
   pausedAt           DateTime? // Data de pausa
   resumedAt          DateTime? // Data de retomada
-  currentPeriodStart DateTime? // Início do período atual
-  currentPeriodEnd   DateTime? // Fim do período atual
+  currentPeriodStart DateTime? // InÃ­cio do perÃ­odo atual
+  currentPeriodEnd   DateTime? // Fim do perÃ­odo atual
   pausedReason       String? // Motivo da pausa
   cancellationReason String? // Motivo do cancelamento
   metadata           Json? // Metadados adicionais
-  createdAt          DateTime      @default(now()) // Data de criação
-  updatedAt          DateTime      @updatedAt // Data de atualização
+  createdAt          DateTime      @default(now()) // Data de criaÃ§Ã£o
+  updatedAt          DateTime      @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   package      Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  payments     PaymentHistory[] // Histórico de pagamentos
+  payments     PaymentHistory[] // HistÃ³rico de pagamentos
 
-  // Comentários
+  // ComentÃ¡rios
   /// Sistema de assinaturas da plataforma
-  /// Suporte a ciclos de cobrança
-  /// Histórico de pagamentos e status
+  /// Suporte a ciclos de cobranÃ§a
+  /// HistÃ³rico de pagamentos e status
 
-  // Índices
+  // Ã�ndices
   @@index([organizationId])
   @@index([packageId])
   @@index([status])
@@ -959,30 +996,30 @@ model Subscription {
   @@index([nextBillingDate])
 }
 
-/// Modelo de Histórico de Pagamentos
+/// Modelo de HistÃ³rico de Pagamentos
 model PaymentHistory {
   id             String        @id @default(cuid())
   subscriptionId String // ID da assinatura
   amount         Decimal // Valor do pagamento
-  paymentMethod  PaymentMethod // Método de pagamento
+  paymentMethod  PaymentMethod // MÃ©todo de pagamento
   status         String        @default("pending") // Status do pagamento
-  transactionId  String? // ID da transação
+  transactionId  String? // ID da transaÃ§Ã£o
   invoiceId      String? // ID da fatura
-  description    String? // Descrição do pagamento
+  description    String? // DescriÃ§Ã£o do pagamento
   metadata       Json? // Metadados adicionais
   processedAt    DateTime? // Data de processamento
-  createdAt      DateTime      @default(now()) // Data de criação
-  updatedAt      DateTime      @updatedAt // Data de atualização
+  createdAt      DateTime      @default(now()) // Data de criaÃ§Ã£o
+  updatedAt      DateTime      @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Histórico completo de pagamentos
-  /// Suporte a múltiplos métodos de pagamento
-  /// Rastreabilidade de transações
+  // ComentÃ¡rios
+  /// HistÃ³rico completo de pagamentos
+  /// Suporte a mÃºltiplos mÃ©todos de pagamento
+  /// Rastreabilidade de transaÃ§Ãµes
 
-  // Índices
+  // Ã�ndices
   @@index([subscriptionId])
   @@index([status])
   @@index([paymentMethod])
@@ -990,28 +1027,28 @@ model PaymentHistory {
   @@index([createdAt])
 }
 
-/// Modelo de Notificações
+/// Modelo de NotificaÃ§Ãµes
 model Notification {
   id        String           @id @default(cuid())
-  title     String // Título da notificação
-  message   String // Mensagem da notificação
-  type      NotificationType // Tipo de notificação
-  status    String           @default("unread") // Status da notificação
-  userId    String // ID do usuário
+  title     String // TÃ­tulo da notificaÃ§Ã£o
+  message   String // Mensagem da notificaÃ§Ã£o
+  type      NotificationType // Tipo de notificaÃ§Ã£o
+  status    String           @default("unread") // Status da notificaÃ§Ã£o
+  userId    String // ID do usuÃ¡rio
   metadata  Json? // Metadados adicionais
   readAt    DateTime? // Data de leitura
-  createdAt DateTime         @default(now()) // Data de criação
-  updatedAt DateTime         @updatedAt // Data de atualização
+  createdAt DateTime         @default(now()) // Data de criaÃ§Ã£o
+  updatedAt DateTime         @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Sistema de notificações do plataforma
-  /// Diferentes tipos de notificações
+  // ComentÃ¡rios
+  /// Sistema de notificaÃ§Ãµes do plataforma
+  /// Diferentes tipos de notificaÃ§Ãµes
   /// Sistema de leitura e status
 
-  // Índices
+  // Ã�ndices
   @@index([userId])
   @@index([type])
   @@index([status])
@@ -1019,27 +1056,27 @@ model Notification {
   @@index([readAt])
 }
 
-/// Modelo de Características Personalizadas de Imóveis
+/// Modelo de CaracterÃ­sticas Personalizadas de ImÃ³veis
 model PropertyFeature {
   id         String   @id @default(cuid())
-  propertyId String // ID do imóvel
-  name       String // Nome da característica
-  value      String // Valor da característica
-  category   String? // Categoria da característica
-  order      Int      @default(0) // Ordem de exibição
-  isActive   Boolean  @default(true) // Está ativa
-  createdAt  DateTime @default(now()) // Data de criação
-  updatedAt  DateTime @updatedAt // Data de atualização
+  propertyId String // ID do imÃ³vel
+  name       String // Nome da caracterÃ­stica
+  value      String // Valor da caracterÃ­stica
+  category   String? // Categoria da caracterÃ­stica
+  order      Int      @default(0) // Ordem de exibiÃ§Ã£o
+  isActive   Boolean  @default(true) // EstÃ¡ ativa
+  createdAt  DateTime @default(now()) // Data de criaÃ§Ã£o
+  updatedAt  DateTime @updatedAt // Data de atualizaÃ§Ã£o
 
   // Relacionamentos
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  // Comentários
-  /// Características personalizadas de imóveis
-  /// Sistema de categorização e ordenação
-  /// Extensibilidade do sistema de características
+  // ComentÃ¡rios
+  /// CaracterÃ­sticas personalizadas de imÃ³veis
+  /// Sistema de categorizaÃ§Ã£o e ordenaÃ§Ã£o
+  /// Extensibilidade do sistema de caracterÃ­sticas
 
-  // Índices
+  // Ã�ndices
   @@index([propertyId])
   @@index([category])
   @@index([name])
@@ -1047,91 +1084,91 @@ model PropertyFeature {
 }
 
 // ============================================
-// IA 4 - AUDIT LOG (SEGURANÇA ENTERPRISE)
+// IA 4 - AUDIT LOG (SEGURANÃ‡A ENTERPRISE)
 // ============================================
 
-/// Tipo de ação auditada
+/// Tipo de aÃ§Ã£o auditada
 enum AuditAction {
-  CREATE // Criação de registro
-  UPDATE // Atualização de registro
-  DELETE // Exclusão de registro
+  CREATE // CriaÃ§Ã£o de registro
+  UPDATE // AtualizaÃ§Ã£o de registro
+  DELETE // ExclusÃ£o de registro
   READ // Leitura de registro
-  LOGIN // Login de usuário
-  LOGOUT // Logout de usuário
+  LOGIN // Login de usuÃ¡rio
+  LOGOUT // Logout de usuÃ¡rio
   SEARCH // Pesquisa de dados
-  ACCESS // Acesso a recurso sensível
-  EXPORT // Exportação de dados
-  IMPORT // Importação de dados
-  PUBLISH // Publicação (ex: portais)
-  REVOKE // Revogação de acesso
-  APPROVE // Aprovação
-  REJECT // Rejeição
+  ACCESS // Acesso a recurso sensÃ­vel
+  EXPORT // ExportaÃ§Ã£o de dados
+  IMPORT // ImportaÃ§Ã£o de dados
+  PUBLISH // PublicaÃ§Ã£o (ex: portais)
+  REVOKE // RevogaÃ§Ã£o de acesso
+  APPROVE // AprovaÃ§Ã£o
+  REJECT // RejeiÃ§Ã£o
   SEND // Envio de mensagem
   RECEIVE // Recebimento de mensagem
-  PASSWORD_CHANGE // Alteração de senha
-  SETTINGS_CHANGE // Alteração de configurações
+  PASSWORD_CHANGE // AlteraÃ§Ã£o de senha
+  SETTINGS_CHANGE // AlteraÃ§Ã£o de configuraÃ§Ãµes
 }
 
 /// Entidade auditada
 enum AuditEntity {
-  USER // Usuário
-  ORGANIZATION // Organização
-  PROPERTY // Imóvel
+  USER // UsuÃ¡rio
+  ORGANIZATION // OrganizaÃ§Ã£o
+  PROPERTY // ImÃ³vel
   LEAD // Lead
-  OWNER // Proprietário
+  OWNER // ProprietÃ¡rio
   CONVERSATION // Conversa
-  ANNOUNCEMENT // Anúncio
+  ANNOUNCEMENT // AnÃºncio
   PACKAGE // Pacote
   SUBSCRIPTION // Assinatura
   PAYMENT // Pagamento
-  NOTIFICATION // Notificação
+  NOTIFICATION // NotificaÃ§Ã£o
 }
 
-/// Nível de risco da ação
+/// NÃ­vel de risco da aÃ§Ã£o
 enum AuditRiskLevel {
   LOW // Baixo risco
-  MEDIUM // Médio risco
+  MEDIUM // MÃ©dio risco
   HIGH // Alto risco
-  CRITICAL // Risco crítico
+  CRITICAL // Risco crÃ­tico
 }
 
 /// Modelo de Auditoria (AuditLog)
 model AuditLog {
   id String @id @default(cuid())
 
-  // Identificação da ação
-  action     AuditAction // Tipo de ação realizada
+  // IdentificaÃ§Ã£o da aÃ§Ã£o
+  action     AuditAction // Tipo de aÃ§Ã£o realizada
   entityType String? // Tipo da entidade afetada (Property, Lead, User)
   entityId   String? // ID do registro afetado
 
-  // Dados da ação
+  // Dados da aÃ§Ã£o
   beforeValues Json? // Estado anterior
   afterValues  Json? // Estado posterior
-  diff         Json? // Diferença entre estados
+  diff         Json? // DiferenÃ§a entre estados
   metadata     Json? // Metadados adicionais
-  description  String? // Descrição da ação
+  description  String? // DescriÃ§Ã£o da aÃ§Ã£o
 
-  // Contexto de segurança
-  ipAddress String? // Endereço IP do usuário
+  // Contexto de seguranÃ§a
+  ipAddress String? // EndereÃ§o IP do usuÃ¡rio
   userAgent String? // User Agent do navegador
-  sessionId String? // ID da sessão
+  sessionId String? // ID da sessÃ£o
 
-  // Classificação de risco
+  // ClassificaÃ§Ã£o de risco
   riskLevel   AuditRiskLevel @default(LOW)
-  containsPII Boolean        @default(false) // Contém dados pessoais
-  isSensitive Boolean        @default(false) // Contém dados sensíveis
+  containsPII Boolean        @default(false) // ContÃ©m dados pessoais
+  isSensitive Boolean        @default(false) // ContÃ©m dados sensÃ­veis
 
   // Relacionamentos
-  userId         String? // Usuário que realizou a ação
+  userId         String? // UsuÃ¡rio que realizou a aÃ§Ã£o
   user           User?         @relation(fields: [userId], references: [id])
-  organizationId String? // Organização relacionada
+  organizationId String? // OrganizaÃ§Ã£o relacionada
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
   // Timestamps
   timestamp DateTime @default(now()) // Quando ocorreu
   createdAt DateTime @default(now())
 
-  // Índiices para performance
+  // Ã�ndiices para performance
   @@index([userId])
   @@index([organizationId])
   @@index([action])
@@ -1141,67 +1178,67 @@ model AuditLog {
 }
 
 // ============================================
-// POLÍTICAS DE RLS (ROW LEVEL SECURITY)
+// POLÃ�TICAS DE RLS (ROW LEVEL SECURITY)
 // ============================================
 
-// Configurações de RLS para suporte multi-tenant
-// Estas políticas devem ser aplicadas no banco de dados PostgreSQL
+// ConfiguraÃ§Ãµes de RLS para suporte multi-tenant
+// Estas polÃ­ticas devem ser aplicadas no banco de dados PostgreSQL
 
-// Política para Organization: Acessar apenas dados da organização do usuário
+// PolÃ­tica para Organization: Acessar apenas dados da organizaÃ§Ã£o do usuÃ¡rio
 // CREATE POLICY "Organization is tenant" ON Organization
 //   FOR ALL TO authenticated
 //   USING (organization_id = auth.jwt()->>'organizationId');
 
-// Política para User: Acessar apenas usuários da mesma organização
+// PolÃ­tica para User: Acessar apenas usuÃ¡rios da mesma organizaÃ§Ã£o
 // CREATE POLICY "User is tenant" ON User
 //   FOR ALL TO authenticated
 //   USING (organization_id = auth.jwt()->>'organizationId');
 
-// Política para Property: Acessar apenas imóveis da organização
+// PolÃ­tica para Property: Acessar apenas imÃ³veis da organizaÃ§Ã£o
 // CREATE POLICY "Property is tenant" ON Property
 //   FOR ALL TO authenticated
 //   USING (organization_id = auth.jwt()->>'organizationId');
 
-// Política para Lead: Acessar apenas leads da organização
+// PolÃ­tica para Lead: Acessar apenas leads da organizaÃ§Ã£o
 // CREATE POLICY "Lead is tenant" ON Lead
 //   FOR ALL TO authenticated
 //   USING (organization_id = auth.jwt()->>'organizationId');
 
-// Política para Notification: Acessar apenas notificações do usuário
+// PolÃ­tica para Notification: Acessar apenas notificaÃ§Ãµes do usuÃ¡rio
 // CREATE POLICY "Notification is user" ON Notification
 //   FOR ALL TO authenticated
 //   USING (user_id = auth.jwt()->>'userId');
 
-// Política de permissões baseadas no papel do usuário
+// PolÃ­tica de permissÃµes baseadas no papel do usuÃ¡rio
 // CREATE POLICY "User can access own data" ON User
 //   FOR SELECT TO authenticated
 //   USING (id = auth.jwt()->>'userId' OR role = 'ADMIN');
 
 // ============================================
-// ÍNDICES ADICIONAIS PARA PERFORMANCE
+// Ã�NDICES ADICIONAIS PARA PERFORMANCE
 // ============================================
 
-// Índices compostos para consultas complexas
+// Ã�ndices compostos para consultas complexas
 // CREATE INDEX idx_property_status_city ON Property(status, city);
 // CREATE INDEX idx_lead_status_assigned ON Lead(status, assigned_to_id);
 // CREATE INDEX idx_conversation_lead_status ON Conversation(lead_id, status);
 // CREATE INDEX idx_announcement_portal_status ON Announcement(portal_type, status);
 // CREATE INDEX idx_subscription_org_status ON Subscription(organization_id, status);
 
-// Índices para busca textual
+// Ã�ndices para busca textual
 // CREATE INDEX idx_property_search ON Property USING gin(to_tsvector('portuguese', title || ' ' || description));
 // CREATE INDEX idx_owner_search ON Owner USING gin(to_tsvector('portuguese', name));
 
-// Índices para datas
+// Ã�ndices para datas
 // CREATE INDEX idx_property_dates ON Property(created_at, published_at, expires_at);
 // CREATE INDEX idx_lead_dates ON Lead(created_at, last_contact, next_contact);
 // CREATE INDEX idx_subscription_dates ON Subscription(start_date, end_date, next_billing_date);
 
 // ============================================
-// TRIGGERS E FUNÇÕES
+// TRIGGERS E FUNÃ‡Ã•ES
 // ============================================
 
-// Trigger para auditoria de alterações
+// Trigger para auditoria de alteraÃ§Ãµes
 //   source,
 //   COUNT(*) as total,
 //   COUNT(*) FILTER (WHERE status = 'NOVO') as new_count,
@@ -1212,16 +1249,16 @@ model AuditLog {
 // FROM Lead
 // GROUP BY organization_id, status, source;
 
-// Índice para a view materializada
+// Ã�ndice para a view materializada
 // CREATE INDEX idx_property_metrics_org ON PropertyMetrics(organization_id);
 // CREATE INDEX idx_lead_metrics_org ON LeadMetrics(organization_id);
 
-/// Log de Auditoria para Operações de Backup (LGPD)
+/// Log de Auditoria para OperaÃ§Ãµes de Backup (LGPD)
 model BackupLog {
   id           String   @id @default(cuid())
   backupId     String // ID externo ou da tarefa
   status       String // SUCCESS, FAILED, PENDING
-  duration     Int? // Duração em ms
+  duration     Int? // DuraÃ§Ã£o em ms
   size         Int? // Tamanho em bytes
   errorMessage String? // Mensagem de erro se houver
   type         String // FULL, INCREMENTAL, RESTORE
@@ -1257,9 +1294,11 @@ model Contract {
   organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   propertyId      String?
   property        Property?         @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  parties         ContractParty[]
-  clauses         ContractClause[]
-  ContractHistory ContractHistory[]
+  parties          ContractParty[]
+  clauses          ContractClause[]
+  contractHistory  ContractHistory[]
+  billingRule      BillingRule?
+  invoices         Invoice[]
 
   @@index([organizationId])
   @@index([propertyId])
@@ -1279,12 +1318,19 @@ model ContractParty {
   email        String
   phone        String
   address      String?
-  status       String   @default("pending") // pending, sent, viewed, signed, etc.
+  status             String   @default("pending") // pending, sent, viewed, signed, etc.
+  signedAt           DateTime?
+  signatureImageUrl  String?
+  biometricFaceUrl   String?
+  biometricVerified  Boolean  @default(false)
+  ipAddress          String?
+  userAgent          String?
+  signingToken       String?  @unique @default(cuid())
 
   @@index([contractId])
 }
 
-/// Cláusulas do contrato
+/// ClÃ¡usulas do contrato
 model ContractClause {
   id         String   @id @default(cuid())
   contractId String
@@ -1298,13 +1344,13 @@ model ContractClause {
   @@index([contractId])
 }
 
-/// Modelo de Histórico de Propriedades (Versão Simples de Snapshot)
+/// Modelo de HistÃ³rico de Propriedades (VersÃ£o Simples de Snapshot)
 model PropertyHistory {
   id         String   @id @default(cuid())
   propertyId String
-  snapshot   Json // Dados completos do imóvel no momento
+  snapshot   Json // Dados completos do imÃ³vel no momento
   changeType String // PRICE_CHANGE, STATUS_CHANGE, etc.
-  changedBy  String // ID do usuário
+  changedBy  String // ID do usuÃ¡rio
   createdAt  DateTime @default(now())
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -1312,17 +1358,174 @@ model PropertyHistory {
   @@index([propertyId])
 }
 
-/// Modelo de Histórico de Contratos
+/// Modelo de HistÃ³rico de Contratos
 model ContractHistory {
   id         String   @id @default(cuid())
   contractId String
-  version    Int // Número da versão (1, 2, 3...)
-  snapshot   Json // Conteúdo do contrato, valores, etc.
-  reason     String? // Motivo da alteração
-  changedBy  String // ID do usuário
+  version    Int // NÃºmero da versÃ£o (1, 2, 3...)
+  snapshot   Json // ConteÃºdo do contrato, valores, etc.
+  reason     String? // Motivo da alteraÃ§Ã£o
+  changedBy  String // ID do usuÃ¡rio
   createdAt  DateTime @default(now())
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
+}
+
+/// Modelo de Logs de Importação
+model ImportLog {
+  id        String   @id @default(cuid())
+  status    String   @default("pending") // completed, failed, syncing, pending
+  message   String?
+  totalRows Int      @default(0)
+  imported  Int      @default(0)
+  updated   Int      @default(0)
+  skipped   Int      @default(0)
+  errors    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Modelo de Resultados de Importação
+model ImportResult {
+  id        String   @id @default(cuid())
+  userId    String?  // ID do usuário que realizou a importação
+  status    String?  // completed, failed
+  result    String?  @db.Text // JSON snapshot da importação
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ============================================
+// IA 5 - COMUNICAÇÃO (EMAIL & SMS)
+// ============================================
+
+/// Modelo de Uso de Comunicação (Individual)
+model CommunicationUsage {
+  id             String              @id @default(cuid())
+  type           CommunicationType
+  status         CommunicationStatus @default(PENDENTE)
+  recipient      String              // E-mail ou Telefone
+  subject        String?             // Para e-mails
+  content        String?             @db.Text
+  externalId     String?             @unique // ID do Mailchimp/Mandrill
+  cost           Decimal?            @db.Decimal(10, 4) // Valor em R$
+  metadata       Json?               // Dados extras (tracking, tags, etc)
+  sentAt         DateTime?           @default(now())
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  error          String?
+
+  // Relacionamentos
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?             // Usuário que disparou
+  user           User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([externalId])
+}
+
+/// Modelo de Cotas de Comunicação por Organização
+model CommunicationQuota {
+  id             String            @id @default(cuid())
+  type           CommunicationType
+  limit          Int               @default(0) // Limite mensal (X envios)
+  used           Int               @default(0) // Envios realizados no mês
+  resetDate      DateTime          // Próxima data de reset (geralmente renovação do plano)
+  
+  // Detalhes financeiros para Master Admin
+  estimatedCost  Decimal           @default(0) @db.Decimal(15, 2)
+  totalRevenue   Decimal           @default(0) @db.Decimal(15, 2) // Caso o plano tenha valor específico para isso
+
+  // Relacionamentos
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([organizationId, type])
+  @@index([organizationId])
+  @@index([type])
+}
+
+// ============================================
+// IA 6 - FINANCEIRO (SPLIT INTELIGENTE)
+// ============================================
+
+/// Regras de Split para Contratos de Aluguel
+model BillingRule {
+  id             String    @id @default(cuid())
+  contractId     String    @unique
+  contract       Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  agencyPercent  Decimal   @default(10.0) @db.Decimal(5, 2)
+  ownerPercent   Decimal   @default(90.0) @db.Decimal(5, 2)
+  fixedFee       Decimal?  @db.Decimal(15, 2) // Taxa fixa se houver
+  
+  startDate      DateTime  @default(now())
+  isActive       Boolean   @default(true)
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+/// CobranÃ§as Mensais (Aluguel)
+model Invoice {
+  id              String         @id @default(cuid())
+  contractId      String
+  contract        Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  amount          Decimal        @db.Decimal(15, 2)
+  dueDate         DateTime
+  status          String         @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED
+  paymentMethod   String?        // PIX, BOLETO, CARD
+  paidAt          DateTime?
+  referenceMonth  String?        // ex: "04/2026"
+  
+  distributions   FinancialDistribution[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+/// DistribuiÃ§Ã£o de Valores (Split)
+model FinancialDistribution {
+  id              String    @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  recipientType   String    // AGENCY, OWNER, THIRD_PARTY
+  recipientName   String
+  recipientId     String?   // User ID or third party ID
+  
+  amount          Decimal   @db.Decimal(15, 2)
+  status          String    @default("PENDING") // PENDING, PAID (D+1/D+5)
+  scheduledFor    DateTime? // Data prevista de repasse
+  
+  metadata        Json?     // Dados bancÃ¡rios ou logs de conciliaÃ§Ã£o
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([invoiceId])
+  @@index([recipientType])
+  @@index([status])
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { xmlGenerator } from '@/lib/xml-processor/xml-generator';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 /**
  * Endpoint que serve o feed XML para os portais (PULL mechanism)
@@ -26,7 +26,6 @@ export async function GET(
     }
 
     // 2. Buscar imóveis ativos que possuem anúncio para este portal
-    // Ou todos os imóveis ativos se for um feed completo
     const properties = await prisma.property.findMany({
       where: {
         status: 'DISPONIVEL',

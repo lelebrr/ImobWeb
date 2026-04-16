@@ -1,9 +1,46 @@
 {
     "version": 2,
-    "builds": [
+    "framework": "nextjs",
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
+    "crons": [
         {
-            "src": "text/imobweb/package.json",
-            "use": "@vercel/next"
+            "path": "/api/devops/health",
+            "schedule": "0 */6 * * *"
+        },
+        {
+            "path": "/api/insights/weekly-summary",
+            "schedule": "0 9 * * 1"
+        },
+        {
+            "path": "/api/backup/run",
+            "schedule": "0 2 * * *"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/api/public/:path*",
+            "destination": "/api/public/v1/:path*"
         }
     ]
 }

@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const dynamic = 'force-dynamic';
+
+/**
+ * Lazy-init OpenAI client to avoid build-time crash when env var is missing.
+ */
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || '',
+  });
+}
 
 /**
  * API Route for Dynamic Translation via AI.
@@ -12,6 +19,13 @@ const openai = new OpenAI({
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Translation service is not configured. Set OPENAI_API_KEY.' },
+        { status: 503 }
+      );
+    }
+
     const { text, targetLocale, sourceLocale = 'pt-BR' } = await req.json();
 
     if (!text || !targetLocale) {
@@ -21,9 +35,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const openai = getOpenAI();
+
     // Call AI to translate
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o', // Using 2026 standard model
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',

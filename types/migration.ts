@@ -8,6 +8,8 @@
  * Tipo de dados de um imóvel importado
  */
 export interface PropertyData {
+    [key: string]: any; // Permite indexação por string
+
     // Identificação
     id?: string;
     title?: string;
@@ -64,7 +66,7 @@ export interface PropertyData {
 export interface ImportError {
     message: string;
     row: number;
-    type: 'validation' | 'system' | 'duplicate';
+    type: 'validation' | 'system' | 'duplicate' | 'warning';
     field?: string | string[];
 }
 
@@ -119,6 +121,10 @@ export interface CRMTemplate {
  * Opções de importação
  */
 export interface ImportOptions {
+    userId?: string;
+    fileName?: string;
+    fileSize?: number;
+    file?: any;
     mode: 'overwrite' | 'merge' | 'shadow'; // overwrite, merge, shadow
     dryRun?: boolean;
     validateBeforeImport?: boolean;

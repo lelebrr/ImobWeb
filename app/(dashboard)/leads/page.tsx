@@ -1,62 +1,29 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Plus, Search, Filter, SlidersHorizontal, UserPlus, Zap } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Plus, Search, Filter, SlidersHorizontal, UserPlus, Zap, Loader2 } from 'lucide-react'
 import { Button } from '@/components/design-system/button'
 import { Input } from '@/components/design-system/input'
 import { Badge } from '@/components/design-system/badge'
 import { LeadCard, LeadStatus } from '@/components/leads/LeadCard'
 import { LeadSlideOver } from '@/components/leads/LeadSlideOver'
-
-// Mock de Leads para demonstração
-const MOCK_LEADS = [
-  {
-    id: '1',
-    name: 'Roberto Camargo',
-    email: 'roberto@email.com',
-    phone: '+55 11 99988-7766',
-    status: 'NOVO' as LeadStatus,
-    source: 'Zap Imóveis',
-    budget: 4500000,
-    propertyInterest: 'Cobertura Duplex Itaim',
-    createdAt: '2026-04-11T14:30:00Z'
-  },
-  {
-    id: '2',
-    name: 'Juliana Mendes',
-    email: 'ju.mendes@gmail.com',
-    status: 'INTERESSADO' as LeadStatus,
-    source: 'WhatsApp IA',
-    budget: 1200000,
-    propertyInterest: 'Loft Vila Madalena',
-    createdAt: '2026-04-10T09:15:00Z'
-  },
-  {
-    id: '3',
-    name: 'Carlos Albuquerque',
-    phone: '+55 11 98877-6655',
-    status: 'CONTATADO' as LeadStatus,
-    source: 'Website Direto',
-    budget: 8000000,
-    propertyInterest: 'Mansão Alphaville',
-    createdAt: '2026-04-09T17:45:00Z'
-  },
-  {
-    id: '4',
-    name: 'Pâmela Souza',
-    email: 'pam.souza@outlook.com',
-    status: 'AGUARDANDO' as LeadStatus,
-    source: 'VivaReal',
-    budget: 850000,
-    propertyInterest: 'Apto 2 qts Pinheiros',
-    createdAt: '2026-04-08T11:20:00Z'
-  }
-]
+import { getDashboardLeads } from '@/app/actions/dashboard'
 
 export default function LeadsPage() {
   const [search, setSearch] = useState('')
+  const [leads, setLeads] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const data = await getDashboardLeads()
+      setLeads(data)
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   const handleOpenLead = (lead: any) => {
     setSelectedLead(lead)
@@ -88,11 +55,11 @@ export default function LeadsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass p-4 rounded-3xl border-none">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Novos Hoje</p>
-          <p className="text-2xl font-black">+12</p>
+          <p className="text-2xl font-black">{loading ? '-' : leads.filter(l => l.status === 'NOVO').length || 0}</p>
         </div>
         <div className="glass p-4 rounded-3xl border-none">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Interessados</p>
-          <p className="text-2xl font-black text-purple-400">28</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Total</p>
+          <p className="text-2xl font-black text-purple-400">{loading ? '-' : leads.length}</p>
         </div>
         <div className="glass p-4 rounded-3xl border-none">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Taxa de Resp.</p>
@@ -126,13 +93,19 @@ export default function LeadsPage() {
       </div>
 
       {/* Leads Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {MOCK_LEADS.map((lead) => (
-          <div key={lead.id} onClick={() => handleOpenLead(lead)} className="cursor-pointer active:scale-[0.98] transition-transform">
-            <LeadCard lead={lead} />
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {leads.filter(l => l.name?.toLowerCase().includes(search.toLowerCase()) || l.email?.toLowerCase().includes(search.toLowerCase())).map((lead) => (
+            <div key={lead.id} onClick={() => handleOpenLead(lead)} className="cursor-pointer active:scale-[0.98] transition-transform">
+              <LeadCard lead={lead} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Lead Detail SlideOver */}
       <LeadSlideOver 
@@ -142,7 +115,7 @@ export default function LeadsPage() {
       />
 
       {/* Empty Message Example */}
-      {MOCK_LEADS.length === 0 && (
+      {!loading && leads.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
                 <Search className="w-8 h-8 text-muted-foreground" />

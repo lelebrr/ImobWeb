@@ -19,7 +19,7 @@ export const PropertyStatusSchema = z.enum([
 
 export const BusinessTypeSchema = z.enum([
   "VENDA",
-  "LOCAÇÃO",
+  "LOCACAO",
   "VENDA_LOCACAO",
 ]);
 

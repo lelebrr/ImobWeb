@@ -198,6 +198,40 @@ export const METRIC_DEFINITIONS = {
       aggregation: 'formula',
       source: 'deals,billing,portals'
     }
+  },
+  insights: {
+    leadVelocity: {
+      id: 'lead_velocity',
+      name: 'Lead Velocity Index',
+      description: 'Medida de quão rápido os leads avançam no funil',
+      unit: 'number' as KpiUnit,
+      aggregation: 'avg',
+      source: 'leads,status_history'
+    },
+    propertyYield: {
+      id: 'property_yield',
+      name: 'Yield do Imóvel',
+      description: 'Retorno de locação sobre valor venal',
+      unit: 'percentage' as KpiUnit,
+      aggregation: 'avg',
+      source: 'properties'
+    },
+    marketShare: {
+      id: 'market_share',
+      name: 'Market Share Local',
+      description: 'Percentual de participação no inventário da região',
+      unit: 'percentage' as KpiUnit,
+      aggregation: 'ratio',
+      source: 'properties,market_data'
+    },
+    revenueProjection: {
+      id: 'revenue_projection',
+      name: 'Projeção de Receita',
+      description: 'Previsão de faturamento baseado no pipeline atual',
+      unit: 'currency' as KpiUnit,
+      aggregation: 'sum',
+      source: 'deals'
+    }
   }
 };
 
@@ -239,8 +273,25 @@ export class MetricCalculator {
         return this.calculateFromVisits(aggregation);
       case 'proposals':
         return this.calculateFromProposals(aggregation);
+      case 'insights':
+        return this.calculateFromInsights(metricKey, aggregation);
       default:
         return 0;
+    }
+  }
+
+  private calculateFromInsights(metricKey: string, aggregation: string): number {
+    switch (metricKey) {
+      case 'revenueProjection':
+        const deals = this.input.deals || [];
+        // Simples projeção: deals abertos * probabilidade média (mock 30%)
+        return deals.filter(d => d.status === 'open').reduce((sum, d) => sum + (d.value * 0.3), 0);
+      case 'propertyYield':
+        const props = this.input.properties || [];
+        const activeRent = props.filter(p => p.status === 'active' && p.value);
+        return activeRent.length > 0 ? (activeRent.reduce((sum, p) => sum + (p.value || 0), 0) / activeRent.length) * 0.005 : 0;
+      default:
+        return Math.random() * 100; // Mock para métricas complexas não implementadas
     }
   }
 

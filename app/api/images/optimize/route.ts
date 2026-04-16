@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { ImageProcessor } from '@/lib/image-optimization/image-processor';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * IMAGE OPTIMIZATION API - IMOBWEB 2026
  * Processes uploads, optimizes formats, and generates AI metadata.

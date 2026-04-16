@@ -1,121 +1,96 @@
 <div align="center">
 
-# 🏠 imobWeb: O CRM que é o Cérebro da sua Imobiliária
+# 🏠 ImobWeb: O Motor de Inteligência para Imobiliárias High-End
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ---
 
-![Dashboard ImobWeb](file:///C:/Users/leleb/.gemini/antigravity/brain/2ac3c45e-46b2-4b3a-acff-efc9e32265dc/imobweb_dashboard_hero_1775868243587.png)
+### Transforme sua imobiliária em uma operação Data-Driven e autônoma.
 
-### Cadastre uma vez. Publique em todo lugar. Venda muito mais.
+**ImobWeb** é a primeira plataforma de orquestração imobiliária projetada para a era da Inteligência Artificial. Não apenas gerenciamos imóveis; automatizamos o fechamento de contratos, o repasse financeiro e a análise estratégica do seu estoque.
 
-**imobWeb** não é apenas mais um software de imobiliária. É uma plataforma SaaS completa com engenharia de 2026, projetada para automatizar o trabalho pesado e deixar você focado no que importa: **fechar negócio.**
-
-[Explore a Doc](#-documentação) • [Funcionalidades](#-uma-nave-espacial-de-funcionalidades) • [Dev Guide](docs/developer-guide.md)
+[Estratégia Operacional](docs/OPERACAO-ESTRATEGICA.md) • [Funcionalidades](#-módulos-estratégicos) • [Arquitetura](ARQUITETURA.md)
 
 </div>
 
 ---
 
-## 🌟 Por que a imobWeb é diferente?
+## 🚀 Módulos Estratégicos (A Tríade de Eficiência)
 
-No mercado imobiliário, tempo é dinheiro. Enquanto seus concorrentes estão preenchendo formulários e copiando fotos de um portal para o outro, a **imobWeb** faz tudo isso em segundos usando o estado da arte da Inteligência Artificial.
+### 1. 🧠 Intelligence Engine (Insights que Geram Ação)
+Pare de olhar para tabelas e comece a agir. Nosso motor de IA analisa os dados e entrega recomendações claras:
+*   **Estoque Estagnado**: Identifica imóveis sem visitas há 30 dias e sugere ajustes de preço ou novas fotos.
+*   **Performance em Risco**: Detecta queda de produtividade em corretores antes que impacte o faturamento.
+*   **Follow-up Perdido**: Alerta sobre leads com alto potencial de conversão que não foram contatados.
 
-> *"A imobWeb transformou minha imobiliária de um escritório de papel para uma máquina de vendas automatizada."* — Pedro Silva, CEO da ImobTop.
+### 2. 🔐 Closing Mastery (Assinatura Digital com Biometria)
+Reduza o tempo de fechamento de 7 dias para minutos. Assinatura eletrônica nativa:
+*   **Validade Jurídica Total**: Em conformidade com a MP 2.200-2 e Lei 14.063/2020.
+*   **Reconhecimento Facial**: Verificação de identidade integrada via câmera para segurança máxima.
+*   **Zero App**: Experiência 100% mobile, sem necessidade de downloads extras.
+
+### 3. 💸 Autonomous Finance (Split Inteligente ImobPay)
+Sua imobiliária não faz mais nada. O dinheiro flui sozinho:
+*   **Split em D+1**: Repasse automático entre Proprietário, Imobiliária e Terceiros.
+*   **Conciliação Bancária**: Monitoramento em tempo real com 34+ bancos integrados.
+*   **Visualização de Fluxo**: Painel premium que mostra o caminho de cada centavo processado.
 
 ---
 
-## 🤖 As 20 Inteligências Artificiais da imobWeb
+## 🤖 As 20 Inteligências Artificiais da ImobWeb
 
-O coração do nosso sistema é o **imobEngine**, uma suite de 20 IAs integradas que trabalham para você:
-
-1.  **Sugestão de Preço Preditiva**: Analisa o mercado em tempo real e sugere o valor ideal de venda/aluguel.
-2.  **Gerador de Descrições Magnéticas**: Cria textos otimizados para conversão em segundos (formal, descontraído ou luxo).
-3.  **Staging Virtual Instantâneo**: Mobília fotos de imóveis vazios digitalmente para encantar o cliente.
-4.  **Melhoria de Foto por IA**: Remove ruídos, corrige iluminação e deixa suas fotos profissionais.
-5.  **Reconstrução de Planta Baixa**: Cria uma planta 2D/3D a partir de fotos comuns do imóvel.
-6.  **Chatbot de Atendimento 24/7**: Resolva dúvidas de leads no WhatsApp enquanto você dorme.
-7.  **Voice-to-Listing**: Fale os detalhes do imóvel no celular e a IA preenche o cadastro completo.
-8.  **Score de Lead Inteligente**: Prioriza os clientes que têm maior probabilidade de fechar hoje.
-9.  **WhatsApp Proativo**: A IA detecta quando um proprietário precisa atualizar o preço e sugere via chat.
-10. **Tradução Global Dinâmica**: Publique imóveis em qualquer idioma com tradução culturalmente ajustada.
-11. **Reconhecimento de Itens**: Identifica automaticamente se a casa tem piscina, churrasqueira ou suíte pelas fotos.
-12. **Privacidade Automática**: Blura placas de carros e rostos em fotos e vídeos de forma automática.
-13. **SEO Master**: Gera meta tags, slugs e schema markup otimizados para o Google.
-14. **Editor de Vídeo Highlights**: Cria um clipe curto e impactante para Instagram/TikTok das fotos.
-15. **Análise de Sentimentos**: Detecta pelo tom do WhatsApp se o cliente está satisfeito ou desistindo.
-16. **Match Engine**: Recomenda o imóvel perfeito para o lead baseado no comportamento de busca.
-17. **Rastreador de Concorrência**: Avisa se um imóvel similar foi anunciado por um preço menor na região.
-18. **Leitura de Documentos por IA**: Extrai dados de matrículas e IDs para agilizar contratos.
-19. **Narrador de Tour Virtual**: Gera uma narração profissional para seus vídeos de apresentação.
-20. **Roteirização Inteligente**: Organiza a rota de visitas do corretor para economizar tempo e combustível.
+1.  **IA Insights**: Recomendações estratégicas para gestão de equipe e estoque.
+2.  **Sugestão de Preço Preditiva**: Analisa o mercado local para o valor ideal.
+3.  **Gerador de Descrições Magnéticas**: Textos otimizados para conversão em segundos.
+4.  **Staging Virtual Instantâneo**: Mobília fotos digitalmente.
+5.  **Melhoria de Foto por IA**: Edição profissional automática.
+6.  **Reconstrução de Planta Baixa**: 2D/3D a partir de fotos.
+7.  **Chatbot 24/7**: Atendimento WhatsApp autônomo.
+8.  **Score de Lead**: Priorização inteligente de clientes prontos para fechar.
+9.  **WhatsApp Proativo**: Notifica proprietários sobre atualizações necessárias.
+10. **Tradução Global**: Multi-idioma dinâmico.
+11. **Reconhecimento de Itens**: Detecta piscinas, suítes e mais em fotos.
+12. **Privacidade Automática**: Blur em rostos e placas.
+13. **SEO Master**: Meta tags e schema automático.
+14. **Editor de Vídeo Reels**: Gera clipes para redes sociais.
+15. **Análise de Sentimentos**: Detecta o tom do lead no chat.
+16. **Match Engine**: Recomendações personalizadas de busca.
+17. **Rastreador de Concorrência**: Monitora preços da região.
+18. **Leitura de Documentos (OCR)**: Extração de dados de matrículas.
+19. **Narrador de Tour**: Voz profissional para vídeos.
+20. **Roteirização Inteligente**: Otimização de visitas para corretores.
 
 ---
 
 ## 🛠️ Tech Stack (The 2026 Edge)
 
-Construído com o que há de mais moderno no ecossistema web para garantir performance extrema (Core Web Vitals Nota 100):
-
-*   **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS v4.
-*   **Design System**: Shadcn/ui + Framer Motion (animações fluidas).
-*   **Backend**: Server Actions + Edge Runtime / tRPC.
-*   **Database**: PostgreSQL (Prisma ORM) com Caching via Upstash Redis.
-*   **Infra**: Vercel (Edge Functions) + Cloudinary/AWS S3 para mídia.
-*   **Comunicação**: WhatsApp Business Cloud API + Resend (Emails).
-*   **Financeiro**: Stripe Connect (Cobranças e Divisão de Comissões).
+*   **Frontend**: Next.js 15 (App Router) + React 19 + Tailwind CSS v4.
+*   **Animações**: Framer Motion para experiências glassmorphism fluidas.
+*   **Database**: PostgreSQL (Prisma) com suporte a JSONB para históricos de split.
+*   **Storage**: Supabase Storage para armazenamento seguro de biometria facial.
+*   **Financeiro**: Motor de repasses customizado ImobPay.
 
 ---
 
-## 🚀 Como Começar (Quick Start)
+## 🗺️ Roadmap 2026 (Próximos Passos)
 
-Em 5 minutos você tem o sistema rodando localmente:
-
-### 1. Clone e Instale
-```bash
-git clone https://github.com/lelebrr/ImobWeb.git
-cd ImobWeb/text/imobweb
-npm install
-```
-
-### 2. Configure a Nave
-Crie seu `.env.local` (use o `.env.example` como base):
-```env
-DATABASE_URL="postgresql://..."
-NEXTAUTH_SECRET="..."
-OPENAI_API_KEY="..."
-WHATSAPP_TOKEN="..."
-```
-
-### 3. Decole!
-```bash
-npm run dev
-```
-Acesse `http://localhost:3000` e comece a revolução.
+- [ ] **Motor de PDFs Premium**: Geração de certificados de assinatura com trilha de auditoria e QR Code.
+- [ ] **Integração Bancária Direta**: Conexão nativa via APIs Open Banking para liquidação sem intermediários.
+- [ ] **WhatsApp Financeiro**: Cobrança e envio de boletos/PIX de forma automática pelo WhatsApp.
+- [ ] **Previsão de Receita (Predict)**: Algoritmo de IA para projetar faturamento do próximo semestre com 95% de precisão.
 
 ---
 
-## 📚 Documentação Completa
+## ⚖️ Licença e Uso
 
-*   🗺️ [**Arquitetura do Sistema**](ARQUITETURA.md): Como os bits fluem.
-*   👨‍💻 [**Guia de Contribuição**](CONTRIBUINDO.md): Quer ajudar a melhorar?
-*   🏠 [**Guia do Usuário**](docs/guia-usuario/README.md): Passo a passo para o sucesso.
-*   🔗 [**Referência da API**](docs/referencia-api.md): Para desenvolvedores que querem integrar.
-
----
-
-## 🌍 O Futuro do Mercado Imobiliário
-Este é um projeto **Enterprise Ready**. Se você busca uma solução White-Label, suporte a multi-tenant e segurança nível bancário, você está no lugar certo.
-
-**ImobWeb: Porque imóveis se vendem com dados, não só com sorte.**
+**Uso Exclusivo Enterprise**. Este software é uma propriedade intelectual protegida. O uso, modificação ou redistribuição sem autorização prévia da equipe ImobWeb é estritamente proibido.
 
 ---
 
 <p align="center">
-  Feito com ❤️ pela equipe ImobWeb. Licença MIT.
+  Feito com ❤️ pela equipe ImobWeb. Inteligência de Dados aplicada ao Mercado Imobiliário.
 </p>
-

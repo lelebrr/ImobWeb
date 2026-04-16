@@ -23,18 +23,19 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
-  ],
+  themeColor: "#0b5bd3",
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "ImobWeb | CRM Imobiliário Avançado",
+    default: "ImobWeb | CRM Imobiliário Elite",
     template: "%s | ImobWeb",
   },
-  description: "A plataforma definitiva para imobiliárias de alto desempenho. Cadastro único, publicação multicanais e gestão com IA.",
+  description: "A plataforma definitiva para corretores de alta performance. Gestão autônoma com IA.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+  },
   keywords: ["crm imobiliario", "gestao de imoveis", "saas imobiliario", "imobiliaria digital"],
   authors: [{ name: "ImobWeb Team" }],
   creator: "ImobWeb",
@@ -58,6 +59,12 @@ export const metadata: Metadata = {
   },
 };
 
+import { PostHogPageView } from "@/components/analytics/PostHogPageView"
+import { Suspense } from "react"
+
+import { AICopilot } from "@/components/ai/AICopilot"
+import { PWAHandler } from "@/components/pwa/PWAHandler"
+
 export default function RootLayout({
   children,
 }: {
@@ -72,9 +79,14 @@ export default function RootLayout({
         )}
       >
         <RootProvider>
+          <PWAHandler />
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
           <main className="relative flex min-h-screen flex-col">
             {children}
           </main>
+          <AICopilot />
         </RootProvider>
         <Analytics />
       </body>

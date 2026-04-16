@@ -18,8 +18,17 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<User |
 
     return {
         id: session.user.id,
-        role: session.user.role as any,
-        organizationId: session.user.organizationId,
+        name: (session.user as any).user_metadata?.name || '',
+        email: session.user.email || '',
+        role: (session.user as any).user_metadata?.role || 'broker',
+        organizationId: (session.user as any).user_metadata?.organizationId || '',
+        organization: {
+            name: '',
+            slug: ''
+        },
+        isActive: true,
+        createdAt: new Date(),
+        lastLoginAt: new Date()
     }
 }
 

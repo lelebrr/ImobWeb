@@ -41,6 +41,105 @@ export function calculateISS(grossValue: number, cityRate: number = FISCAL_CONST
 }
 
 /**
+ * Valida CEP brasileiro (8 dígitos)
+ */
+export function validateCep(cep: string): boolean {
+  if (!cep || typeof cep !== 'string') return false;
+  // Remove caracteres não numéricos
+  const cleaned = cep.replace(/\D/g, '');
+  // Verifica se tem 8 dígitos
+  return /^\d{8}$/.test(cleaned);
+}
+
+/**
+ * Valida CPF ou CNPJ brasileiro
+ */
+export function validateCpfCnpj(cpfCnpj: string): boolean {
+  if (!cpfCnpj || typeof cpfCnpj !== 'string') return false;
+
+  // Remove caracteres não numéricos
+  const cleaned = cpfCnpj.replace(/\D/g, '');
+
+  // Verifica tamanho
+  if (cleaned.length !== 11 && cleaned.length !== 14) return false;
+
+  // Verifica CPF
+  if (cleaned.length === 11) {
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1+$/.test(cleaned)) return false;
+
+    // Cálculo do primeiro dígito verificador
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleaned[i]) * (10 - i);
+    }
+    let remainder = sum % 11;
+    const digit1 = remainder < 2 ? 0 : 11 - remainder;
+
+    if (parseInt(cleaned[9]) !== digit1) return false;
+
+    // Cálculo do segundo dígito verificador
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleaned[i]) * (11 - i);
+    }
+    remainder = sum % 11;
+    const digit2 = remainder < 2 ? 0 : 11 - remainder;
+
+    return parseInt(cleaned[10]) === digit2;
+  }
+
+  // Verifica CNPJ
+  if (cleaned.length === 14) {
+    // Verifica se todos os dígitos são iguais
+    if (/^(\d)\1+$/.test(cleaned)) return false;
+
+    // Cálculo do primeiro dígito verificador
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      sum += parseInt(cleaned[i]) * (13 - i);
+    }
+    let remainder = sum % 11;
+    const digit1 = remainder < 2 ? 0 : 11 - remainder;
+
+    if (parseInt(cleaned[12]) !== digit1) return false;
+
+    // Cálculo do segundo dígito verificador
+    sum = 0;
+    for (let i = 0; i < 13; i++) {
+      sum += parseInt(cleaned[i]) * (14 - i);
+    }
+    remainder = sum % 11;
+    const digit2 = remainder < 2 ? 0 : 11 - remainder;
+
+    return parseInt(cleaned[13]) === digit2;
+  }
+
+  return false;
+}
+
+/**
+ * Valida telefone brasileiro (com ou sem DDD)
+ */
+export function validatePhone(phone: string): boolean {
+  if (!phone || typeof phone !== 'string') return false;
+  // Remove caracteres não numéricos
+  const cleaned = phone.replace(/\D/g, '');
+  // Verifica se tem 10 ou 11 dígitos
+  return /^(\d{10}|\d{11})$/.test(cleaned);
+}
+
+/**
+ * Valida email brasileiro
+ */
+export function validateEmail(email: string): boolean {
+  if (!email || typeof email !== 'string') return false;
+  // Regex simples para validação de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Verifica se deve reter CSRF (4.65%)
  */
 export function shouldRetainCSRF(monthlyTotal: number): boolean {

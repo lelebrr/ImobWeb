@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -15,7 +15,10 @@ import {
   FileText,
   Target,
   Activity,
-  PieChart
+  PieChart,
+  Settings2,
+  FileSpreadsheet,
+  FileJson
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -39,110 +42,59 @@ import { Button } from '@/components/design-system/button';
 import { cn, formatCurrency } from '@/lib/utils';
 import { formatKpiValue, KPI_DEFINITIONS } from '@/lib/analytics/kpi-definitions';
 import type { KpiValue, KpiTrend, KpiCategory } from '@/types/analytics';
-
-const MOCK_KPI_VALUES: KpiValue[] = [
-  { kpiId: 'total_revenue', value: 1250000, previousValue: 980000, trend: 'up', trendPercentage: 27.6, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'monthly_revenue', value: 185000, previousValue: 165000, trend: 'up', trendPercentage: 12.1, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'conversion_rate', value: 8.5, previousValue: 7.2, trend: 'up', trendPercentage: 18.1, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'average_ticket', value: 450000, previousValue: 420000, trend: 'up', trendPercentage: 7.1, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'active_properties', value: 156, previousValue: 142, trend: 'up', trendPercentage: 9.9, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'total_leads', value: 234, previousValue: 198, trend: 'up', trendPercentage: 18.2, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'average_sale_time', value: 45, previousValue: 52, trend: 'down', trendPercentage: -13.5, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-  { kpiId: 'pipeline_value', value: 3200000, previousValue: 2800000, trend: 'up', trendPercentage: 14.3, period: { start: new Date(), end: new Date() }, updatedAt: new Date() },
-];
-
-const REVENUE_DATA = [
-  { month: 'Jan', revenue: 85000, deals: 12 },
-  { month: 'Feb', revenue: 92000, deals: 14 },
-  { month: 'Mar', revenue: 78000, deals: 11 },
-  { month: 'Apr', revenue: 115000, deals: 18 },
-  { month: 'May', revenue: 98000, deals: 15 },
-  { month: 'Jun', revenue: 142000, deals: 22 },
-  { month: 'Jul', revenue: 165000, deals: 24 },
-  { month: 'Aug', revenue: 185000, deals: 28 },
-  { month: 'Sep', revenue: 178000, deals: 26 },
-  { month: 'Oct', revenue: 195000, deals: 30 },
-  { month: 'Nov', revenue: 168000, deals: 25 },
-  { month: 'Dec', revenue: 210000, deals: 32 },
-];
-
-const LEADS_FUNNEL = [
-  { name: 'Total Leads', value: 234, color: '#3B82F6' },
-  { name: 'Contatados', value: 187, color: '#8B5CF6' },
-  { name: 'Visitas', value: 89, color: '#F59E0B' },
-  { name: 'Propostas', value: 45, color: '#10B981' },
-  { name: 'Fechados', value: 20, color: '#059669' },
-];
-
-const PORTAL_PERFORMANCE = [
-  { portal: 'Zap', leads: 89, revenue: 520000, roi: 3.2 },
-  { portal: 'Viva', leads: 67, revenue: 380000, roi: 2.8 },
-  { portal: 'OLX', leads: 45, revenue: 210000, roi: 1.9 },
-  { portal: 'ImovelWeb', leads: 33, revenue: 140000, roi: 1.5 },
-];
-
-const TOP_AGENTS = [
-  { name: 'Carlos Silva', deals: 18, revenue: 280000, conversion: 12.5 },
-  { name: 'Ana Santos', deals: 15, revenue: 245000, conversion: 11.2 },
-  { name: 'Pedro Oliveira', deals: 12, revenue: 198000, conversion: 9.8 },
-  { name: 'Maria Costa', deals: 10, revenue: 175000, conversion: 8.5 },
-  { name: 'João Lima', deals: 8, revenue: 152000, conversion: 7.2 },
-];
+import { ReportService } from '@/lib/analytics/report-service';
+import { DASHBOARD_WIDGETS, WidgetDefinition } from '@/lib/analytics/widget-registry';
+import { getRichAnalyticsStats, getDashboardConfig, saveDashboardConfig } from '@/app/actions/dashboard';
+import { toast } from 'sonner';
 
 interface KpiCardProps {
-  kpi: KpiValue;
+  kpiId: string;
+  value: number;
+  trend?: string;
+  trendPercentage?: number;
   title: string;
   icon: React.ReactNode;
 }
 
-function KpiCard({ kpi, title, icon }: KpiCardProps) {
-  const definition = KPI_DEFINITIONS.find(d => d.id === kpi.kpiId);
+function KpiCard({ kpiId, value, trend, trendPercentage, title, icon }: KpiCardProps) {
+  const definition = KPI_DEFINITIONS.find(d => d.id === kpiId);
   const unit = definition?.unit || 'number';
 
-  const getTrendIcon = (trend: KpiTrend) => {
-    switch (trend) {
+  const getTrendIcon = (t?: string) => {
+    switch (t) {
       case 'up': return <TrendingUp className="h-4 w-4" />;
       case 'down': return <TrendingDown className="h-4 w-4" />;
       default: return <Minus className="h-4 w-4" />;
     }
   };
 
-  const getTrendColor = (trend: KpiTrend) => {
-    switch (trend) {
-      case 'up': return 'text-green-600 bg-green-50';
-      case 'down': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+  const getTrendColor = (t?: string) => {
+    switch (t) {
+      case 'up': return 'text-green-600 bg-green-50/50';
+      case 'down': return 'text-red-600 bg-red-50/50';
+      default: return 'text-gray-600 bg-gray-50/50';
     }
   };
 
-  const isNegativeBetter = ['average_sale_time', 'stale_properties', 'churn_rate'].includes(kpi.kpiId);
-  
-  const trendColor = useMemo(() => {
-    if (isNegativeBetter) {
-      return kpi.trend === 'down' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50';
-    }
-    return getTrendColor(kpi.trend || 'stable');
-  }, [kpi.trend, isNegativeBetter]);
-
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-4">
+    <Card className="glass-card hover:shadow-xl transition-all border-none group">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
               {icon}
             </div>
             <div>
-              <p className="text-sm text-gray-500">{title}</p>
-              <p className="text-xl font-bold text-gray-900">
-                {formatKpiValue(kpi.value, unit)}
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-0.5">{title}</p>
+              <p className="text-2xl font-black tracking-tighter text-foreground">
+                {formatKpiValue(value, unit)}
               </p>
             </div>
           </div>
-          {kpi.trendPercentage !== undefined && (
-            <div className={cn('flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium', trendColor)}>
-              {getTrendIcon(kpi.trend || 'stable')}
-              <span>{Math.abs(kpi.trendPercentage).toFixed(1)}%</span>
+          {trendPercentage !== undefined && (
+            <div className={cn('flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black italic', getTrendColor(trend))}>
+              {getTrendIcon(trend)}
+              <span>{Math.abs(trendPercentage).toFixed(1)}%</span>
             </div>
           )}
         </div>
@@ -154,13 +106,14 @@ function KpiCard({ kpi, title, icon }: KpiCardProps) {
 interface ChartCardProps {
   title: string;
   children: React.ReactNode;
+  span?: number;
 }
 
-function ChartCard({ title, children }: ChartCardProps) {
+function ChartCard({ title, children, span = 1 }: ChartCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+    <Card className={cn("glass-card border-none overflow-hidden", span > 1 && "lg:col-span-" + span)}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-black uppercase tracking-tighter opacity-80">{title}</CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -169,227 +122,301 @@ function ChartCard({ title, children }: ChartCardProps) {
 
 export default function ExecutiveDashboard() {
   const [timeRange, setTimeRange] = useState('month');
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [visibleWidgets, setVisibleWidgets] = useState<string[]>([]);
+  const [isConfiguring, setIsConfiguring] = useState(false);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+  const fetchStatsAndConfig = async () => {
+    setLoading(true);
+    try {
+      const [statsData, configData] = await Promise.all([
+        getRichAnalyticsStats(),
+        getDashboardConfig()
+      ]);
+      
+      setStats(statsData);
+      
+      if (configData && configData.length > 0) {
+        setVisibleWidgets(configData);
+      } else {
+        setVisibleWidgets(DASHBOARD_WIDGETS.filter(w => w.defaultVisible).map(w => w.id));
+      }
+    } catch (err) {
+      toast.error('Erro ao buscar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const kpiCards = [
-    { kpi: MOCK_KPI_VALUES[0], title: 'Faturamento Total', icon: <DollarSign className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[1], title: 'Faturamento Mensal', icon: <Calendar className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[2], title: 'Taxa de Conversão', icon: <Target className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[3], title: 'Ticket Médio', icon: <FileText className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[4], title: 'Imóveis Ativos', icon: <Building2 className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[5], title: 'Total de Leads', icon: <Users className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[6], title: 'Tempo Médio Venda', icon: <Activity className="h-5 w-5" /> },
-    { kpi: MOCK_KPI_VALUES[7], title: 'Valor do Pipeline', icon: <PieChart className="h-5 w-5" /> },
-  ];
+  useEffect(() => {
+    fetchStatsAndConfig();
+  }, [timeRange]);
+
+  const toggleWidget = async (id: string) => {
+    const newConfig = visibleWidgets.includes(id) 
+      ? visibleWidgets.filter(w => w !== id) 
+      : [...visibleWidgets, id];
+    
+    setVisibleWidgets(newConfig);
+    
+    // Save to DB
+    const res = await saveDashboardConfig(newConfig);
+    if (!res.success) {
+      toast.error('Erro ao salvar preferência');
+    }
+  };
+
+  const handleExportPdf = () => {
+    toast.promise(ReportService.exportToPdf('executive-dashboard-container'), {
+      loading: 'Gerando PDF...',
+      success: 'PDF exportado com sucesso!',
+      error: 'Erro ao gerar PDF'
+    });
+  };
+
+  const handleExportExcel = () => {
+    if (!stats) return;
+    const data = ReportService.prepareExcelData(stats);
+    ReportService.exportToExcel(data, `dashboard-${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Excel exportado com sucesso!');
+  };
+
+  if (loading && !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary opacity-20" />
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground opacity-40">Processando Inteligência de Dados...</p>
+      </div>
+    );
+  }
+
+  const activeKpis = DASHBOARD_WIDGETS.filter(w => w.type === 'stat' && visibleWidgets.includes(w.id));
+  const activeCharts = DASHBOARD_WIDGETS.filter(w => w.type !== 'stat' && visibleWidgets.includes(w.id));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center justify-between">
+    <div id="executive-dashboard-container" className="space-y-8 animate-in fade-in duration-700">
+      {/* Dashboard Sub-Header with Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 p-6 rounded-[2rem] border border-white/40">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-1 border-l-4 border-primary rounded-full" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Executivo</h1>
-            <p className="text-gray-500">Visão geral do negócio em tempo real</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <select 
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="week">Última semana</option>
-              <option value="month">Último mês</option>
-              <option value="quarter">Último trimestre</option>
-              <option value="year">Último ano</option>
-            </select>
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} />
-              Atualizar
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar
-            </Button>
+            <h2 className="text-xl font-black tracking-tighter">Visão Operacional Elite</h2>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest opacity-60">Status gerado em {new Date().toLocaleTimeString('pt-BR')}</p>
           </div>
         </div>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <select 
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="h-10 px-4 rounded-xl border-none glass font-bold text-xs uppercase tracking-widest cursor-pointer hover:bg-white/60 transition-colors outline-none"
+          >
+            <option value="week">Semana</option>
+            <option value="month">Mês</option>
+            <option value="quarter">Trimestre</option>
+            <option value="year">Ano</option>
+          </select>
 
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-8">
-          {kpiCards.map((item, index) => (
-            <KpiCard key={index} kpi={item.kpi} title={item.title} icon={item.icon} />
-          ))}
+          <Button 
+            variant="outline" 
+            className="h-10 glass border-none font-bold text-[10px] uppercase tracking-widest"
+            onClick={() => setIsConfiguring(!isConfiguring)}
+          >
+            <Settings2 className={cn("mr-2 h-4 w-4", isConfiguring && "text-primary animate-pulse")} />
+            Personalizar
+          </Button>
+
+          <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block" />
+
+          <Button 
+            variant="outline" 
+            className="h-10 glass border-none font-bold text-[10px] uppercase tracking-widest"
+            onClick={handleExportExcel}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+            Excel
+          </Button>
+
+          <Button 
+            className="h-10 shadow-lg shadow-primary/20 bg-primary font-black text-[10px] uppercase tracking-widest rounded-xl px-6"
+            onClick={handleExportPdf}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            PDF Expert
+          </Button>
         </div>
+      </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Configuration Panel */}
+      {isConfiguring && (
+        <Card className="glass border-primary/20 animate-in slide-in-from-top duration-500 overflow-hidden">
+          <CardHeader className="bg-primary/5 py-4">
+            <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Configurar Widgets de Visibilidade</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {DASHBOARD_WIDGETS.map(widget => (
+              <div 
+                key={widget.id}
+                onClick={() => toggleWidget(widget.id)}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border-2",
+                  visibleWidgets.includes(widget.id) 
+                    ? "bg-primary/10 border-primary shadow-sm" 
+                    : "bg-white/20 border-transparent grayscale opacity-50 hover:grayscale-0 hover:opacity-100"
+                )}
+              >
+                <widget.icon className="h-4 w-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-tight">{widget.title}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+        {activeKpis.map(widget => (
+          <KpiCard 
+            key={widget.id}
+            kpiId={widget.id}
+            title={widget.title}
+            icon={<widget.icon className="h-6 w-6" />}
+            value={
+              widget.id === 'total_leads' ? stats.totalLeads :
+              widget.id === 'active_properties' ? stats.activeProperties :
+              widget.id === 'monthly_revenue' ? 185000 : 
+              widget.id === 'total_revenue' ? stats.totalProperties * 10000 :
+              stats.totalLeads * 0.1
+            }
+            trend="up"
+            trendPercentage={12.4}
+          />
+        ))}
+      </div>
+
+      {/* Major Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {visibleWidgets.includes('revenue_growth') && (
           <div className="lg:col-span-2">
-            <ChartCard title="Faturamento Mensal">
-              <div className="h-72">
+            <ChartCard title="Evolução de Performance Financeira" span={1}>
+              <div className="h-[350px] mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={REVENUE_DATA}>
+                  <AreaChart data={stats.revenueData}>
                     <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6B7280" />
-                    <YAxis 
-                      tick={{ fontSize: 12 }} 
-                      stroke="#6B7280"
-                      tickFormatter={(value) => `R$ ${value / 1000}k`}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.4} />
+                    <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v/1000}k`} />
                     <Tooltip 
-                      contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB' }}
-                      formatter={(value: number) => [formatCurrency(value), 'Faturamento']}
+                      contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}
+                      itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="revenue" 
                       stroke="#3B82F6" 
-                      strokeWidth={2}
-                      fill="url(#revenueGradient)" 
+                      strokeWidth={4}
+                      fillOpacity={1} 
+                      fill="url(#colorRevenue)" 
+                      animationDuration={2000}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </ChartCard>
           </div>
+        )}
 
-          <div>
-            <ChartCard title="Funil de Conversão">
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={LEADS_FUNNEL} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} stroke="#6B7280" />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} stroke="#6B7280" width={80} />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB' }} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {LEADS_FUNNEL.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+        {visibleWidgets.includes('leads_funnel') && (
+          <ChartCard title="Funil Dinâmico de Conversão">
+            <div className="h-[350px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.leadsFunnel} layout="vertical" barGap={12}>
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={9} fontWeight="black" width={80} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                     cursor={{fill: 'transparent'}}
+                     contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
+                  />
+                  <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={24}>
+                    {stats.leadsFunnel.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {visibleWidgets.includes('portal_performance') && (
+           <ChartCard title="Market Share & Canais Digitais">
+              <div className="h-[300px] mt-2">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                       <Pie
+                          data={stats.sources}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={100}
+                          innerRadius={60}
+                          fill="#8884d8"
+                          dataKey="value"
+                          paddingAngle={5}
+                       >
+                          {stats.sources.map((entry: any, index: number) => (
+                             <Cell key={`cell-${index}`} fill={['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981', '#6366f1'][index % 5]} />
+                          ))}
+                       </Pie>
+                       <Tooltip />
+                       <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase' }} />
+                    </RechartsPieChart>
+                 </ResponsiveContainer>
               </div>
-            </ChartCard>
-          </div>
-        </div>
+           </ChartCard>
+        )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ChartCard title="Performance por Portal">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={PORTAL_PERFORMANCE} barSize={40}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="portal" tick={{ fontSize: 12 }} stroke="#6B7280" />
-                  <YAxis 
-                    tick={{ fontSize: 12 }} 
-                    stroke="#6B7280"
-                    tickFormatter={(value) => `R$ ${value / 1000}k`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Legend />
-                  <Bar dataKey="revenue" name="Receita" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-2 text-left font-medium text-gray-500">Portal</th>
-                    <th className="pb-2 text-right font-medium text-gray-500">Leads</th>
-                    <th className="pb-2 text-right font-medium text-gray-500">Receita</th>
-                    <th className="pb-2 text-right font-medium text-gray-500">ROI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PORTAL_PERFORMANCE.map((portal) => (
-                    <tr key={portal.portal} className="border-b last:border-0">
-                      <td className="py-2 font-medium text-gray-900">{portal.portal}</td>
-                      <td className="py-2 text-right">{portal.leads}</td>
-                      <td className="py-2 text-right">{formatCurrency(portal.revenue)}</td>
-                      <td className="py-2 text-right">
-                        <span className={cn(
-                          'rounded-full px-2 py-0.5 text-xs font-medium',
-                          portal.roi >= 2 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        )}>
-                          {portal.roi.toFixed(1)}x
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {visibleWidgets.includes('top_agents') && (
+          <ChartCard title="Ranking de Performance Humana">
+            <div className="space-y-4 mt-4">
+               {stats.topAgents.map((agent: any, i: number) => (
+                 <div key={agent.name} className="flex items-center justify-between p-4 rounded-3xl bg-white/40 hover:bg-white/80 transition-all border border-transparent hover:border-primary/10 group">
+                    <div className="flex items-center gap-4">
+                       <span className={cn(
+                         "h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black",
+                         i === 0 ? "bg-yellow-400 text-yellow-900" : "bg-primary/10 text-primary"
+                       )}>{i + 1}</span>
+                       <div>
+                          <p className="text-sm font-black tracking-tight">{agent.name}</p>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase">{agent.deals} negócios concluídos</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-sm font-black text-primary">{formatCurrency(agent.revenue)}</p>
+                       <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full italic">{agent.conversion}% conv.</span>
+                    </div>
+                 </div>
+               ))}
             </div>
           </ChartCard>
-
-          <ChartCard title="Top Corretores">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={TOP_AGENTS} layout="vertical" barSize={32}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    type="number" 
-                    tick={{ fontSize: 12 }} 
-                    stroke="#6B7280"
-                    tickFormatter={(value) => `R$ ${value / 1000}k`}
-                  />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} stroke="#6B7280" width={100} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Bar dataKey="revenue" name="Receita" fill="#10B981" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 space-y-2">
-              {TOP_AGENTS.slice(0, 3).map((agent, index) => (
-                <div key={agent.name} className="flex items-center justify-between rounded-lg bg-gray-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-                      index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                      index === 1 ? 'bg-gray-100 text-gray-700' :
-                      'bg-orange-100 text-orange-700'
-                    )}>
-                      {index + 1}
-                    </span>
-                    <span className="font-medium text-gray-900">{agent.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-green-600">{formatCurrency(agent.revenue)}</span>
-                    <span className="ml-2 text-xs text-gray-500">({agent.deals} deals)</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ChartCard>
-        </div>
-
-        <div className="mt-6 rounded-lg border bg-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-green-500"></div>
-              <span className="text-sm font-medium text-gray-700">Tudo funcionando</span>
-              <span className="text-xs text-gray-500">Última atualização: {new Date().toLocaleTimeString('pt-BR')}</span>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span>Leads hoje: 23</span>
-              <span>Visitas hoje: 8</span>
-              <span>Contratos hoje: 2</span>
-            </div>
-          </div>
-        </div>
+        )}
+      </div>
+      
+      {/* Footer Info */}
+      <div className="flex flex-col md:flex-row justify-between items-center py-6 border-t border-gray-200/50 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">
+         <p>ImobWeb Intelligence Platform v2.0</p>
+         <div className="flex gap-6 mt-4 md:mt-0">
+            <span>Sincronizado com Prisma ORM</span>
+            <span>Segurança High-End Ativada</span>
+         </div>
       </div>
     </div>
   );

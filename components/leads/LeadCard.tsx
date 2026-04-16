@@ -6,7 +6,7 @@ import { Badge } from '@/components/design-system/badge'
 import { Button } from '@/components/design-system/button'
 import { cn } from '@/lib/responsive/tailwind-utils'
 
-export type LeadStatus = 'NOVO' | 'CONTATADO' | 'INTERESSADO' | 'AGUARDANDO' | 'PERDIDO' | 'CONVERTIDO' | 'ARQUIVADO'
+export type LeadStatus = 'NOVO' | 'INTERESSADO' | 'CONTATADO' | 'AGUARDANDO' | 'VISITA_AGENDADA' | 'PROPOSTA' | 'GANHO' | 'PERDIDO' | 'CONVERTIDO' | 'ARQUIVADO'
 
 interface LeadCardProps {
   lead: {
@@ -25,9 +25,12 @@ interface LeadCardProps {
 
 const statusConfig: Record<LeadStatus, { label: string, color: string }> = {
   NOVO: { label: 'Novo', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  CONTATADO: { label: 'Contatado', color: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' },
   INTERESSADO: { label: 'Interessado', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+  CONTATADO: { label: 'Contatado', color: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' },
   AGUARDANDO: { label: 'Aguardando', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+  VISITA_AGENDADA: { label: 'Visita Agendada', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
+  PROPOSTA: { label: 'Proposta', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  GANHO: { label: 'Ganho', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
   PERDIDO: { label: 'Perdido', color: 'bg-red-500/20 text-red-500 border-red-500/30' },
   CONVERTIDO: { label: 'Convertido', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
   ARQUIVADO: { label: 'Arquivado', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
@@ -40,7 +43,7 @@ export function LeadCard({ lead }: LeadCardProps) {
     <div className="glass border-none group hover:bg-white/10 transition-all duration-300 rounded-3xl p-5 relative overflow-hidden">
       {/* Glow Effect */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
-      
+
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex gap-4 items-center">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center font-black text-primary text-xl shadow-inner uppercase">
@@ -54,7 +57,7 @@ export function LeadCard({ lead }: LeadCardProps) {
           </div>
         </div>
         <Badge className={cn("text-[10px] font-black uppercase tracking-widest border px-2.5 py-1", status.color)}>
-           {status.label}
+          {status.label}
         </Badge>
       </div>
 
@@ -82,7 +85,7 @@ export function LeadCard({ lead }: LeadCardProps) {
               <MessageSquare className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors" />
             </Button>
           </div>
-          
+
           <Button size="sm" className="rounded-full px-5 font-black text-[11px] uppercase tracking-tighter shadow-lg shadow-primary/20">
             Ver Detalhes <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
           </Button>

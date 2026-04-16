@@ -1,56 +1,28 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Plus, Search, Filter, Home, MapPin, DollarSign, SlidersHorizontal } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Plus, Search, Filter, Home, MapPin, DollarSign, SlidersHorizontal, Loader2 } from 'lucide-react'
 import { Button } from '@/components/design-system/button'
 import { Input } from '@/components/design-system/input'
 import { Badge } from '@/components/design-system/badge'
-import { PropertyCard } from '@/components/ui/PropertyCard'
+import { PropertyCard } from '@/components/properties/PropertyCard'
 import { useRouter } from 'next/navigation'
-
-// Mock de dados para demonstração - Em um caso real, viria do Prisma/API
-const MOCK_PROPERTIES = [
-  {
-    id: '1',
-    title: 'Cobertura Duplex no Itaim Bibi',
-    description: 'Vista espetacular 360 graus, acabamento em mármore italiano e automação completa.',
-    price: { amount: 8500000, currency: 'BRL' },
-    address: { neighborhood: 'Itaim Bibi', city: 'São Paulo' },
-    metrics: { totalArea: 450, bedrooms: 4, bathrooms: 5, parkingSpaces: 4 },
-    media: [{ url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000' }],
-    status: 'ACTIVE' as const,
-    usage: 'FOR_SALE' as const,
-    typeId: 'Apartamento'
-  },
-  {
-    id: '2',
-    title: 'Casa Contemporânea em Pinheiros',
-    description: 'Projeto assinado por arquiteto renomado, jardim vertical e teto solar.',
-    price: { amount: 3200000, currency: 'BRL' },
-    address: { neighborhood: 'Pinheiros', city: 'São Paulo' },
-    metrics: { totalArea: 280, bedrooms: 3, bathrooms: 4, parkingSpaces: 2 },
-    media: [{ url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000' }],
-    status: 'ACTIVE' as const,
-    usage: 'FOR_SALE' as const,
-    typeId: 'Casa'
-  },
-  {
-    id: '3',
-    title: 'Loft Industrial na Vila Madalena',
-    description: 'Pé direito duplo, janelas amplas e conceito aberto. Ideal para solteiros ou casais.',
-    price: { amount: 1200000, currency: 'BRL' },
-    address: { neighborhood: 'Vila Madalena', city: 'São Paulo' },
-    metrics: { totalArea: 95, bedrooms: 1, bathrooms: 1, parkingSpaces: 1 },
-    media: [{ url: 'https://images.unsplash.com/photo-1536376074432-bf12585b0573?auto=format&fit=crop&q=80&w=1000' }],
-    status: 'ACTIVE' as const,
-    usage: 'FOR_SALE' as const,
-    typeId: 'Loft'
-  }
-]
+import { getDashboardProperties } from '@/app/actions/dashboard'
 
 export default function PropertiesPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [properties, setProperties] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const data = await getDashboardProperties()
+      setProperties(data)
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   return (
     <div className="space-y-8">
@@ -95,16 +67,22 @@ export default function PropertiesPage() {
       </div>
 
       {/* Properties Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {MOCK_PROPERTIES.map((property) => (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {properties.filter(p => p.title?.toLowerCase().includes(search.toLowerCase()) || p.code?.toLowerCase().includes(search.toLowerCase())).map((property) => (
           <div key={property.id} className="animate-in fade-in zoom-in-95 duration-500">
              <PropertyCard property={property as any} />
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Empty State Mock */}
-      {MOCK_PROPERTIES.length === 0 && (
+      {!loading && properties.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
           <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center">
             <Home className="w-10 h-10 text-muted-foreground" />

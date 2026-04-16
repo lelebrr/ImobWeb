@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { Redis } from "@upstash/redis";
-
-const prisma = new PrismaClient();
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
-});
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Lazy-init Redis to avoid build-time crash when env vars are missing.
+ */
+async function getRedis() {
+  const { Redis } = await import("@upstash/redis");
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL || "",
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  });
+}
 
 /**
  * ENDPOINT DE HEALTH CHECK ENTERPRISE
@@ -26,21 +30,31 @@ export async function GET() {
 
   try {
     // 1. Check Database (Prisma)
-    const dbPromise = prisma.$queryRaw`SELECT 1`.then(() => status.database = "healthy").catch(() => status.database = "unhealthy");
+    const dbPromise = prisma.$queryRaw`SELECT 1`
+      .then(() => { status.database = "healthy"; })
+      .catch(() => { status.database = "unhealthy"; });
     
-    // 2. Check Redis (Upstash)
-    const redisPromise = redis.ping().then(() => status.redis = "healthy").catch(() => status.redis = "unhealthy");
+    // 2. Check Redis (Upstash) - only if configured
+    let redisPromise: Promise<void> = Promise.resolve();
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      const redis = await getRedis();
+      redisPromise = redis.ping()
+        .then(() => { status.redis = "healthy"; })
+        .catch(() => { status.redis = "unhealthy"; });
+    } else {
+      status.redis = "not_configured";
+    }
 
-    // 3. Check WhatsApp API (Placeholder - depende da IA de Integração)
-    status.whatsapp_api = "connected"; // mock
+    // 3. Check WhatsApp API
+    status.whatsapp_api = process.env.WHATSAPP_VERIFY_TOKEN ? "connected" : "not_configured";
 
-    // 4. Check Stripe (Optional)
-    status.stripe = "healthy";
+    // 4. Check Stripe
+    status.stripe = process.env.STRIPE_SECRET_KEY ? "healthy" : "not_configured";
 
     await Promise.all([dbPromise, redisPromise]);
 
     const duration = Date.now() - startTime;
-    const isHealthy = status.database === "healthy" && status.redis === "healthy";
+    const isHealthy = status.database === "healthy";
 
     return NextResponse.json({
       status: isHealthy ? "healthy" : "partially_healthy",

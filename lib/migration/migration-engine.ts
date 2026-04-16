@@ -2,10 +2,8 @@
 
 import { CSVImporter, ImportResult } from '../importer/csv-importer';
 import { PropertyData, ImportOptions, MigrationStatus, FieldMapping } from '../../types/migration';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma';
 import { Buffer } from 'buffer';
-
-const prisma = new PrismaClient();
 
 /**
  * Motor de migração e importação em massa
@@ -146,7 +144,7 @@ export class MigrationEngine {
         result: ImportResult,
         options: ImportOptions
     ): Promise<void> {
-        const { data, metadata } = result;
+        const { data } = result;
         let importedCount = 0;
         let updatedCount = 0;
         let skippedCount = 0;
@@ -192,7 +190,7 @@ export class MigrationEngine {
 
         // Log do resultado
         await this.logImportResult(
-            metadata.totalRows,
+            result.metadata.totalRows,
             importedCount,
             updatedCount,
             skippedCount,
@@ -205,36 +203,23 @@ export class MigrationEngine {
      */
     private mapPropertyData(propertyData: PropertyData): any {
         return {
-            title: propertyData.title,
+            title: propertyData.title || 'Imóvel sem título',
+            description: propertyData.description,
             address: propertyData.address,
             neighborhood: propertyData.neighborhood,
             city: propertyData.city,
             state: propertyData.state,
             cep: propertyData.cep,
-            number: propertyData.number,
-            complement: propertyData.complement,
-            propertyType: propertyData.propertyType,
+            type: propertyData.propertyType as any || 'APARTAMENTO',
+            businessType: propertyData.businessType as any || 'VENDA',
             bedrooms: this.parseNumber(propertyData.bedrooms),
             bathrooms: this.parseNumber(propertyData.bathrooms),
-            parkingSpaces: this.parseNumber(propertyData.parkingSpaces),
-            area: this.parseNumber(propertyData.area),
+            garages: this.parseNumber(propertyData.parkingSpaces),
+            areaTotal: this.parseNumber(propertyData.area),
             price: this.parsePrice(propertyData.price),
             currency: propertyData.currency || 'BRL',
-            phone: propertyData.phone,
-            email: propertyData.email,
-            seller: propertyData.seller,
-            sellerCpfCnpj: propertyData.sellerCpfCnpj,
-            sellerEmail: propertyData.sellerEmail,
-            sellerPhone: propertyData.sellerPhone,
-            status: propertyData.status || 'active',
-            entryDate: propertyData.entryDate ? new Date(propertyData.entryDate) : new Date(),
-            description: propertyData.description,
-            image: propertyData.image,
-            images: propertyData.images ? JSON.stringify(propertyData.images) : null,
-            history: propertyData.history,
-            commission: this.parseNumber(propertyData.commission),
-            notes: propertyData.notes,
-            tags: propertyData.tags ? JSON.stringify(propertyData.tags) : null,
+            status: (propertyData.status as any) || 'DISPONIVEL',
+            organizationId: propertyData.organizationId || 'default_org_id',
         };
     }
 
@@ -262,30 +247,14 @@ export class MigrationEngine {
                 city: propertyData.city || existing.city,
                 state: propertyData.state || existing.state,
                 cep: propertyData.cep || existing.cep,
-                number: propertyData.number || existing.number,
-                complement: propertyData.complement || existing.complement,
-                propertyType: propertyData.propertyType || existing.propertyType,
                 bedrooms: propertyData.bedrooms !== undefined ? this.parseNumber(propertyData.bedrooms) : existing.bedrooms,
                 bathrooms: propertyData.bathrooms !== undefined ? this.parseNumber(propertyData.bathrooms) : existing.bathrooms,
-                parkingSpaces: propertyData.parkingSpaces !== undefined ? this.parseNumber(propertyData.parkingSpaces) : existing.parkingSpaces,
-                area: propertyData.area !== undefined ? this.parseNumber(propertyData.area) : existing.area,
-                price: propertyData.price || existing.price,
+                garages: propertyData.parkingSpaces !== undefined ? this.parseNumber(propertyData.parkingSpaces) : existing.garages,
+                areaTotal: propertyData.area !== undefined ? this.parseNumber(propertyData.area) : existing.areaTotal,
+                price: propertyData.price !== undefined ? this.parsePrice(propertyData.price) : existing.price,
                 currency: propertyData.currency || existing.currency,
-                phone: propertyData.phone || existing.phone,
-                email: propertyData.email || existing.email,
-                seller: propertyData.seller || existing.seller,
-                sellerCpfCnpj: propertyData.sellerCpfCnpj || existing.sellerCpfCnpj,
-                sellerEmail: propertyData.sellerEmail || existing.sellerEmail,
-                sellerPhone: propertyData.sellerPhone || existing.sellerPhone,
-                status: propertyData.status || existing.status,
-                entryDate: propertyData.entryDate ? new Date(propertyData.entryDate) : existing.entryDate,
+                status: (propertyData.status as any) || existing.status,
                 description: propertyData.description || existing.description,
-                image: propertyData.image || existing.image,
-                images: propertyData.images ? JSON.stringify(propertyData.images) : existing.images,
-                history: propertyData.history || existing.history,
-                commission: propertyData.commission !== undefined ? this.parseNumber(propertyData.commission) : existing.commission,
-                notes: propertyData.notes || existing.notes,
-                tags: propertyData.tags ? JSON.stringify(propertyData.tags) : existing.tags,
             },
         });
     }
@@ -308,8 +277,9 @@ export class MigrationEngine {
         if (value === undefined || value === null || value === '') {
             return null;
         }
-        const num = typeof value === 'string' ? parseFloat(value.replace(/[^\d.,-]/g, '')) : value;
-        return isNaN(num) ? null : num;
+        if (typeof value === 'number') return value;
+        const cleanValue = value.replace(/[^\d.,]/g, '').replace(',', '.');
+        return parseFloat(cleanValue) || 0;
     }
 
     /**
@@ -323,15 +293,11 @@ export class MigrationEngine {
         await prisma.importResult.create({
             data: {
                 id: jobId,
-                userId: options.userId || 'anonymous',
-                fileName: options.fileName || 'unknown',
-                fileSize: options.fileSize || 0,
-                fileType: this.detectFileType(options.file),
+                userId: options.userId,
                 status: result.errors.length === 0 ? 'completed' : 'failed',
                 result: JSON.stringify(result),
-                options: JSON.stringify(options),
                 createdAt: new Date(),
-            },
+            } as any,
         });
     }
 
@@ -347,6 +313,8 @@ export class MigrationEngine {
     ): Promise<void> {
         await prisma.importLog.create({
             data: {
+                status: errors === 0 ? 'completed' : 'failed',
+                message: `Importação: ${imported} novos, ${updated} atualizados, ${skipped} ignorados, ${errors} erros`,
                 totalRows,
                 imported,
                 updated,
@@ -381,7 +349,7 @@ export class MigrationEngine {
 
         if (!job) return null;
 
-        return JSON.parse(job.result);
+        return JSON.parse(job.result || '{}');
     }
 
     /**
@@ -394,12 +362,8 @@ export class MigrationEngine {
         // Marcar como cancelado
         this.activeJobs.set(jobId, 'cancelled');
 
-        // Se for um Promise, podemos tentar cancelar (depende da implementação)
-        if (job instanceof Promise) {
-            // Nota: não há forma padrão de cancelar promises assíncronas
-            // em JavaScript, mas podemos limpar referências
-            this.processing.delete(jobId);
-        }
+        // Limpar referências
+        this.processing.delete(jobId);
 
         return true;
     }
@@ -429,15 +393,20 @@ export class MigrationEngine {
         failedImports: number;
         averageDuration: number;
     }> {
-        const stats = await prisma.importLog.groupBy({
-            by: ['status'],
-            _count: true,
+        // Contar total de importações
+        const totalImports = await prisma.importLog.count();
+
+        // Contar importações com sucesso (errors === 0)
+        const successfulImports = await prisma.importLog.count({
+            where: { status: 'completed' },
         });
 
-        const totalImports = await prisma.importLog.count();
-        const successfulImports = stats.find((s: any) => s.status === 'completed')?._count || 0;
-        const failedImports = stats.find((s: any) => s.status === 'failed')?._count || 0;
+        // Contar importações com falha
+        const failedImports = await prisma.importLog.count({
+            where: { status: 'failed' },
+        });
 
+        // Calcular duração média a partir dos resultados recentes
         const results = await prisma.importResult.findMany({
             where: {
                 createdAt: {
@@ -450,11 +419,17 @@ export class MigrationEngine {
         });
 
         const durations = results
-            .map((r) => r.result ? JSON.parse(r.result).metadata.duration : 0)
+            .map((r) => {
+                try {
+                    return r.result ? JSON.parse(r.result)?.metadata?.duration : 0;
+                } catch {
+                    return 0;
+                }
+            })
             .filter((d: number) => d > 0);
 
         const averageDuration = durations.length > 0
-            ? durations.reduce((a, b) => a + b, 0) / durations.length
+            ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length
             : 0;
 
         return {

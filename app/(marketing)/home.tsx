@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Navbar from '@/components/marketing/Navbar'
 import Hero from '@/components/marketing/Hero'
+import FeaturedProperties from '@/components/marketing/FeaturedProperties'
 import Benefits from '@/components/marketing/Benefits'
 import Testimonials from '@/components/marketing/Testimonials'
 import PricingTable from '@/components/marketing/PricingTable'
@@ -16,6 +17,8 @@ export default function Home() {
                 <section id="hero">
                     <Hero />
                 </section>
+
+                <FeaturedProperties />
 
                 <section id="features">
                     <Benefits />

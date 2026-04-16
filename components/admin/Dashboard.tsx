@@ -94,7 +94,7 @@ const topOrganizations = [
 
 const Dashboard = () => {
     // Track dashboard view
-    trackAdminEvent('Admin Dashboard Viewed')
+    trackAdminEvent('Admin Dashboard Viewed', '', {})
 
     return (
         <div className="space-y-6">

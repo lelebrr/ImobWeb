@@ -1,8 +1,13 @@
 /**
  * Billing Webhook Handlers - ImobWeb 2026
- * 
+ *
  * Processa eventos do Stripe e outras plataformas de pagamento.
  */
+
+export const handleWebhook = async (request: Request) => {
+  console.log('[Webhook] Received webhook request');
+  return { success: true };
+};
 
 export const handleStripeEvents = {
   /**

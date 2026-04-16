@@ -3,7 +3,7 @@
 import * as XLSX from 'xlsx';
 import * as csvParser from 'csv-parser';
 import { Readable } from 'stream';
-import { validateCep, validateCpfCnpj, validatePhone, validateEmail } from '../../fiscal-rules';
+import { validateCep, validateCpfCnpj, validatePhone, validateEmail } from '../fiscal-rules';
 import { PropertyData, ImportError, ImportResult } from '../../types/migration';
 import { Buffer } from 'buffer';
 
@@ -60,7 +60,7 @@ export class CSVImporter {
      * Processa arquivo Excel (.xlsx)
      */
     private static async processExcel(
-        file: Buffer,
+        file: Buffer | Readable,
         options: { chunkSize?: number; onProgress?: (progress: any) => void }
     ): Promise<ImportResult> {
         const workbook = XLSX.read(file, { type: 'buffer' });
@@ -73,6 +73,7 @@ export class CSVImporter {
             return {
                 data: [],
                 errors: [{ message: 'Arquivo vazio ou sem dados', row: 0, type: 'validation' }],
+                warnings: [],
                 metadata: { totalRows: 0, processedRows: 0, validRows: 0, invalidRows: 0, duplicateRows: 0 }
             };
         }
@@ -196,8 +197,8 @@ export class CSVImporter {
                 }
 
                 // Validar quartos e vagas
-                const bedrooms = parseInt(processedRow.bedrooms || '0', 10);
-                const parkingSpaces = parseInt(processedRow.parkingSpaces || '0', 10);
+                const bedrooms = parseInt(String(processedRow.bedrooms || '0'), 10);
+                const parkingSpaces = parseInt(String(processedRow.parkingSpaces || '0'), 10);
                 if (bedrooms < 0 || parkingSpaces < 0) {
                     warnings.push({
                         message: `Número de quartos ou vagas inválidos`,
@@ -253,7 +254,7 @@ export class CSVImporter {
     /**
      * Processa arquivo CSV
      */
-    private static processCSV(
+    private static async processCSV(
         file: Buffer | Readable,
         options: { chunkSize?: number; onProgress?: (progress: any) => void }
     ): Promise<ImportResult> {
@@ -272,7 +273,7 @@ export class CSVImporter {
 
         if (file instanceof Readable) {
             const stream = file;
-            const parser = csvParser();
+            const parser = csvParser.default();
 
             stream.pipe(parser);
 
@@ -356,8 +357,8 @@ export class CSVImporter {
                     }
 
                     // Validar quartos e vagas
-                    const bedrooms = parseInt(processedRow.bedrooms || '0', 10);
-                    const parkingSpaces = parseInt(processedRow.parkingSpaces || '0', 10);
+                    const bedrooms = parseInt(String(processedRow.bedrooms || '0'), 10);
+                    const parkingSpaces = parseInt(String(processedRow.parkingSpaces || '0'), 10);
                     if (bedrooms < 0 || parkingSpaces < 0) {
                         result.warnings.push({
                             message: `Número de quartos ou vagas inválidos`,
@@ -481,8 +482,8 @@ export class CSVImporter {
                     }
 
                     // Validar quartos e vagas
-                    const bedrooms = parseInt(processedRow.bedrooms || '0', 10);
-                    const parkingSpaces = parseInt(processedRow.parkingSpaces || '0', 10);
+                    const bedrooms = parseInt(String(processedRow.bedrooms || '0'), 10);
+                    const parkingSpaces = parseInt(String(processedRow.parkingSpaces || '0'), 10);
                     if (bedrooms < 0 || parkingSpaces < 0) {
                         result.warnings.push({
                             message: `Número de quartos ou vagas inválidos`,

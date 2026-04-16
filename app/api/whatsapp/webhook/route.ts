@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { PrismaClient } from '@prisma/client'
-// import { verifyWhatsAppSignature } from '@/lib/whatsapp/verify'
-// import { processIncomingMessage } from '@/lib/whatsapp/process-message'
-// import { processIncomingCall } from '@/lib/whatsapp/process-call'
+import { prisma } from '@/lib/prisma'
 
-// Note: Using local implementations for now to stabilize build.
-
-const prisma = new PrismaClient()
+export const dynamic = 'force-dynamic';
 
 /**
  * Webhook Handler para WhatsApp Business Cloud API
@@ -16,22 +10,14 @@ const prisma = new PrismaClient()
  * Configuração no WhatsApp Business API:
  * - Endpoint: https://seu-dominio.com/api/whatsapp/webhook
  * - Verify Token: token-seguro-aleatorio
- * - Callback URL: https://graph.facebook.com/v19.0/YOUR_PHONE_NUMBER_ID/webhooks
  */
 
 /**
  * Verificar assinatura do webhook (segurança)
  */
 function verifySignature(request: NextRequest, signature: string, payload: string): boolean {
-    // Em produção, isso deve ser feito com o token de verificação configurado no WhatsApp
-    // const token = process.env.WHATSAPP_VERIFY_TOKEN
-    // const expectedSignature = crypto
-    //   .createHmac('sha256', token)
-    //   .update(payload)
-    //   .digest('base64')
-    // return signature === expectedSignature
-
-    // Para desenvolvimento, aceita qualquer assinatura
+    // Em produção, validar com crypto HMAC + WHATSAPP_APP_SECRET
+    // Por enquanto, aceita qualquer assinatura em dev
     return true
 }
 
@@ -44,45 +30,37 @@ export async function POST(request: NextRequest) {
         const body = await request.text()
         const signature = request.headers.get('x-hub-signature-256')
 
-        // Verificar assinatura
         if (!verifySignature(request, signature || '', body)) {
             return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
         }
 
-        // Parsear o payload JSON
         const payload = JSON.parse(body)
         const entry = payload.entry?.[0]
         const changes = entry?.changes?.[0]
         const value = changes?.value
-        const metadata = entry?.changes?.[0]?.value?.metadata
         const from = value?.messages?.[0]?.from
         const message = value?.messages?.[0]
         const call = value?.calls?.[0]
-        const status = value?.statuses?.[0]
+        const statusEvent = value?.statuses?.[0]
 
-        // Log do webhook recebido
         console.log('[WhatsApp Webhook] Event received:', {
             type: payload.object,
             from,
             hasMessage: !!message,
             hasCall: !!call,
-            hasStatus: !!status,
+            hasStatus: !!statusEvent,
         })
 
-        // Processar diferentes tipos de eventos
         if (message) {
-            // Mensagem recebida
             return await processIncomingMessage(message, from)
         }
 
         if (call) {
-            // Chamada recebida
             return await processIncomingCall(call, from)
         }
 
-        if (status) {
-            // Status de mensagem
-            return await processMessageStatus(status, from)
+        if (statusEvent) {
+            return await processMessageStatus(statusEvent)
         }
 
         return NextResponse.json({ received: true })
@@ -105,7 +83,6 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
-    // Token de verificação configurado no WhatsApp Business API
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
@@ -117,19 +94,16 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Webhook Handler para atualização de status
+ * Processa atualização de status de mensagem
  */
-async function processMessageStatus(status: any, phoneNumber: string) {
+async function processMessageStatus(status: any) {
     try {
         const messageId = status.message_id
         const statusType = status.status
         const timestamp = status.timestamp
 
-        // Buscar mensagem no banco de dados
         const message = await prisma.conversation.findFirst({
-            where: {
-                externalId: messageId,
-            },
+            where: { externalId: messageId },
         })
 
         if (!message) {
@@ -137,18 +111,13 @@ async function processMessageStatus(status: any, phoneNumber: string) {
             return NextResponse.json({ received: true })
         }
 
-        // Atualizar status da mensagem
         await prisma.conversation.update({
             where: { id: message.id },
             data: {
-                status: statusType === 'sent' ? 'ENVIADO' : 'ENTREGUE',
-                deliveredAt: new Date(timestamp * 1000),
+                status: statusType === 'sent' ? 'ENVIADO' : statusType === 'delivered' ? 'ENTREGUE' : statusType === 'read' ? 'LIDA' : 'ENVIADO',
+                deliveredAt: statusType === 'delivered' ? new Date(timestamp * 1000) : undefined,
+                readAt: statusType === 'read' ? new Date(timestamp * 1000) : undefined,
             },
-        })
-
-        console.log('[WhatsApp Webhook] Message status updated:', {
-            messageId,
-            status: statusType,
         })
 
         return NextResponse.json({ received: true })
@@ -159,31 +128,42 @@ async function processMessageStatus(status: any, phoneNumber: string) {
 }
 
 /**
- * Webhook Handler para mensagens recebidas
+ * Processa mensagem recebida - busca lead real pelo número
  */
 async function processIncomingMessage(message: any, phoneNumber: string) {
     try {
         const messageText = message.text?.body || '';
         const messageId = message.id;
 
-        // Registrar mensagem no banco de dados
+        // Buscar lead pelo número de WhatsApp ou telefone
+        let lead = await prisma.lead.findFirst({
+            where: {
+                OR: [
+                    { whatsapp: phoneNumber },
+                    { phone: phoneNumber },
+                ],
+            },
+        });
+
+        if (!lead) {
+            console.log('[WhatsApp Webhook] No lead found for:', phoneNumber);
+            return NextResponse.json({ received: true, matched: false });
+        }
+
         await prisma.conversation.create({
             data: {
-                leadId: phoneNumber, // Em produção, buscar lead pelo número
+                leadId: lead.id,
                 message: messageText,
                 direction: 'INCOMING',
                 status: 'ENTREGUE',
                 externalId: messageId,
-                createdAt: new Date(),
+                messageType: message.type || 'text',
+                mediaUrl: message.image?.id || message.video?.id || message.audio?.id || null,
+                mediaType: message.type !== 'text' ? message.type : null,
             },
         });
 
-        console.log('[WhatsApp Webhook] Message processed:', {
-            messageId,
-            from: phoneNumber,
-        });
-
-        return NextResponse.json({ received: true });
+        return NextResponse.json({ received: true, matched: true });
     } catch (error) {
         console.error('[WhatsApp Webhook] Error processing message:', error);
         return NextResponse.json({ error: 'Error processing message' }, { status: 500 });
@@ -191,19 +171,30 @@ async function processIncomingMessage(message: any, phoneNumber: string) {
 }
 
 /**
- * Webhook Handler para chamadas
+ * Processa chamada recebida
  */
 async function processIncomingCall(call: any, phoneNumber: string) {
     try {
         const callId = call.id
         const callType = call.direction === 'inbound' ? 'ENTRADA' : 'SAÍDA'
-        const from = call.from
-        const to = call.to
 
-        // Registrar chamada no banco de dados
+        const lead = await prisma.lead.findFirst({
+            where: {
+                OR: [
+                    { whatsapp: phoneNumber },
+                    { phone: phoneNumber },
+                ],
+            },
+        });
+
+        if (!lead) {
+            console.log('[WhatsApp Webhook] No lead found for call from:', phoneNumber);
+            return NextResponse.json({ received: true, matched: false });
+        }
+
         await prisma.conversation.create({
             data: {
-                leadId: phoneNumber, // Em produção, buscar lead pelo número
+                leadId: lead.id,
                 message: `Chamada ${callType} registrada`,
                 direction: 'INCOMING',
                 status: 'ATIVA',
@@ -211,19 +202,14 @@ async function processIncomingCall(call: any, phoneNumber: string) {
                 metadata: {
                     callId,
                     callType,
-                    from,
-                    to,
+                    from: call.from,
+                    to: call.to,
                     duration: call.creation_timestamp,
                 },
             },
         })
 
-        console.log('[WhatsApp Webhook] Call processed:', {
-            callId,
-            type: callType,
-        })
-
-        return NextResponse.json({ received: true })
+        return NextResponse.json({ received: true, matched: true })
     } catch (error) {
         console.error('[WhatsApp Webhook] Error processing call:', error)
         return NextResponse.json({ error: 'Error processing call' }, { status: 500 })

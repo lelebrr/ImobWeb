@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://imobweb.com
+Host: https://imobal.com
 
 # Sitemaps
-Sitemap: https://imobweb.com/sitemap.xml
+Sitemap: https://imobal.com/sitemap.xml

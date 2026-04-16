@@ -3,10 +3,16 @@ import { z } from 'zod';
 import { signingService } from '@/lib/signing/signing-service';
 import type { SigningMethod } from '@/types/contracts';
 
+export const dynamic = 'force-dynamic';
+
 const sendForSignatureSchema = z.object({
   contractId: z.string(),
   partyId: z.string(),
-  method: z.enum(['email', 'whatsapp', 'certificate', 'docusign', 'clicksign', 'assine_bem'])
+  method: z.enum(['email', 'whatsapp', 'certificate', 'docusign', 'clicksign', 'assine_bem']),
+  signerEmail: z.string().email(),
+  documentUrl: z.string().url(),
+  signerName: z.string().min(1),
+  emailSubject: z.string().optional().default('Assinatura de Contrato'),
 });
 
 export async function POST(request: NextRequest) {
@@ -20,10 +26,10 @@ export async function POST(request: NextRequest) {
       const result = await signingService.sendViaEmail(
         validated.contractId,
         validated.partyId,
-        'signer@email.com',
-        'https://docs.example.com/contract',
-        'Nome do Assinante',
-        'Assinatura de Contrato'
+        validated.signerEmail,
+        validated.documentUrl,
+        validated.signerName,
+        validated.emailSubject
       );
 
       return NextResponse.json({

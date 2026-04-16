@@ -55,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         } catch (error) {
             console.error('Erro ao atualizar sessão:', error)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session)
             setUser(session?.user ?? null)
+            setLoading(false)
 
             if (session?.user.user_metadata) {
                 setOrganizationId(session.user.user_metadata.organizationId || null)
@@ -100,6 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = async () => {
         const { error } = await supabase.auth.signOut()
         if (error) throw error
+        setUser(null)
+        setSession(null)
+        setOrganizationId(null)
     }
 
     return (
