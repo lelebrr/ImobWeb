@@ -13,7 +13,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -28,56 +28,70 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login falhou");
+        setError(data.error || "E-mail ou senha incorretos");
         return;
       }
 
-      alert("Login realizado com sucesso! Redirecionando...");
-      router.push(redirectTo);
-      router.refresh();
+      console.log("Login OK - Redirecionando para:", redirectTo);
+
+      window.location.href = redirectTo;
     } catch (err) {
-      setError("Erro de conexão com o servidor");
+      console.error(err);
+      setError("Erro ao conectar com o servidor");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8">imobWeb Login</h1>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-slate-900">imobWeb</h1>
+          <p className="text-slate-600 mt-2">Faça login para continuar</p>
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-1">E-mail</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              E-mail
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-4 border rounded-xl"
+              className="w-full px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500"
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Senha</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Senha
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-4 border rounded-xl"
+              className="w-full px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500"
+              required
             />
           </div>
 
-          {error && <p className="text-red-500 text-center">{error}</p>}
+          {error && <p className="text-red-500 text-center text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-emerald-600 text-white py-4 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium py-4 rounded-2xl transition-all"
           >
-            {isLoading ? "Entrando..." : "Acessar Dashboard"}
+            {isLoading ? "Entrando..." : "Entrar no Dashboard"}
           </button>
         </form>
+
+        <p className="text-center text-xs text-slate-500 mt-8">
+          Teste: admin@imobweb.com.br / admin123
+        </p>
       </div>
     </div>
   );
@@ -85,7 +99,7 @@ function LoginForm() {
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div>Carregando...</div>
     </div>
   );
