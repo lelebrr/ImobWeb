@@ -60,13 +60,25 @@ function LoginForm() {
         throw new Error(result.error || "E-mail ou senha incorretos");
       }
 
-      // Login bem-sucedido
-      toast.success("Bem-vindo ao imobWeb!", {
-        description: "Redirecionando para o dashboard...",
+      const destination = result.redirectTo || redirectTo;
+      const userRole = result.role || 'BROKER';
+
+      const roleMessages: Record<string, string> = {
+        SUPER_ADMIN: 'Painel Administrador',
+        PLATFORM_MASTER: 'Painel Administrador',
+        MANAGER: 'Dashboard Imobiliária',
+        AGENCY_MASTER: 'Dashboard Imobiliária',
+        ADMIN: 'Dashboard Imobiliária',
+        BROKER: 'Painel Corretor',
+        PARTNER: 'Portal Parceiro',
+        OWNER: 'Portal Proprietário'
+      };
+
+      toast.success(`Bem-vindo ao imobWeb!`, {
+        description: `Redirecionando para ${roleMessages[userRole] || 'Dashboard'}...`,
       });
 
-      // Redirecionamento seguro (compatível com o novo middleware)
-      router.push(redirectTo);
+      router.push(destination);
       router.refresh();
     } catch (err: any) {
       setError("email", { message: err.message });

@@ -33,5 +33,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true, user: data.user });
+  const userRole = (data.user?.user_metadata?.role as string) || "BROKER";
+  const isSuperAdmin =
+    userRole === "SUPER_ADMIN" || userRole === "PLATFORM_MASTER";
+
+  return NextResponse.json({
+    success: true,
+    user: data.user,
+    role: userRole,
+    redirectTo: isSuperAdmin ? "/admin" : "/dashboard",
+  });
 }

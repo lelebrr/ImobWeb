@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Search, Bell, Plus, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Bell, Plus, Settings, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,10 +13,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { CommandMenu } from '@/components/ui/command-menu';
+import { CommandMenu } from "@/components/ui/command-menu";
 
 interface TopbarProps {
   user: {
@@ -26,9 +28,10 @@ interface TopbarProps {
 }
 
 export function Topbar({ user, onQuickAction }: TopbarProps) {
+  const router = useRouter();
+
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md lg:px-6">
-      
       {/* Search Section */}
       <div className="flex flex-1 items-center gap-4">
         <div className="w-full max-w-md hidden md:flex">
@@ -39,9 +42,9 @@ export function Topbar({ user, onQuickAction }: TopbarProps) {
       {/* Actions Section */}
       <div className="flex items-center gap-3">
         {/* Quick Action Button */}
-        <Button 
-          variant="default" 
-          size="sm" 
+        <Button
+          variant="default"
+          size="sm"
           className="hidden sm:flex"
           onClick={onQuickAction}
         >
@@ -50,11 +53,7 @@ export function Topbar({ user, onQuickAction }: TopbarProps) {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-destructive border-2 border-background" />
-          <span className="sr-only">Notificações</span>
-        </Button>
+        <NotificationBell userId="current-user" />
 
         {/* User Profile */}
         <DropdownMenu>
@@ -78,7 +77,10 @@ export function Topbar({ user, onQuickAction }: TopbarProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => router.push("/dashboard/settings")}
+            >
               Configurações da Conta
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">
