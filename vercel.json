@@ -6,16 +6,8 @@
     "devCommand": "npm run dev",
     "crons": [
         {
-            "path": "/api/devops/health",
-            "schedule": "0 */6 * * *"
-        },
-        {
-            "path": "/api/insights/weekly-summary",
-            "schedule": "0 9 * * 1"
-        },
-        {
-            "path": "/api/backup/run",
-            "schedule": "0 2 * * *"
+            "path": "/api/cron/maintenance",
+            "schedule": "0 9 * * *"
         }
     ],
     "headers": [
