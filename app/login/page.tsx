@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, ShieldCheck, Building2 } from "lucide-react";
+import { Loader2, LogIn, Building2, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,12 +15,12 @@ import { toast } from "sonner"; // Usando sonner (configurado no RootProvider)
 
 const loginSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
-  password: z.string().min(1, "A senha é obrigatória"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginFormInput = z.infer<typeof loginSchema>;
 
-function LoginFormContent() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
@@ -32,7 +32,7 @@ function LoginFormContent() {
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<LoginForm>({
+  } = useForm<LoginFormInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "admin@imobweb.com.br",
@@ -40,10 +40,11 @@ function LoginFormContent() {
     },
   });
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: LoginFormInput) => {
     setIsLoading(true);
 
     try {
+      // Mantendo a lógica de autenticação via Supabase API (já verificada como funcional)
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +61,7 @@ function LoginFormContent() {
       }
 
       // Login bem-sucedido
-      toast.success("Login realizado!", {
+      toast.success("Bem-vindo ao imobWeb!", {
         description: "Redirecionando para o dashboard...",
       });
 
@@ -69,8 +70,8 @@ function LoginFormContent() {
       router.refresh();
     } catch (err: any) {
       setError("email", { message: err.message });
-      toast.error("Erro ao fazer login", {
-        description: err.message || "Verifique suas credenciais",
+      toast.error("Falha no login", {
+        description: err.message || "Verifique suas credenciais e tente novamente.",
       });
     } finally {
       setIsLoading(false);
@@ -78,86 +79,141 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="min-h-screen flex w-full">
-      {/* LADO ESQUERDO - ILUSTRAÇÃO PREMIUM */}
+    <div className="min-h-screen flex">
+      {/* ====================== LADO ESQUERDO - ILUSTRAÇÃO PREMIUM ====================== */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center">
+        {/* Background sutil */}
         <div className="absolute inset-0 bg-[radial-gradient(at_center,#10b98120_0%,transparent_70%)]" />
 
+        {/* Ilustração principal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="relative z-10 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="absolute inset-0 flex items-center justify-center"
         >
-          <div className="flex justify-center mb-8">
-            <div className="w-24 h-24 bg-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl">
-              <span className="text-white text-5xl font-bold">iW</span>
-            </div>
-          </div>
+          <div className="relative w-[520px] h-[520px]">
+            {/* Mockup do Dashboard */}
+            <motion.div
+              animate={{ y: [0, -15, 0] }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute left-12 top-12 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl w-96 h-[480px] overflow-hidden"
+            >
+              <div className="bg-emerald-600 h-10 flex items-center px-4 text-white text-[10px] font-black uppercase tracking-widest">
+                imobWeb • Dashboard
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="h-8 bg-white/10 rounded-2xl" />
+                <div className="grid grid-cols-3 gap-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 bg-white/10 rounded-2xl animate-pulse"
+                      style={{ animationDelay: `${i * 0.2}s` }}
+                    />
+                  ))}
+                </div>
+                <div className="h-32 bg-white/5 rounded-2xl border border-white/5" />
+              </div>
+            </motion.div>
 
-          <h1 className="text-5xl font-bold text-white leading-tight max-w-md">
-            O CRM que <span className="text-emerald-400">realmente</span> vende
-            imóveis
-          </h1>
-          <p className="mt-6 text-xl text-white/70 max-w-xs mx-auto">
-            Cadastro único • WhatsApp automático • Vendas mais rápidas
-          </p>
+            {/* Ícones flutuantes */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-6 -right-6 text-emerald-400 opacity-50"
+            >
+              <Building2 size={80} />
+            </motion.div>
 
-          <div className="mt-16 flex justify-center gap-8 text-white/60">
-            <div className="flex items-center gap-2">
-              <Building2 size={28} />
-              <span className="text-sm">Imobiliárias</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={28} />
-              <span className="text-sm">Segurança</span>
-            </div>
+            <motion.div
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute bottom-12 left-12 text-white"
+            >
+              <ShieldCheck size={64} className="drop-shadow-2xl opacity-80" />
+            </motion.div>
           </div>
         </motion.div>
+
+        {/* Texto overlay */}
+        <div className="absolute bottom-12 left-12 text-white max-w-sm">
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-5xl font-bold leading-tight"
+          >
+            O CRM que <span className="text-emerald-400">realmente</span> vende
+            imóveis.
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="mt-4 text-lg text-white/70"
+          >
+            Cadastro único. WhatsApp automático. Vendas mais rápidas.
+          </motion.p>
+        </div>
+
+        {/* Logo no canto */}
+        <div className="absolute top-8 left-8 flex items-center gap-3 text-white">
+          <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="font-bold text-xl">iW</span>
+          </div>
+          <span className="text-2xl font-black tracking-tighter">imobWeb</span>
+        </div>
       </div>
 
-      {/* LADO DIREITO - FORMULÁRIO */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-white">
+      {/* ====================== LADO DIREITO - FORMULÁRIO ====================== */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
           className="w-full max-w-md"
         >
-          <div className="mb-10">
-            <h2 className="text-3xl font-semibold text-slate-900">
-              Bem-vindo de volta
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">
+              Olá, seja bem-vindo!
             </h2>
-            <p className="text-slate-600 mt-2">Faça login para continuar</p>
+            <p className="text-slate-600 mt-2 font-medium">
+              Faça login para acessar sua conta estratégica
+            </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div>
-              <Label htmlFor="email" className="text-slate-700">
-                E-mail
+            <div className="space-y-2">
+              <Label htmlFor="email" className="font-bold text-xs uppercase tracking-widest opacity-70">
+                E-mail profissional
               </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
                 {...register("email")}
-                className="h-14 mt-2 text-base"
+                className="h-14 text-base rounded-2xl border-slate-200 focus:ring-emerald-500"
               />
               {errors.email && (
-                <p className="mt-1 text-red-500 text-sm">
+                <p className="text-red-500 text-xs font-bold mt-1">
                   {errors.email.message}
                 </p>
               )}
             </div>
 
-            <div>
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-slate-700">
+                <Label htmlFor="password" className="font-bold text-xs uppercase tracking-widest opacity-70">
                   Senha
                 </Label>
                 <a
                   href="/forgot-password"
-                  className="text-xs text-emerald-600 hover:underline"
+                  className="text-xs font-bold text-emerald-600 hover:underline"
                 >
                   Esqueceu a senha?
                 </a>
@@ -167,10 +223,10 @@ function LoginFormContent() {
                 type="password"
                 placeholder="••••••••"
                 {...register("password")}
-                className="h-14 mt-2 text-base"
+                className="h-14 text-base rounded-2xl border-slate-200 focus:ring-emerald-500"
               />
               {errors.password && (
-                <p className="mt-1 text-red-500 text-sm">
+                <p className="text-red-500 text-xs font-bold mt-1">
                   {errors.password.message}
                 </p>
               )}
@@ -179,25 +235,26 @@ function LoginFormContent() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 text-lg font-semibold bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 shadow-lg"
+              className="w-full h-16 text-lg font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 transition-all duration-300 shadow-xl shadow-emerald-500/20 rounded-2xl"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                  Entrando na plataforma...
+                  Conectando...
                 </>
               ) : (
-                "Acessar Dashboard"
+                "Acessar meu Dashboard"
               )}
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-10 text-center text-sm text-slate-500">
+            Ainda não tem conta?{" "}
             <a
               href="/register"
-              className="text-emerald-600 hover:underline text-sm font-medium"
+              className="font-black text-emerald-600 hover:underline uppercase tracking-widest text-xs"
             >
-              Ainda não tem conta? Criar conta gratuita
+              Criar conta gratuita
             </a>
           </div>
         </motion.div>
@@ -210,12 +267,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
           <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
         </div>
       }
     >
-      <LoginFormContent />
+      <LoginForm />
     </Suspense>
   );
 }
