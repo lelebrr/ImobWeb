@@ -2,5 +2,5 @@
 // A página principal do marketplace está em app/(marketplace)/page.tsx
 
 export default function MarketplacePage() {
-    return null; // Página redirecionada
+    return null;
 }
