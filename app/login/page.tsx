@@ -24,7 +24,7 @@ function LoginForm() {
   const { signIn, loading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("admin@imobweb.com.br");
-  const [password, setPassword] = useState("admin");
+  const [password, setPassword] = useState("admin123");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,11 +33,15 @@ function LoginForm() {
     setIsLoading(true);
     setError("");
 
+    console.log("Attempting login with:", email);
+    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
     try {
       await signIn({ email, password });
+      console.log("Login successful");
 
       // Wait for auth state to update
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Force a full page navigation
       window.location.href = "/dashboard";

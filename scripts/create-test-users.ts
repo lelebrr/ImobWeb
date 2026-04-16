@@ -35,8 +35,23 @@ async function createTestUsers() {
 
   for (const userData of users) {
     try {
-      const { data: authUser, error: authError } =
-        await supabase.auth.admin.createUser({
+      // Check if user exists
+      const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
+      const existingUser = listData?.users.find(u => u.email === userData.email);
+
+      if (existingUser) {
+        const { data: authUser, error: authError } = await supabase.auth.admin.updateUserById(
+          existingUser.id,
+          { password: userData.password }
+        );
+
+        if (authError) {
+          console.log(`⚠️ ${userData.email} (update): ${authError.message}`);
+        } else {
+          console.log(`✅ Updated password for: ${userData.email}`);
+        }
+      } else {
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
           email: userData.email,
           password: userData.password,
           email_confirm: true,
@@ -46,10 +61,11 @@ async function createTestUsers() {
           },
         });
 
-      if (authError) {
-        console.log(`⚠️ ${userData.email}: ${authError.message}`);
-      } else {
-        console.log(`✅ Created: ${userData.email}`);
+        if (authError) {
+          console.log(`⚠️ ${userData.email} (create): ${authError.message}`);
+        } else {
+          console.log(`✅ Created: ${userData.email}`);
+        }
       }
     } catch (err: any) {
       console.log(`⚠️ ${userData.email}: ${err.message}`);
