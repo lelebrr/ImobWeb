@@ -34,10 +34,13 @@ function LoginForm() {
     setError("");
 
     try {
-      const result = await signIn({ email, password });
-      console.log("Login result:", result);
-      router.push("/dashboard");
-      router.refresh();
+      await signIn({ email, password });
+
+      // Wait for auth state to update
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Force a full page navigation
+      window.location.href = "/dashboard";
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
