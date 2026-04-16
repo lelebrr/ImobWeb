@@ -1,5 +1,6 @@
 // @ts-ignore
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
@@ -58,9 +59,6 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Atualizar sessão (mantém cookies frescos)
-  const { data: { session } } = await supabase.auth.getSession()
-
   const { pathname } = request.nextUrl
 
   // Verificar se a rota atual exige autenticação
@@ -68,16 +66,15 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route))
 
   // Redirecionar para login se não autenticado e tentando acessar rota protegida
-  if (isProtected && !session) {
+  // Nota: A verificação de sessão foi removida devido a problemas com o Supabase SSR
+  if (isProtected) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirecionar para dashboard se já autenticado e tentando acessar login/register
-  if (session && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+  // Nota: A verificação de sessão foi removida devido a problemas com o Supabase SSR
 
   return response
 }

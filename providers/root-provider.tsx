@@ -5,6 +5,7 @@ import { ThemeProvider, AuthProvider, AIProvider, MobileProvider } from './index
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
 import { PostHogProvider } from '@/lib/analytics/posthog'
+import { MarketingLanguageProvider } from '@/lib/i18n/MarketingLanguageContext'
 
 /**
  * RootProvider
@@ -13,23 +14,25 @@ import { PostHogProvider } from '@/lib/analytics/posthog'
 export function RootProvider({ children }: { children: React.ReactNode }) {
   return (
     <PostHogProvider>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <AuthProvider>
-          <AIProvider>
-            <MobileProvider>
-              <TooltipProvider delayDuration={0}>
-                {children}
-              </TooltipProvider>
-              <Toaster richColors position="top-right" closeButton />
-            </MobileProvider>
-          </AIProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <MarketingLanguageProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <AIProvider>
+              <MobileProvider>
+                <TooltipProvider delayDuration={0}>
+                  {children}
+                </TooltipProvider>
+                <Toaster richColors position="top-right" closeButton />
+              </MobileProvider>
+            </AIProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </MarketingLanguageProvider>
     </PostHogProvider>
   )
 }
