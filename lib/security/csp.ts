@@ -9,7 +9,7 @@ export function generateNonce() {
 
 export function getCSP(nonce: string) {
   const isProd = process.env.NODE_ENV === 'production';
-
+  
   // Lista de domínios confiáveis
   const trustedDomains = [
     "'self'",
