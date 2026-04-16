@@ -7,10 +7,32 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 // Configuração do Redis (Variáveis de ambiente obrigatórias)
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
-});
+// Lazy initialization to avoid warnings during build if environment variables are missing
+let redisInstance: Redis | null = null;
+
+function getRedis() {
+  if (!redisInstance) {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!url || !token) {
+      if (process.env.NODE_ENV === "production") {
+        console.warn("[RATE_LIMIT] Missing Upstash Redis environment variables in production!");
+      }
+      // Return a dummy client or handle as needed. 
+      // Most Upstash methods will fail if URL/Token are empty, but we avoid the warning at instantiation.
+      return new Redis({
+        url: url || "https://dummy-url.upstash.io",
+        token: token || "dummy",
+      });
+    }
+
+    redisInstance = new Redis({ url, token });
+  }
+  return redisInstance;
+}
+
+const redis = getRedis();
 
 /**
  * Rate Limit Global - 100 requisições a cada 10 segundos por IP

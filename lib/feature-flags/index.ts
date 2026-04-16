@@ -5,10 +5,28 @@
 
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
-});
+// Lazy initialization for Redis to avoid warnings during build
+let redisInstance: Redis | null = null;
+
+function getRedis() {
+  if (!redisInstance) {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!url || !token) {
+      // In build/dev without env vars, return a dummy client that fails gracefully
+      return new Redis({
+        url: url || "https://dummy-url.upstash.io",
+        token: token || "dummy",
+      });
+    }
+
+    redisInstance = new Redis({ url, token });
+  }
+  return redisInstance;
+}
+
+const redis = getRedis();
 
 export type FlagType = "release" | "experiment" | "operational" | "permission";
 
