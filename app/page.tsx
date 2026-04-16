@@ -16,16 +16,16 @@ import { PostHogProvider } from '@/lib/analytics/posthog'
 
 /**
  * Metadata & SEO - Psicologia de Autoridade:
- * - T\u00edtulo com ano (2026) transmite que a ferramenta \u00e9 o estado da arte.
- * - Description foca em benef\u00edcios reais (fechar vendas) em vez de apenas recursos.
+ * - Título com ano (2026) transmite que a ferramenta é o estado da arte.
+ * - Description foca em benefícios reais (fechar vendas) em vez de apenas recursos.
  */
 export const metadata: Metadata = {
-    title: 'imobWeb | O CRM Imobili\u00e1rio mais Inteligente do Brasil (2026)',
-    description: 'Transforme sua imobili\u00e1ria com IA preditiva, publica\u00e7\u00e3o autom\u00e1tica em portais e WhatsApp proativo. A \u00fanica plataforma que fecha vendas para voc\u00ea.',
-    keywords: ['crm imobili\u00e1rio', 'ia para imobili\u00e1rias', 'software imobili\u00e1rio', 'venda de im\u00f3veis', 'brasil', 'proptech'],
+    title: 'imobWeb | O CRM Imobiliário mais Inteligente do Brasil (2026)',
+    description: 'Transforme sua imobiliária com IA preditiva, publicação automática em portais e WhatsApp proativo. A única plataforma que fecha vendas para você.',
+    keywords: ['crm imobiliário', 'ia para imobiliárias', 'software imobiliário', 'venda de imóveis', 'brasil', 'proptech'],
     openGraph: {
-        title: 'imobWeb 2026 - O Futuro do Mercado Imobili\u00e1rio',
-        description: 'Potencialize suas vendas com a nossa IA de \u00faltima gera\u00e7\u00e3o.',
+        title: 'imobWeb 2026 - O Futuro do Mercado Imobiliário',
+        description: 'Potencialize suas vendas com a nossa IA de última geração.',
         type: 'website',
         locale: 'pt_BR',
         url: 'https://imobweb.app',
@@ -57,12 +57,12 @@ export default function Home() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            
+
             <Navbar />
-            
+
             <main className="flex flex-col bg-brand-clean min-h-screen">
                 <Hero />
-                
+
                 <Suspense fallback={<div className="h-96 flex items-center justify-center">...</div>}>
                     <ProblemSolution />
                 </Suspense>
@@ -87,7 +87,7 @@ export default function Home() {
                     <Testimonials />
                 </Suspense>
 
-                <Suspense fallback={<div className="h-96 flex items-center justify-center text-brand-deep font-black">Carregando planos imbat\u00edveis...</div>}>
+                <Suspense fallback={<div className="h-96 flex items-center justify-center text-brand-deep font-black">Carregando planos imbatíveis...</div>}>
                     <PricingTable />
                 </Suspense>
 
@@ -95,7 +95,7 @@ export default function Home() {
 
                 <Footer />
 
-                {/* Camada de Convers\u00e3o Adicional */}
+                {/* Camada de Conversão Adicional */}
                 <FloatingWhatsApp />
             </main>
         </PostHogProvider>

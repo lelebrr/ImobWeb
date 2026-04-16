@@ -279,6 +279,59 @@ const translations: Record<Language, TranslationDict> = {
         }
     },
     en: {
+        problemSolution: {
+            title: 'Simplify Your Real Estate Operations',
+            subtitle: 'From lead generation to closing, we provide all the tools you need to succeed.',
+            prob1: 'Managing multiple portals, tracking leads, and coordinating teams can be overwhelming.',
+            prob1Desc: 'Without a centralized system, you risk losing leads and missing opportunities.',
+            sol1: 'Our all-in-one platform centralizes everything you need.',
+            sol1Desc: 'Manage properties, leads, and teams from a single dashboard.',
+            prob2: 'Manual processes waste valuable time and resources.',
+            prob2Desc: 'Spending hours on administrative tasks instead of closing deals.',
+            sol2: 'Automated workflows save you time and increase efficiency.',
+            sol2Desc: 'Let our AI handle repetitive tasks while you focus on growth.'
+        },
+        howItWorks: {
+            title: 'How It Works',
+            step1: 'Sign Up',
+            step1Title: 'Create your account in seconds',
+            step1Desc: 'No credit card required',
+            step2: 'Connect',
+            step2Title: 'Integrate your portals',
+            step2Desc: 'Link your existing real estate platforms',
+            step3: 'Launch',
+            step3Title: 'Start managing your properties',
+            step3Desc: 'Begin tracking leads and closing deals',
+            step4: 'Scale',
+            step4Title: 'Grow your business',
+            step4Desc: 'Add more features as you need them'
+        },
+        featuresGrid: {
+            title: 'Powerful Features for Real Estate Professionals',
+            subtitle: 'Everything you need to manage your business effectively',
+            f1Title: 'Multi-Portal Management',
+            f1Desc: 'Manage multiple real estate portals from one dashboard',
+            f2Title: 'AI-Powered Lead Scoring',
+            f2Desc: 'Automatically prioritize leads based on engagement',
+            f3Title: 'WhatsApp Integration',
+            f3Desc: 'Seamless communication with clients',
+            f4Title: 'Automated Reports',
+            f4Desc: 'Generate insights with one click',
+            f5Title: 'Custom Portals',
+            f5Desc: 'White-label solutions for your brand',
+            f6Title: 'Mobile Access',
+            f6Desc: 'Manage your business on the go'
+        },
+        marketplace: {
+            title: 'Maximize Your Potential with Add-ons',
+            subtitle: 'From 3D tours to guarantee insurance, everything is a click away.',
+            cta: 'Explore Marketplace'
+        },
+        franchise: {
+            title: 'For Networks and Franchises',
+            subtitle: 'The control franchisees need, with the autonomy franchisees desire.',
+            cta: 'Schedule Enterprise Demo'
+        },
         nav: {
             features: 'Features',
             pricing: 'Pricing',

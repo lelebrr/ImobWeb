@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -7,10 +7,20 @@ export class ReportService {
    * Exporta dados para Excel (.xlsx)
    */
   static exportToExcel(data: any[], fileName: string = 'relatorio-imobweb.xlsx') {
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Dados');
-    XLSX.writeFile(wb, fileName);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Dados');
+
+    worksheet.columns = [
+      { header: 'Métrica', key: 'metric', width: 30 },
+      { header: 'Valor', key: 'value', width: 20 },
+      { header: 'Unidade', key: 'unit', width: 10 }
+    ];
+
+    data.forEach(row => {
+      worksheet.addRow(row);
+    });
+
+    workbook.xlsx.writeFile(fileName);
   }
 
   /**

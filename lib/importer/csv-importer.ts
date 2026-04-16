@@ -1,6 +1,6 @@
 // lib/importer/csv-importer.ts
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import * as csvParser from 'csv-parser';
 import { Readable } from 'stream';
 import { validateCep, validateCpfCnpj, validatePhone, validateEmail } from '../fiscal-rules';
@@ -63,11 +63,18 @@ export class CSVImporter {
         file: Buffer | Readable,
         options: { chunkSize?: number; onProgress?: (progress: any) => void }
     ): Promise<ImportResult> {
-        const workbook = XLSX.read(file, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(file as any);
+        const worksheet = workbook.worksheets[0];
 
-        const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const data: any[][] = [];
+        worksheet.eachRow((row, rowNumber) => {
+            const rowData: any[] = [];
+            row.eachCell((cell) => {
+                rowData.push(cell.value);
+            });
+            data.push(rowData);
+        });
 
         if (data.length === 0) {
             return {
