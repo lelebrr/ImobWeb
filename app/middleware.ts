@@ -11,7 +11,6 @@ const PROTECTED_ROUTES = [
   "/settings",
   "/contracts",
 ];
-
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/pricing"];
 
 export async function middleware(request: NextRequest) {
@@ -33,6 +32,15 @@ export async function middleware(request: NextRequest) {
   });
 
   const { pathname } = request.nextUrl;
+  console.log(`[Middleware] Acessando: ${pathname}`);
+
+  // Check all cookies
+  const allCookies = request.cookies.getAll();
+  console.log(
+    `[Middleware] Cookies:`,
+    allCookies.map((c) => c.name),
+  );
+
   const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route),
   );
@@ -40,9 +48,18 @@ export async function middleware(request: NextRequest) {
   if (isProtected) {
     const {
       data: { session },
+      error,
     } = await supabase.auth.getSession();
+    console.log(
+      `[Middleware] Sessão encontrada?`,
+      !!session,
+      error?.message || "OK",
+    );
 
     if (!session) {
+      console.log(
+        "[Middleware] → Usuário não logado → Redirecionando para login",
+      );
       const redirectUrl = new URL("/login", request.url);
       redirectUrl.searchParams.set("redirectTo", pathname);
       return NextResponse.redirect(redirectUrl);
@@ -54,6 +71,9 @@ export async function middleware(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
     if (session) {
+      console.log(
+        "[Middleware] → Usuário já logado → Redirecionando para dashboard",
+      );
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
