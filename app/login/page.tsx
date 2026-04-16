@@ -23,7 +23,8 @@ type LoginFormInput = z.infer<typeof loginSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams?.get("redirectTo") || "/dashboard";
+  const rawRedirect = searchParams?.get("redirectTo");
+  const redirectTo = rawRedirect ? decodeURIComponent(rawRedirect) : "/dashboard";
 
   const [isLoading, setIsLoading] = useState(false);
 

@@ -64,14 +64,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     /**
-     * Inicializar sessão
+     * Inicializar sessão e monitorar mudanças
      */
     useEffect(() => {
-        refreshSession()
+        let mounted = true
 
+        // O listener onAuthStateChange é disparado imediatamente com o estado atual
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!mounted) return
+
+            console.log(`[Auth] Evento: ${_event}`)
             setSession(session)
             setUser(session?.user ?? null)
             setLoading(false)
@@ -81,7 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, [supabase])
 
     /**

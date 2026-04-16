@@ -39,7 +39,35 @@ export function MobileProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("online", updateOnline);
     window.addEventListener("offline", updateOnline);
 
-    // 3. Detecta se estamos em um wrapper nativo
+    // 3. Diagnostic History Guard (Identify navigation loops)
+    if (process.env.NODE_ENV === 'production' || true) {
+      const originalReplaceState = window.history.replaceState;
+      const originalPushState = window.history.pushState;
+      let callCount = 0;
+      let lastCallTime = Date.now();
+
+      window.history.replaceState = function(...args) {
+        callCount++;
+        const now = Date.now();
+        if (now - lastCallTime > 1000) {
+          callCount = 0;
+          lastCallTime = now;
+        }
+
+        if (callCount > 5) {
+          console.warn('[HistoryGuard] Detectado loop de replaceState:', args[2]);
+          console.trace();
+        }
+        return originalReplaceState.apply(this, args);
+      };
+
+      window.history.pushState = function(...args) {
+        console.log('[HistoryGuard] pushState:', args[2]);
+        return originalPushState.apply(this, args);
+      };
+    }
+
+    // 4. Detecta se estamos em um wrapper nativo
     const checkNative = () => {
       const native = !!((window as any).Capacitor || (window as any).ReactNativeWebView);
       setIsNative(native);
