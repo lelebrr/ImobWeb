@@ -1,6 +1,8 @@
 import { PrismaClient, Property } from '@prisma/client';
 import { PriceRecommendation } from '../../types/insights';
+// @ts-ignore
 import { generateText } from 'ai';
+// @ts-ignore
 import { openai } from '@ai-sdk/openai';
 
 const prisma = new PrismaClient();

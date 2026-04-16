@@ -86,6 +86,59 @@ interface TranslationDict {
         rights: string
         desc: string
     }
+    problemSolution: {
+        title: string
+        subtitle: string
+        prob1: string
+        prob1Desc: string
+        sol1: string
+        sol1Desc: string
+        prob2: string
+        prob2Desc: string
+        sol2: string
+        sol2Desc: string
+    }
+    howItWorks: {
+        title: string
+        step1: string
+        step1Title: string
+        step1Desc: string
+        step2: string
+        step2Title: string
+        step2Desc: string
+        step3: string
+        step3Title: string
+        step3Desc: string
+        step4: string
+        step4Title: string
+        step4Desc: string
+    }
+    featuresGrid: {
+        title: string
+        subtitle: string
+        f1Title: string
+        f1Desc: string
+        f2Title: string
+        f2Desc: string
+        f3Title: string
+        f3Desc: string
+        f4Title: string
+        f4Desc: string
+        f5Title: string
+        f5Desc: string
+        f6Title: string
+        f6Desc: string
+    }
+    marketplace: {
+        title: string
+        subtitle: string
+        cta: string
+    }
+    franchise: {
+        title: string
+        subtitle: string
+        cta: string
+    }
 }
 
 const translations: Record<Language, TranslationDict> = {
@@ -99,15 +152,15 @@ const translations: Record<Language, TranslationDict> = {
             startFree: 'Comece Grátis'
         },
         hero: {
-            badge: 'Plataforma premiada em CRM imobiliário',
-            titlePart1: 'CRM Imobiliário Completo para',
-            titleHighlight: ' Corretores e Imobiliárias',
-            subtitle: 'Sistema multi-tenant com gestão de imóveis, clientes, corretoras e integração WhatsApp. Comece grátis com plano para corretores autônomos.',
-            ctaPrimary: 'Comece Agora',
-            ctaSecondary: 'Ver Planos',
-            trust1: '7 dias grátis',
-            trust2: 'Sem cartão necessário',
-            trust3: 'Cancelamento livre'
+            badge: 'Plataforma #1 em Conversão Imobiliária (2026)',
+            titlePart1: 'Cadastro 1x. WhatsApp Automático.',
+            titleHighlight: ' Venda 3x mais.',
+            subtitle: 'O imobWeb é o único CRM que proativamente busca o fechamento. IA preditiva, publicação em todos os portais e WhatsApp proativo para proprietários.',
+            ctaPrimary: 'Começar Grátis Agora',
+            ctaSecondary: 'Ver Demonstração',
+            trust1: 'Líder em 2026',
+            trust2: '+500 Imobiliárias',
+            trust3: 'Setup em 2 minutos'
         },
         benefits: {
             title: 'Tudo que você precisa para vender mais',
@@ -157,19 +210,72 @@ const translations: Record<Language, TranslationDict> = {
         },
         footer: {
             product: 'Produto',
-            features: 'Funcionalidades',
-            pricing: 'Planos',
+            features: 'Recursos',
+            pricing: 'Preços',
             resources: 'Recursos',
             blog: 'Blog',
-            helpCenter: 'Central de Ajuda',
+            helpCenter: 'Suporte',
             company: 'Empresa',
             aboutUs: 'Sobre Nós',
             contact: 'Contato',
             legal: 'Legal',
             privacy: 'Privacidade',
-            terms: 'Termos de Uso',
+            terms: 'Termos',
             rights: 'Todos os direitos reservados.',
-            desc: 'Revolucionando o mercado imobiliário com tecnologia e inovação.'
+            desc: 'A plataforma definitiva para imobiliárias de alta performance.'
+        },
+        problemSolution: {
+            title: 'Por que as imobiliárias perdem 60% dos leads?',
+            subtitle: 'A resposta está na demora e na falta de proatividade. O imobWeb resolve isso com automação extrema.',
+            prob1: 'Cadastro Lento',
+            prob1Desc: 'Horas perdidas cadastrando em vários portais.',
+            sol1: 'Publicação 1-Click',
+            sol1Desc: 'Cadastre uma vez, publique em todos os portais e redes sociais instantaneamente.',
+            prob2: 'Leads Esquecidos',
+            prob2Desc: 'Corretores demoram horas para responder e perdem o "timing".',
+            sol2: 'WhatsApp Proativo',
+            sol2Desc: 'Nossa IA aborda o prospecto em segundos e já qualifica o lead para você.'
+        },
+        howItWorks: {
+            title: 'Como funciona o imobWeb',
+            step1: '01',
+            step1Title: 'Cadastro Único',
+            step1Desc: 'Insira os dados do imóvel em uma interface ultra-rápida.',
+            step2: '02',
+            step2Title: 'Multidifusão IA',
+            step2Desc: 'IA otimiza a descrição e publica em +20 portais automaticamente.',
+            step3: '03',
+            step3Title: 'Atendimento Pró-ativo',
+            step3Desc: 'Leads recebem contato via WhatsApp em menos de 10 segundos.',
+            step4: '04',
+            step4Title: 'Fechamento Digital',
+            step4Desc: 'Contratos e assinaturas resolvidos em minutos dentro da plataforma.'
+        },
+        featuresGrid: {
+            title: 'Tecnologia de ponta em cada detalhe',
+            subtitle: 'Mais de 20 módulos de IA trabalhando para o seu sucesso.',
+            f1Title: 'IA Preditiva de Preços',
+            f1Desc: 'Sugestões baseadas em dados reais do mercado local.',
+            f2Title: 'Contratos Inteligentes',
+            f2Desc: 'Assinatura digital e gestão de documentos em conformidade com a LGPD.',
+            f3Title: 'Score de Saúde do Imóvel',
+            f3Desc: 'Saiba quais imóveis estão prontos para vender ou precisam de ajuste.',
+            f4Title: 'Financeiro Completo',
+            f4Desc: 'Controle de comissões, repasses e fluxo de caixa automatizado.',
+            f5Title: 'Add-ons Marketplace',
+            f5Desc: 'Potencialize seu CRM com ferramentas de parceiros integradas.',
+            f6Title: 'Multi-tenant e Franquias',
+            f6Desc: 'Gestão isolada de múltiplas unidades com visão consolidada.'
+        },
+        marketplace: {
+            title: 'Maximize seu potencial com Add-ons',
+            subtitle: 'De tours 3D a seguros fiança, tudo a um clique de distância.',
+            cta: 'Explorar Marketplace'
+        },
+        franchise: {
+            title: 'Para Redes e Franquias',
+            subtitle: 'O controle que a franqueadora precisa, com a autonomia que o franqueado deseja.',
+            cta: 'Agendar Demo Enterprise'
         }
     },
     en: {
