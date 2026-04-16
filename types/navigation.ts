@@ -1,12 +1,29 @@
 import { LucideIcon } from 'lucide-react';
 
 export type UserRole = 
+  // Platform Roles
+  | 'PLATFORM_MASTER'
+  | 'PLATFORM_MARKETING'
+  | 'PLATFORM_FINANCE'
+  | 'PLATFORM_SUPPORT'
+  // Agency Roles
+  | 'AGENCY_MASTER'
+  | 'AGENCY_SALES'
+  | 'AGENCY_HR'
+  | 'AGENCY_MARKETING'
+  | 'AGENCY_FINANCE'
+  | 'AGENCY_SUPPORT'
+  // Legacy / Hybrid Roles
   | 'SUPER_ADMIN'
   | 'PARTNER'
   | 'MANAGER'
   | 'BROKER'
   | 'OWNER'
-  | 'FINANCIAL';
+  | 'FINANCIAL'
+  | 'ADMIN'
+  | 'GERENTE'
+  | 'CORRETOR'
+  | 'ASSISTENTE';
 
 export interface NavItem {
   title: string;
