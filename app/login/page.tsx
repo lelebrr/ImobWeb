@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/design-system/button";
@@ -21,20 +21,12 @@ import { useAuth } from "@/providers/auth-provider";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, loading: authLoading, isAuthenticated } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@imobweb.com.br");
+  const [password, setPassword] = useState("admin");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push(redirectTo);
-    }
-  }, [isAuthenticated, redirectTo, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +34,13 @@ function LoginForm() {
     setError("");
 
     try {
-      await signIn({ email, password });
+      const result = await signIn({ email, password });
+      console.log("Login result:", result);
+      router.push("/dashboard");
+      router.refresh();
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
-    } finally {
       setIsLoading(false);
     }
   };
