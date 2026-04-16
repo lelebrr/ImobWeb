@@ -1,7 +1,7 @@
 // @ts-ignore
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Middleware de Autenticação e Proteção de Rotas
@@ -9,80 +9,100 @@ import { NextResponse, type NextRequest } from 'next/server'
  */
 
 // Rotas que exigem autenticação
-const PROTECTED_ROUTES = ['/dashboard', '/admin', '/partner', '/portal', '/settings', '/reports']
+const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/admin",
+  "/partner",
+  "/portal",
+  "/settings",
+  "/reports",
+];
 
 // Rotas públicas (nunca bloqueadas)
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/pricing', '/properties', '/sign', '/api', '/schedule', '/offline', '/health']
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/register",
+  "/pricing",
+  "/properties",
+  "/sign",
+  "/api",
+  "/schedule",
+  "/offline",
+  "/health",
+];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // Se não houver configuração do Supabase, permitir passagem (dev mode)
-  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
-    return response
+  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes("placeholder")) {
+    return response;
   }
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({ name, value: '', ...options })
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
       },
-    }
-  )
+      set(name: string, value: string, options: CookieOptions) {
+        request.cookies.set({ name, value, ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value, ...options });
+      },
+      remove(name: string, options: CookieOptions) {
+        request.cookies.set({ name, value: "", ...options });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
 
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
   // Verificar se a rota atual exige autenticação
-  const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
-  const isPublic = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route))
+  const isProtected = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route),
+  );
+  const isPublic = PUBLIC_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route),
+  );
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Redirecionar para login se não autenticado e tentando acessar rota protegida
   if (isProtected && !user) {
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(redirectUrl)
+    const redirectUrl = new URL("/login", request.url);
+    redirectUrl.searchParams.set("redirectTo", pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
   // Redirecionar para dashboard se já autenticado e tentando acessar login/register
-  if ((pathname === '/login' || pathname === '/register') && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if ((pathname === "/login" || pathname === "/register") && user) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Redirecionar para dashboard se já autenticado e tentando acessar login/register
   // Nota: A verificação de sessão foi removida devido a problemas com o Supabase SSR
 
-  return response
+  return response;
 }
 
 export const config = {
@@ -95,6 +115,6 @@ export const config = {
      * - public folder assets
      * - API routes that handle their own auth
      */
-    '/((?!_next/static|_next/image|favicon.ico|icons|images|sw.js|manifest.json|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    "/((?!_next/static|_next/image|favicon.ico|icons|images|sw.js|manifest.json|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
-}
+};

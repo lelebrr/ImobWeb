@@ -117,7 +117,7 @@ const Hero = () => {
                                     </motion.div>
 
                                     <img 
-                                        src="/imobweb_dashboard_mockup_1776344140707.png" 
+                                        src="/imobweb_dashboard_mockup.png" 
                                         alt="imobWeb Premium Dashboard" 
                                         className="rounded-[2.8rem] w-full shadow-2xl relative z-10 brightness-110"
                                     />
