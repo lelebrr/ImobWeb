@@ -23,7 +23,7 @@ type LoginFormInput = z.infer<typeof loginSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectTo = searchParams?.get("redirectTo") || "/dashboard";
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,21 +61,21 @@ function LoginForm() {
       }
 
       const destination = result.redirectTo || redirectTo;
-      const userRole = result.role || 'BROKER';
+      const userRole = result.role || "BROKER";
 
       const roleMessages: Record<string, string> = {
-        SUPER_ADMIN: 'Painel Administrador',
-        PLATFORM_MASTER: 'Painel Administrador',
-        MANAGER: 'Dashboard Imobiliária',
-        AGENCY_MASTER: 'Dashboard Imobiliária',
-        ADMIN: 'Dashboard Imobiliária',
-        BROKER: 'Painel Corretor',
-        PARTNER: 'Portal Parceiro',
-        OWNER: 'Portal Proprietário'
+        SUPER_ADMIN: "Painel Administrador",
+        PLATFORM_MASTER: "Painel Administrador",
+        MANAGER: "Dashboard Imobiliária",
+        AGENCY_MASTER: "Dashboard Imobiliária",
+        ADMIN: "Dashboard Imobiliária",
+        BROKER: "Painel Corretor",
+        PARTNER: "Portal Parceiro",
+        OWNER: "Portal Proprietário",
       };
 
       toast.success(`Bem-vindo ao imobWeb!`, {
-        description: `Redirecionando para ${roleMessages[userRole] || 'Dashboard'}...`,
+        description: `Redirecionando para ${roleMessages[userRole] || "Dashboard"}...`,
       });
 
       router.push(destination);
@@ -83,7 +83,8 @@ function LoginForm() {
     } catch (err: any) {
       setError("email", { message: err.message });
       toast.error("Falha no login", {
-        description: err.message || "Verifique suas credenciais e tente novamente.",
+        description:
+          err.message || "Verifique suas credenciais e tente novamente.",
       });
     } finally {
       setIsLoading(false);
@@ -201,7 +202,10 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-bold text-xs uppercase tracking-widest opacity-70">
+              <Label
+                htmlFor="email"
+                className="font-bold text-xs uppercase tracking-widest opacity-70"
+              >
                 E-mail profissional
               </Label>
               <Input
@@ -220,7 +224,10 @@ function LoginForm() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="font-bold text-xs uppercase tracking-widest opacity-70">
+                <Label
+                  htmlFor="password"
+                  className="font-bold text-xs uppercase tracking-widest opacity-70"
+                >
                   Senha
                 </Label>
                 <a
