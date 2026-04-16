@@ -86,9 +86,11 @@ const Navbar = () => {
               {t.nav.login}
             </Link>
 
-            <Button className="bg-brand-action hover:bg-amber-600 text-slate-900 shadow-glow-action rounded-full px-8 font-black border-none h-11">
-              {t.nav.startFree}
-            </Button>
+            <Link href="/login">
+              <Button className="bg-brand-action hover:bg-amber-600 text-slate-900 shadow-glow-action rounded-full px-8 font-black border-none h-11">
+                {t.nav.startFree}
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Toggle */}

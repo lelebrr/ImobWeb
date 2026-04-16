@@ -3,10 +3,10 @@
 import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/design-system/button";
-import { Input } from "@/components/design-system/input";
-import { Label } from "@/components/design-system/label";
-import { Card, CardContent } from "@/components/design-system/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Mail,
   Lock,
