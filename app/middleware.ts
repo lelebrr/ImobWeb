@@ -2,20 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/admin",
-  "/partner",
-  "/properties",
-  "/reports",
-  "/settings",
-  "/contracts",
-];
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/pricing"];
-
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  let response = NextResponse.next();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -24,7 +15,6 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          request.cookies.set(name, value);
           response.cookies.set(name, value, options);
         });
       },
@@ -32,34 +22,15 @@ export async function middleware(request: NextRequest) {
   });
 
   const { pathname } = request.nextUrl;
-  console.log(`[Middleware] Acessando: ${pathname}`);
 
-  // Check all cookies
-  const allCookies = request.cookies.getAll();
-  console.log(
-    `[Middleware] Cookies:`,
-    allCookies.map((c) => c.name),
-  );
+  const protectedRoutes = ["/dashboard", "/admin", "/partner", "/properties"];
 
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route),
-  );
-
-  if (isProtected) {
+  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     const {
       data: { session },
-      error,
     } = await supabase.auth.getSession();
-    console.log(
-      `[Middleware] Sessão encontrada?`,
-      !!session,
-      error?.message || "OK",
-    );
 
     if (!session) {
-      console.log(
-        "[Middleware] → Usuário não logado → Redirecionando para login",
-      );
       const redirectUrl = new URL("/login", request.url);
       redirectUrl.searchParams.set("redirectTo", pathname);
       return NextResponse.redirect(redirectUrl);
@@ -71,19 +42,15 @@ export async function middleware(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
     if (session) {
-      console.log(
-        "[Middleware] → Usuário já logado → Redirecionando para dashboard",
-      );
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
-  const response = NextResponse.next();
   return response;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons|images|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
