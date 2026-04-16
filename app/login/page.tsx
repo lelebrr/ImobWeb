@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/design-system/button";
 import { Input } from "@/components/design-system/input";
@@ -20,12 +20,22 @@ import { useAuth } from "@/providers/auth-provider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { signIn, loading: authLoading, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("User authenticated, redirecting to:", redirectTo);
+      router.push(redirectTo);
+    }
+  }, [isAuthenticated, redirectTo, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +43,11 @@ export default function LoginPage() {
     setError("");
 
     try {
+      console.log("Attempting login with:", email);
       await signIn({ email, password });
-      router.push("/dashboard");
-      router.refresh();
+      console.log("Login successful");
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
     } finally {
       setIsLoading(false);
