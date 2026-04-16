@@ -12,7 +12,6 @@ async function createTestUsers() {
     console.error(
       "❌ Variables NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required",
     );
-    console.log("ENV file loaded:", process.env.ENV_LOADED);
     process.exit(1);
   }
 
@@ -21,13 +20,13 @@ async function createTestUsers() {
   const users = [
     {
       email: "admin@imobweb.com.br",
-      password: "admin",
+      password: "admin123",
       name: "Administrador Master",
       role: "PLATFORM_MASTER",
     },
     {
       email: "imobiliaria@imobweb.com.br",
-      password: "imobiliaria",
+      password: "imob123",
       name: "Imobiliária Demo",
       role: "AGENCY_MASTER",
     },
@@ -36,14 +35,17 @@ async function createTestUsers() {
   for (const userData of users) {
     try {
       // Check if user exists
-      const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
-      const existingUser = listData?.users.find(u => u.email === userData.email);
+      const { data: listData, error: listError } =
+        await supabase.auth.admin.listUsers();
+      const existingUser = listData?.users.find(
+        (u) => u.email === userData.email,
+      );
 
       if (existingUser) {
-        const { data: authUser, error: authError } = await supabase.auth.admin.updateUserById(
-          existingUser.id,
-          { password: userData.password }
-        );
+        const { data: authUser, error: authError } =
+          await supabase.auth.admin.updateUserById(existingUser.id, {
+            password: userData.password,
+          });
 
         if (authError) {
           console.log(`⚠️ ${userData.email} (update): ${authError.message}`);
@@ -51,15 +53,16 @@ async function createTestUsers() {
           console.log(`✅ Updated password for: ${userData.email}`);
         }
       } else {
-        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-          email: userData.email,
-          password: userData.password,
-          email_confirm: true,
-          user_metadata: {
-            name: userData.name,
-            role: userData.role,
-          },
-        });
+        const { data: authUser, error: authError } =
+          await supabase.auth.admin.createUser({
+            email: userData.email,
+            password: userData.password,
+            email_confirm: true,
+            user_metadata: {
+              name: userData.name,
+              role: userData.role,
+            },
+          });
 
         if (authError) {
           console.log(`⚠️ ${userData.email} (create): ${authError.message}`);
@@ -73,8 +76,8 @@ async function createTestUsers() {
   }
 
   console.log("\n📧 Test accounts ready!");
-  console.log("   admin@imobweb.com.br / admin");
-  console.log("   imobiliaria@imobweb.com.br / imobiliaria");
+  console.log("   admin@imobweb.com.br / admin123");
+  console.log("   imobiliaria@imobweb.com.br / imob123");
 }
 
 createTestUsers();

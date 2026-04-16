@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/design-system/button";
@@ -21,7 +21,7 @@ import { useAuth } from "@/providers/auth-provider";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, loading: authLoading } = useAuth();
+  const { signIn, loading: authLoading, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState("admin@imobweb.com.br");
   const [password, setPassword] = useState("admin123");
@@ -33,24 +33,22 @@ function LoginForm() {
     setIsLoading(true);
     setError("");
 
-    console.log("Attempting login with:", email);
-    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-
     try {
       await signIn({ email, password });
-      console.log("Login successful");
-
-      // Wait for auth state to update
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Force a full page navigation
-      window.location.href = "/dashboard";
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Credenciais inválidas. Tente novamente.");
+    } finally {
       setIsLoading(false);
     }
   };
+
+  // Redirect if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, router]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-dashboard-gradient">
