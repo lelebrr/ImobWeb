@@ -28,7 +28,7 @@ export class SaleProbabilityEngine {
             },
             select: { id: true, status: true },
           },
-          views: {
+          viewRecords: {
             where: {
               createdAt: {
                 gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -37,7 +37,7 @@ export class SaleProbabilityEngine {
             select: { count: true },
           },
           announcements: {
-            where: { status: "PUBLICADO" },
+            where: { status: "PUBLISHED" },
             select: { portalId: true },
           },
         },
@@ -48,44 +48,61 @@ export class SaleProbabilityEngine {
       }
 
       // 2. Calcular fatores de probabilidade
-      const factors = await this.calculateFactors(property);
+      const factorValues = await this.calculateFactors(property);
 
       // 3. Calcular probabilidade final
-      const probability = this.calculateFinalProbability(factors);
+      const probabilityValue = this.calculateFinalProbability(factorValues);
 
       // 4. Calcular dias esperados de venda
-      const expectedDays = this.calculateExpectedDays(factors);
+      const expectedDays = this.calculateExpectedDays(factorValues);
 
       // 5. Gerar análise da IA
-      const aiAnalysis = await this.generateAIAnalysis(factors, probability);
+      const aiAnalysis = await this.generateAIAnalysis(factorValues, probabilityValue);
 
       // Gerar comparação com o mercado
       const marketComparison = {
-        averagePrice: Number(property.price) || 0,
+        averagePrice: property.price ? Number(property.price) : 0,
         priceRange: {
           min: property.price ? Number(property.price) * 0.9 : 0,
           max: property.price ? Number(property.price) * 1.1 : 0,
         },
-        pricePercentile: Math.round(probability * 100),
+        pricePercentile: Math.round(probabilityValue * 100),
         daysOnMarketAverage: expectedDays,
-        soldRatio: Math.min(0.85, probability * 0.9),
+        soldRatio: Math.min(0.85, probabilityValue * 0.9),
         competitiveAdvantage: {
-          hasAdvantage: probability > 0.5,
-          reason: probability > 0.5 ? "Imóvel competitivo no mercado" : "Melhorar posicionamento",
-          score: Math.round(probability * 100),
+          hasAdvantage: probabilityValue > 0.5,
+          reason: probabilityValue > 0.5 ? "Imóvel competitivo no mercado" : "Melhorar posicionamento",
+          score: Math.round(probabilityValue * 100),
         },
       };
 
       // Gerar recomendações
-      const recommendations = this.generateRecommendations(factors, probability);
+      const recommendations = this.generateRecommendations(factorValues, probabilityValue);
+
+      // Mapear fatores para o formato de array esperado pelo SaleProbabilityScore
+      const factorsArray = [
+        { label: 'Leads Recentes', score: factorValues.leadScore, impact: factorValues.leadScore > 60 ? 'positive' : 'negative' as const },
+        { label: 'Visualizações', score: factorValues.viewScore, impact: factorValues.viewScore > 60 ? 'positive' : 'negative' as const },
+        { label: 'Portais Ativos', score: factorValues.portalScore, impact: factorValues.portalScore > 60 ? 'positive' : 'negative' as const },
+        { label: 'Preço', score: factorValues.priceScore, impact: factorValues.priceScore > 60 ? 'positive' : 'negative' as const },
+        { label: 'Engajamento', score: factorValues.engagementScore, impact: factorValues.engagementScore > 60 ? 'positive' : 'negative' as const },
+        { label: 'Tempo Online', score: factorValues.timeOnlineScore, impact: factorValues.timeOnlineScore > 60 ? 'positive' : 'negative' as const },
+      ];
 
       return {
-        probability: Math.min(0.98, Math.max(0.05, probability)),
-        probabilityPercentage: Math.round(probability * 100),
+        score: Math.round(probabilityValue * 100),
+        level: this.determineLevel(probabilityValue),
+        trend: 'stable',
+        aiInsight: aiAnalysis.detailedAnalysis || 'Análise em processamento',
+        predictedDaysToSale: Math.max(7, expectedDays),
+        factors: factorsArray,
+        
+        // Campos de compatibilidade
+        probability: Math.min(0.98, Math.max(0.05, probabilityValue)),
+        probabilityPercentage: Math.round(probabilityValue * 100),
         expectedDays: Math.max(7, expectedDays),
-        engagementScore: factors.engagementScore,
+        engagementScore: factorValues.engagementScore,
         aiAnalysis,
-        factors,
         marketComparison,
         recommendations,
       };
@@ -95,6 +112,14 @@ export class SaleProbabilityEngine {
     }
   }
 
+  private static determineLevel(probability: number): 'very_high' | 'high' | 'medium' | 'low' | 'very_low' {
+    if (probability >= 0.8) return 'very_high';
+    if (probability >= 0.6) return 'high';
+    if (probability >= 0.4) return 'medium';
+    if (probability >= 0.2) return 'low';
+    return 'very_low';
+  }
+
   /**
    * Calcula os fatores que influenciam a probabilidade de venda
    * @param property Dados do imóvel
@@ -102,14 +127,14 @@ export class SaleProbabilityEngine {
    */
   private static async calculateFactors(
     property: any
-  ): Promise<SaleProbabilityFactors> {
+  ): Promise<any> {
     // 1. Fator de Leads Recentes
     const recentLeads = property.leads?.length || 0;
     const leadScore = this.calculateLeadScore(recentLeads);
 
     // 2. Fator de Visualizações
-    const views = property.views?.[0]?.count || 0;
-    const viewScore = this.calculateViewScore(views);
+    const viewsCount = property.viewRecords?.reduce((sum: number, v: any) => sum + (v.count || 0), 0) || 0;
+    const viewScore = this.calculateViewScore(viewsCount);
 
     // 3. Fator de Portais Ativos
     const activePortals = property.announcements?.length || 0;
@@ -132,7 +157,7 @@ export class SaleProbabilityEngine {
       engagementScore,
       timeOnlineScore,
       recentLeads,
-      views,
+      views: viewsCount,
       activePortals,
       favorites: property.favorites || 0,
       inquiries: property.inquiries || 0,

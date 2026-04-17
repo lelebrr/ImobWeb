@@ -35,9 +35,8 @@ interface PropertyData {
   publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-  views?: number;
-  favorites?: number;
   photos?: { isPrimary: boolean }[];
+  viewCount?: number;
   owner?: {
     lastContactAt?: Date;
     whatsapp?: string;
@@ -125,7 +124,14 @@ export class ScoreEngine {
   private static async getPropertyWithRelations(
     propertyId: string,
   ): Promise<PropertyData | null> {
-    return null;
+    return (await prisma.property.findUnique({
+      where: { id: propertyId },
+      include: {
+        photos: { select: { isPrimary: true } },
+        owner: { select: { lastContactAt: true, whatsapp: true } },
+        announcements: { select: { portalType: true, status: true } },
+      },
+    })) as any;
   }
 
   private static async getScoreConfig(
@@ -216,7 +222,7 @@ export class ScoreEngine {
     config: ScoreConfig,
     portalAverages?: Record<string, number>,
   ): Promise<FactorDetail> {
-    const views = property.views || 0;
+    const views = property.viewCount || 0;
     const avgViews = portalAverages
       ? Object.values(portalAverages).reduce((a, b) => a + b, 0) /
         Object.keys(portalAverages).length

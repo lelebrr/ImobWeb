@@ -106,3 +106,62 @@ export interface FieldModeError {
   timestamp: Date;
 }
 
+export interface FieldVisit {
+  id: string;
+  propertyId: string;
+  brokerId: string;
+  clientName: string;
+  clientPhone: string;
+  checkInAt: string;
+  checkOutAt?: string;
+  notes: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+}
+
+export interface OfflineAction {
+  id: string;
+  type: "UPLOAD_MEDIA" | "REGISTER_VISIT" | "UPDATE_PROPERTY" | "ADD_NOTE";
+  payload: any;
+  timestamp: string;
+  retryCount: number;
+}
+
+export interface SmartCameraMedia {
+  id: string;
+  propertyId?: string;
+  type?: "PHOTO" | "VIDEO";
+  url?: string;
+  thumbnailUrl?: string;
+  room?: string;
+  caption?: string;
+  takenAt: string;
+  metadata?: Record<string, any>;
+  blob?: Blob;
+  previewUrl?: string;
+  aiCaption?: string;
+  detectedRoom?: string;
+}
+
+export interface VoiceRegistrationResult {
+  propertyId: string;
+  transcription: string;
+  entities: {
+    price?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    area?: number;
+    type?: string;
+  };
+  confidence: number;
+}
+
+export interface FieldSyncStatus {
+  lastSyncAt: string;
+  pendingActions: number;
+  status: "IDLE" | "SYNCING" | "ERROR";
+  error?: string;
+}

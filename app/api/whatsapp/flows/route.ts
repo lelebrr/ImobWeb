@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         propertyId,
         type || "PROPERTY_UPDATE",
         {
-          views30Days: property.views || 0,
+          views30Days: property.viewCount || 0,
         },
       );
 

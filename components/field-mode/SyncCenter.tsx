@@ -13,6 +13,7 @@ import {
   Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { db } from '@/lib/field-mode/db';
 import { FieldEngine } from '@/lib/field-mode/field-engine';

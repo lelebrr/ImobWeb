@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { contractGenerator } from '@/lib/contracts/contract-generator';
 import { signingService } from '@/lib/signing/signing-service';
-import type { ContractType, ContractProperty, ContractParty, SigningMethod } from '@/types/contracts';
+import { ContractType, ContractStatus } from '@/types/contracts';
+import type { ContractProperty, ContractParty, SigningMethod } from '@/types/contracts';
 
 const createContractSchema = z.object({
-  type: z.enum(['sale', 'rent', 'proposal', 'authorization', 'commercial']),
+  type: z.nativeEnum(ContractType),
   property: z.object({
     id: z.string(),
     address: z.string(),
@@ -80,8 +81,8 @@ export async function POST(request: NextRequest) {
 
     const contract = contractGenerator.generate({
       type: validatedData.type,
-      property: validatedData.property,
-      parties: validatedData.parties,
+      property: validatedData.property as ContractProperty,
+      parties: validatedData.parties as ContractParty[],
       totalValue: validatedData.totalValue,
       installments: validatedData.installments,
       startDate: validatedData.startDate ? new Date(validatedData.startDate) : undefined,
@@ -167,10 +168,11 @@ function getMockContracts() {
     {
       id: 'contract-001',
       templateId: 'template-sale',
-      type: 'sale' as ContractType,
-      status: 'pending_signature',
+      type: ContractType.SALE,
+      status: ContractStatus.PENDING_SIGNATURE,
       title: 'Contrato de Compra e Venda - Rua das Flores, 123',
       description: 'Contrato de compra e venda para apartamento no valor de R$ 450.000',
+      propertyId: 'prop-001',
       property: {
         id: 'prop-001',
         address: 'Rua das Flores, 123',
@@ -211,15 +213,18 @@ function getMockContracts() {
       createdAt: new Date(Date.now() - 86400000 * 2),
       updatedAt: new Date(Date.now() - 86400000),
       createdBy: 'user-001',
-      documentVersion: 1
+      documentVersion: 1,
+      currentVersionId: null,
+      terms: {} as any
     },
     {
       id: 'contract-002',
       templateId: 'template-rent',
-      type: 'rent' as ContractType,
-      status: 'fully_signed',
+      type: ContractType.RENT,
+      status: ContractStatus.FULLY_SIGNED,
       title: 'Contrato de Locação - Av. Paulista, 1000',
       description: 'Contrato de locação comercial no valor de R$ 5.000/mês',
+      propertyId: 'prop-002',
       property: {
         id: 'prop-002',
         address: 'Av. Paulista, 1000',
@@ -260,8 +265,9 @@ function getMockContracts() {
       createdAt: new Date(Date.now() - 86400000 * 10),
       updatedAt: new Date(Date.now() - 86400000 * 5),
       createdBy: 'user-001',
-      signedAt: new Date(Date.now() - 86400000 * 5),
-      documentVersion: 1
+      documentVersion: 1,
+      currentVersionId: 'version-002',
+      terms: {} as any
     }
   ];
 }

@@ -222,17 +222,46 @@ export type PriceSuggestion = z.infer<typeof PriceSuggestionSchema>;
  * Resultado do cálculo de probabilidade de venda
  */
 export const SaleProbabilityScoreSchema = z.object({
-  probability: z.number().min(0).max(1),
-  probabilityPercentage: z.number().min(0).max(100),
-  expectedDays: z.number().min(1),
-  engagementScore: z.number().min(0).max(100),
-  aiAnalysis: AIAnalysisSchema,
-  factors: SaleProbabilityFactorsSchema,
-  marketComparison: MarketComparisonSchema,
-  recommendations: z.array(z.string()),
+  score: z.number().min(0).max(100),
+  level: z.enum(['very_high', 'high', 'medium', 'low', 'very_low']),
+  trend: z.enum(['up', 'down', 'stable']),
+  aiInsight: z.string(),
+  predictedDaysToSale: z.number(),
+  factors: z.array(z.object({
+    label: z.string(),
+    score: z.number().min(0).max(100),
+    impact: z.enum(['positive', 'negative', 'neutral']),
+  })),
+  // Campos legados ou extras para compatibilidade
+  probability: z.number().min(0).max(1).optional(),
+  probabilityPercentage: z.number().min(0).max(100).optional(),
+  expectedDays: z.number().min(1).optional(),
+  engagementScore: z.number().min(0).max(100).optional(),
+  aiAnalysis: AIAnalysisSchema.optional(),
+  marketComparison: MarketComparisonSchema.optional(),
+  recommendations: z.array(z.string()).optional(),
 });
 
 export type SaleProbabilityScore = z.infer<typeof SaleProbabilityScoreSchema>;
+
+/**
+ * Constantes para visualização do score
+ */
+export const PROBABILITY_COLORS: Record<string, string> = {
+  very_high: '#22c55e', // emerald-500
+  high: '#84cc16',      // lime-500
+  medium: '#eab308',    // amber-500
+  low: '#f97316',       // orange-500
+  very_low: '#ef4444',  // red-500
+};
+
+export const PROBABILITY_LABELS: Record<string, string> = {
+  very_high: 'Muito Alta',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
+  very_low: 'Muito Baixa',
+};
 
 // ============================================================================
 // MODO CORRETOR EM CAMPO (FIELD MODE) - FEATURE 3

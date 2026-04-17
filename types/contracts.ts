@@ -1,18 +1,30 @@
 // types/contracts.ts
 export enum ContractType {
-  PURCHASE_SALE = "PURCHASE_SALE",
-  LEASE = "LEASE",
-  COMMERCIAL_PROPOSAL = "COMMERCIAL_PROPOSAL",
-  SALE_AUTHORIZATION = "SALE_AUTHORIZATION",
-  SERVICE_AGREEMENT = "SERVICE_AGREEMENT",
+  SALE = "sale",
+  RENT = "rent",
+  PROPOSAL = "proposal",
+  AUTHORIZATION = "authorization",
+  COMMERCIAL = "commercial",
 }
 
+// Para manter compatibilidade com nomes antigos
+export const PURCHASE_SALE = ContractType.SALE;
+export const LEASE = ContractType.RENT;
+export const COMMERCIAL_PROPOSAL = ContractType.PROPOSAL;
+export const SALE_AUTHORIZATION = ContractType.AUTHORIZATION;
+
 export enum ContractStatus {
-  DRAFT = "DRAFT",
-  GENERATED = "GENERATED",
-  PENDING_SIGNATURE = "PENDING_SIGNATURE",
-  SIGNED = "SIGNED",
-  ARCHIVED = "ARCHIVED",
+  DRAFT = "draft",
+  GENERATED = "generated",
+  PENDING_SIGNATURE = "pending_signature",
+  SIGNED = "signed",
+  ARCHIVED = "archived",
+  PENDING_REVIEW = "pending_review",
+  PARTIALLY_SIGNED = "partially_signed",
+  FULLY_SIGNED = "fully_signed",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled",
+  COMPLETED = "completed",
 }
 
 export enum SignatureStatus {
@@ -174,15 +186,26 @@ export interface ServiceLevelAgreement {
 
 export interface Contract {
   id: string;
+  title: string;
   type: ContractType;
   propertyId: string;
-  propertySnapshot?: PropertySnapshot; // Snapshot at time of contract generation
-  parties: Party[];
+  property: ContractProperty;
+  propertySnapshot?: PropertySnapshot;
+  parties: ContractParty[];
   terms: ContractTerms;
   status: ContractStatus;
   createdAt: Date;
   updatedAt: Date;
   currentVersionId: string | null;
+  createdBy: string;
+  templateId?: string;
+  description?: string;
+  documentVersion?: number;
+  totalValue: number;
+  installments?: number;
+  startDate?: Date;
+  endDate?: Date;
+  clauses: ContractClause[];
 }
 
 export interface ContractVersion {
@@ -211,32 +234,123 @@ export interface Signature {
   rejectedReason?: string;
 }
 
-export interface DealPipelineStage {
+export interface DealStage {
   id: string;
   name: string;
-  description?: string;
   order: number;
-  isActive: boolean;
-  isFinal?: boolean;
-  // Configuration for automation (e.g., auto-advance conditions)
-  autoAdvanceConditions?: Record<string, any>;
-  color?: string; // For UI display
+  color: string;
+  isFinal: boolean;
+}
+
+export interface DealActivity {
+  id: string;
+  dealId: string;
+  type: 'note' | 'task' | 'document' | 'email' | 'call';
+  title: string;
+  description: string;
+  createdBy: string;
+  createdAt?: Date;
 }
 
 export interface Deal {
   id: string;
-  contractId: string;
-  currentStageId: string;
-  enteredAt: Date;
+  contractId?: string;
+  stageId: string;
+  stage: DealStage;
+  activities: DealActivity[];
+  propertyId: string;
+  property: ContractProperty;
+  clientId: string;
+  client: ContractParty;
+  value: number;
+  probability: number;
+  expectedCloseDate?: Date;
+  actualCloseDate?: Date;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  currentStageId?: string; // Mantendo por compatibilidade com definições antigas
+  enteredAt?: Date;
   exitedAt?: Date;
-  // Metadata for tracking
   metadata?: Record<string, any>;
 }
 
-export interface PipelineAnalytics {
-  stage: string;
-  dealCount: number;
-  averageDaysInStage: number;
-  conversionRateToNextStage: number;
-  totalValue: number;
+export interface DealPipeline {
+  stages: DealStage[];
+  deals: Deal[];
+}
+
+// Novos tipos adicionados para resolver erros de compilação
+export interface ContractProperty {
+  id: string;
+  title?: string;
+  address: string;
+  type: 'apartment' | 'house' | 'commercial' | 'land' | 'industrial';
+  city: string;
+  state: string;
+  zipCode: string;
+  area?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  parkingSpaces?: number;
+  value?: number;
+}
+
+export interface ContractParty {
+  id: string;
+  type: 'buyer' | 'seller' | 'tenant' | 'landlord' | 'witness' | 'guarantor';
+  name: string;
+  document: string;
+  documentType: 'cpf' | 'cnpj' | 'rg';
+  email: string;
+  phone: string;
+  signature?: {
+    status: 'pending' | 'sent' | 'signed' | 'rejected';
+    signedAt?: Date;
+  };
+}
+
+export interface ContractClause {
+  id: string;
+  title: string;
+  content: string;
+  order: number;
+  required: boolean;
+}
+
+export interface ContractTemplate {
+  id: string;
+  name: string;
+  type: ContractType;
+  content: string;
+}
+
+export type SigningMethod = 'SIMPLE' | 'DIGITAL_CERTIFICATE' | 'email' | 'whatsapp' | 'certificate';
+export type SigningStatus = 'pending' | 'sent' | 'signed' | 'rejected' | 'expired';
+
+export interface SignatureRequest {
+  id: string;
+  contractId: string;
+  partyId: string;
+  method: SigningMethod;
+  status: SigningStatus;
+  sentAt: Date;
+  expiresAt?: Date;
+  signedAt?: Date;
+  signingUrl?: string;
+}
+
+export interface SigningResult {
+  success: boolean;
+  requestId: string;
+  signingUrl?: string;
+  error?: string;
+}
+
+export interface SigningProvider {
+  id: string;
+  name: string;
+  type: 'docusign' | 'clicksign' | 'assine_bem' | 'autentique' | 'manual';
+  enabled: boolean;
+  credentials: Record<string, string>;
 }

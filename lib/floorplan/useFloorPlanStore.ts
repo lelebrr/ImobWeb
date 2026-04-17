@@ -53,23 +53,23 @@ const createFloorPlanStore = (propertyId: string) => {
       addElement: (el: FloorPlanElement) =>
         set((state) => {
           state.elements.push(el);
-          state.history.push(state.elements.map((e) => ({ ...e })));
+          state.history.push(state.elements.map((e: any) => ({ ...e })));
           state.future = [];
         }),
       updateElement: (id: string, partial: Partial<FloorPlanElement>) =>
         set((state) => {
-          const idx = state.elements.findIndex((e) => e.id === id);
+          const idx = state.elements.findIndex((e: any) => e.id === id);
           if (idx !== -1) {
             state.elements[idx] = { ...state.elements[idx], ...partial };
-            state.history.push(state.elements.map((e) => ({ ...e })));
+            state.history.push(state.elements.map((e: any) => ({ ...e })));
             state.future = [];
           }
         }),
       removeElement: (id: string) =>
         set((state) => {
-          state.elements = state.elements.filter((e) => e.id !== id);
+          state.elements = state.elements.filter((e: any) => e.id !== id);
           if (state.selectedElementId === id) state.selectedElementId = null;
-          state.history.push(state.elements.map((e) => ({ ...e })));
+          state.history.push(state.elements.map((e: any) => ({ ...e })));
           state.future = [];
         }),
       clearSelection: () =>
@@ -83,13 +83,13 @@ const createFloorPlanStore = (propertyId: string) => {
       setDarkMode: (v: boolean) => set({ darkMode: v }),
       pushHistory: () =>
         set((state) => {
-          state.history.push(state.elements.map((e) => ({ ...e })));
+          state.history.push(state.elements.map((e: any) => ({ ...e })));
           state.future = [];
         }),
       undo: () => {
         const state = get();
         if (state.history.length === 0) return;
-        const current = state.elements.map((e) => ({ ...e }));
+        const current = state.elements.map((e: any) => ({ ...e }));
         set((s) => {
           s.future.push(s.elements);
           s.elements = s.history.pop()!;

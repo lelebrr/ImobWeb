@@ -38,7 +38,7 @@ import { VisitNotes } from './VisitNotes';
  * The ultimate mobile tool for real estate brokers. Optimized & Expanded.
  */
 export function FieldModeDashboard() {
-  const [syncStatus, setSyncStatus] = useState<FieldSyncStatus>('ONLINE');
+  const [syncStatus, setSyncStatus] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [nearbyProperty, setNearbyProperty] = useState<any>(null);

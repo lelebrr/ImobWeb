@@ -1,4 +1,4 @@
-import { prisma } from "@/prisma/client";
+import { prisma } from "@/lib/prisma";
 import {
   Partner,
   ResellerClient,
@@ -67,7 +67,7 @@ export class CommissionEngine {
 
     // Atualiza para processando (em um sistema real, isso dispararia um job de pagamento)
     const updatedCommissions = await Promise.all(
-      pendingCommissions.map(async (commission) => {
+      pendingCommissions.map(async (commission: any) => {
         return await prisma.commission.update({
           where: { id: commission.id },
           data: {
@@ -89,7 +89,7 @@ export class CommissionEngine {
   static async calculateFranchiseRoyalties(
     franchiseId: string,
     period: string, // YYYY-MM format
-  ): Promise<{ amount: number; details: any[] }> {
+  ): Promise<{ amount: number; details: import("@/types/partner").FranchiseRoyaltyDetail[] }> {
     // Busca a franquia
     const franchise = await prisma.partner.findUnique({
       where: { id: franchiseId },
@@ -109,7 +109,7 @@ export class CommissionEngine {
       where: {
         OR: [
           { partnerId: franchiseId }, // Subcontas diretas da franquia
-          { partnerId: { in: subFranchises.map((sf) => sf.id) } }, // Subcontas das subfranquias
+          { partnerId: { in: subFranchises.map((sf: any) => sf.id) } }, // Subcontas das subfranquias
         ],
         status: "active",
       },
@@ -120,7 +120,7 @@ export class CommissionEngine {
       where: {
         OR: [
           { partnerId: franchiseId },
-          { partnerId: { in: subFranchises.map((sf) => sf.id) } },
+          { partnerId: { in: subFranchises.map((sf: any) => sf.id) } },
         ],
         status: "active",
       },
@@ -145,25 +145,25 @@ export class CommissionEngine {
             where: { partnerId: franchiseId, status: "active" },
             _sum: { monthlyValue: true },
           })
-          .then((r) => r._sum.monthlyValue || 0),
+          .then((r: any) => r._sum.monthlyValue || 0),
       },
       {
         type: "sub_franchise_clients",
         count: await prisma.resellerClient.count({
           where: {
-            partnerId: { in: subFranchises.map((sf) => sf.id) },
+            partnerId: { in: subFranchises.map((sf: any) => sf.id) },
             status: "active",
           },
         }),
         mrr: await prisma.resellerClient
           .aggregate({
             where: {
-              partnerId: { in: subFranchises.map((sf) => sf.id) },
+              partnerId: { in: subFranchises.map((sf: any) => sf.id) },
               status: "active",
             },
             _sum: { monthlyValue: true },
           })
-          .then((r) => r._sum.monthlyValue || 0),
+          .then((r: any) => r._sum.monthlyValue || 0),
       },
     ];
 
@@ -263,17 +263,17 @@ export class CommissionEngine {
       },
     });
 
-    const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
+    const totalEarned = commissions.reduce((sum: number, c: any) => sum + c.amount, 0);
     const totalPaid = commissions
-      .filter((c) => c.status === "paid")
-      .reduce((sum, c) => sum + c.amount, 0);
+      .filter((c: any) => c.status === "paid")
+      .reduce((sum: number, c: any) => sum + c.amount, 0);
     const totalPending = commissions
-      .filter((c) => c.status === "pending")
-      .reduce((sum, c) => sum + c.amount, 0);
+      .filter((c: any) => c.status === "pending")
+      .reduce((sum: number, c: any) => sum + c.amount, 0);
 
     // Agrupa por mês
     const commissionsByMonth = Array.from(
-      commissions.reduce((map, commission) => {
+      commissions.reduce((map: Map<string, number>, commission: any) => {
         const month = commission.period; // Já está no formato YYYY-MM
         const current = map.get(month) || 0;
         return map.set(month, current + commission.amount);
@@ -283,7 +283,7 @@ export class CommissionEngine {
 
     // Top 5 clientes por comissão gerada
     const topClients = Array.from(
-      commissions.reduce((map, commission) => {
+      commissions.reduce((map: Map<string, number>, commission: any) => {
         if (!commission.resellerClient) return map;
         const clientName = commission.resellerClient.clientName;
         const current = map.get(clientName) || 0;

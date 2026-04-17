@@ -1,11 +1,14 @@
+import {
+  ContractStatus,
+  ContractType,
+  PartyType
+} from '@/types/contracts';
 import type {
   Contract,
-  ContractType,
   ContractClause,
   ContractProperty,
   ContractParty,
   ContractTemplate,
-  ContractClause as ClauseType
 } from '@/types/contracts';
 
 const CLAUSE_TEMPLATES: Record<ContractType, ContractClause[]> = {
@@ -288,11 +291,20 @@ export class ContractGenerator {
       id: `contract-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       templateId: `template-${type}`,
       type,
-      status: 'draft',
+      status: ContractStatus.DRAFT,
       title: this.generateTitle(type, property),
       description: this.generateDescription(type, property, totalValue),
       property,
-      parties,
+      parties: parties.map(p => ({
+        id: p.id,
+        type: p.type,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        document: p.document,
+        documentType: p.documentType,
+        signature: p.signature
+      })),
       clauses,
       totalValue,
       installments,
@@ -301,7 +313,9 @@ export class ContractGenerator {
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: '',
-      documentVersion: 1
+      documentVersion: 1,
+      currentVersionId: null,
+      terms: {} as any // Placeholder or properly initialize if needed
     };
 
     return contract;

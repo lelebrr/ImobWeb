@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { dealPipeline, createDealFromProperty, convertToContract } from '@/lib/deal-flow';
+import { ContractType } from '@/types/contracts';
 
 const createDealSchema = z.object({
   propertyId: z.string(),
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
         type: z.enum(['sale', 'rent', 'proposal'])
       }).parse(body);
 
-      const contractId = convertToContract(dealId, type);
+      const contractId = convertToContract(dealId, type as ContractType);
       
       return NextResponse.json({ success: true, contractId });
     }

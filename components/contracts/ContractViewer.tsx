@@ -67,7 +67,10 @@ export function ContractViewer({
       fully_signed: 'Totalmente Assinado',
       expired: 'Expirado',
       cancelled: 'Cancelado',
-      completed: 'Concluído'
+      completed: 'Concluído',
+      generated: 'Gerado',
+      signed: 'Assinado',
+      archived: 'Arquivado'
     };
     return labels[status] || status;
   };

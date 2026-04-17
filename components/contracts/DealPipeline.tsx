@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/design-system/button";
 import { cn } from "@/lib/utils";
-import type { Deal, DealPipelineStage } from "@/types/contracts";
+import type { Deal, DealStage } from "@/types/contracts";
 
 interface DealPipelineProps {
-  stages: DealPipelineStage[];
+  stages: DealStage[];
   deals: Deal[];
   onMoveDeal?: (dealId: string, newStageId: string) => void;
   onCreateDeal?: () => void;

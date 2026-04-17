@@ -20,7 +20,8 @@ import {
   Home,
   MessageSquare,
   HelpCircle,
-  BarChart4
+  BarChart4,
+  Navigation
 } from 'lucide-react';
 import { NavSection, UserRole } from '@/types/navigation';
 

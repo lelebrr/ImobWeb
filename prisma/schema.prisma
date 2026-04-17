@@ -329,6 +329,7 @@ model Organization {
   autoBlockConfigs   AutoBlockConfig[]
   onboardingProgresses OnboardingProgress[]
   adoptionMetrics      AdoptionMetrics[]
+  resellerClient       ResellerClient?
 
   // ComentÃ¡rios
   /// OrganizaÃ§Ã£o principal para suporte multi-tenant
@@ -510,7 +511,7 @@ model Property {
   warnings     String? // Avisos importantes
 
   // Metadados
-  views     Int? @default(0) // NÃºmero de visualizaÃ§Ãµes
+  viewCount Int? @default(0) // NÃºmero de visualizaÃ§Ãµes
   favorites Int? @default(0) // NÃºmero de favoritos
   shares    Int? @default(0) // NÃºmero de compartilhamentos
   clicks    Int? @default(0) // NÃºmero de cliques
@@ -550,6 +551,7 @@ model Property {
   aiRecommendations      AIRecommendation[]
   integrationEvents      IntegrationEvent[]
   proofOfLifeRecords     ProofOfLife[]
+  views                  PropertyView[]
 
   // ComentÃ¡rios
   /// Modelo principal de imÃ³veis com +80 campos detalhados
@@ -1883,4 +1885,138 @@ enum HighlightLevel {
   PREMIUM_PLUS
   DESTAQUE
   SUPER_DESTAQUE
+}
+
+// ============================================
+// PARTNER & WHITE LABEL SYSTEM
+// ============================================
+
+model Partner {
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  tier                String   // reseller, franchise
+  level               String   // silver, gold, platinum, franchise
+  parentId            String?
+  status              String   @default("active")
+  commissionRate      Decimal  @db.Decimal(5, 2)
+  recurringCommission Boolean  @default(true)
+  maxSubAccounts      Int
+  brandingConfigId    String?  @unique
+  brandingConfig      BrandingConfig? @relation(fields: [brandingConfigId], references: [id])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  resellerClients ResellerClient[]
+  commissions     Commission[]
+  addons          PartnerAddon[]
+
+  @@index([email])
+}
+
+model BrandingConfig {
+  id                   String   @id @default(cuid())
+  partnerId            String   @unique
+  domain               String   @unique
+  logoUrl              String?
+  faviconUrl           String?
+  primaryColor         String
+  secondaryColor       String
+  backgroundColor      String
+  textColor            String
+  accentColor          String
+  fontFamily           String
+  darkModeEnabled      Boolean  @default(true)
+  darkModeColors       Json?    // { primary, secondary, background, text, accent }
+  hidePlatformBranding Boolean  @default(false)
+  customCss            String?
+  customJs             String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  partner              Partner?
+}
+
+model ResellerClient {
+  id              String   @id @default(cuid())
+  partnerId       String
+  partner         Partner  @relation(fields: [partnerId], references: [id])
+  subAccountId    String   @unique
+  subAccount      Organization @relation(fields: [subAccountId], references: [id])
+  clientName      String
+  clientDomain    String
+  status          String   @default("active")
+  monthlyValue    Decimal  @db.Decimal(15, 2)
+  commissionRate  Decimal  @db.Decimal(5, 2)
+  commissionValue Decimal  @db.Decimal(15, 2)
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  lastPaymentDate DateTime?
+  nextPaymentDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  commissions     Commission[]
+
+  @@index([partnerId])
+  @@index([subAccountId])
+}
+
+model Commission {
+  id               String   @id @default(cuid())
+  partnerId        String
+  partner          Partner  @relation(fields: [partnerId], references: [id])
+  resellerClientId String
+  resellerClient   ResellerClient @relation(fields: [resellerClientId], references: [id])
+  amount           Decimal  @db.Decimal(15, 2)
+  period           String   // YYYY-MM
+  status           String   @default("pending") // pending, paid, cancelled
+  calculatedAt     DateTime @default(now())
+  paidAt           DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([partnerId])
+  @@index([resellerClientId])
+  @@index([period])
+}
+
+model Addon {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(15, 2)
+  billingType  String   @default("monthly") // monthly, yearly, once, usage
+  usageBased   Boolean  @default(false)
+  usagePrice   Decimal? @db.Decimal(15, 2)
+  icon         String?
+  category     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  partnerAddons PartnerAddon[]
+}
+
+model PartnerAddon {
+  id          String   @id @default(cuid())
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id])
+  addonId     String
+  addon       Addon    @relation(fields: [addonId], references: [id])
+  isActive    Boolean  @default(true)
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([partnerId])
+  @@index([addonId])
+}
+
+model PropertyView {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  count      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([createdAt])
 }

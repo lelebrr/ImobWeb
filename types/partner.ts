@@ -1,10 +1,12 @@
 export type PartnerTier = "reseller" | "franchise";
+export type PartnerLevel = "silver" | "gold" | "platinum" | "franchise";
 
 export interface Partner {
   id: string;
   name: string;
   email: string;
   tier: PartnerTier;
+  level: PartnerLevel;
   parentId: string | null; // For franchise hierarchies
   status: "active" | "suspended" | "pending";
   createdAt: Date;
@@ -79,13 +81,16 @@ export interface Addon {
   name: string;
   description: string;
   price: number; // Monthly price
+  billingType: "monthly" | "yearly" | "once" | "usage";
   usageBased: boolean;
   usagePrice: number | null; // Price per unit if usage-based
   icon: string;
   category: "ia" | "portals" | "marketing" | "financial" | "reports";
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  isActive?: boolean;
+  developer: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isInstalled?: boolean; // For UI state
 }
 
 export interface PartnerAddon {
@@ -140,4 +145,10 @@ export interface RoyaltyPayment {
   period: string; // "YYYY-MM"
   status: "paid" | "pending" | "processing";
   processedAt?: string;
+}
+
+export interface FranchiseRoyaltyDetail {
+  type: string;
+  count: number;
+  mrr: number;
 }

@@ -68,7 +68,7 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
       id: Math.random().toString(36).substr(2, 9),
       blob,
       previewUrl,
-      timestamp: new Date().toISOString()
+      takenAt: new Date().toISOString()
     };
     
     setPhotos(prev => [newMedia, ...prev]);
