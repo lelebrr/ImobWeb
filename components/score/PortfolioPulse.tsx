@@ -2,17 +2,16 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  PortfolioPulse,
+import type {
+  PortfolioPulse as PortfolioPulseType,
   HealthLevel,
-  HEALTH_LEVEL_COLORS,
-  HEALTH_LEVEL_LABELS,
 } from "@/types/score";
+import { HEALTH_LEVEL_COLORS, HEALTH_LEVEL_LABELS } from "@/types/score";
 import { HealthScoreRing } from "./HealthScoreCard";
 
 interface PortfolioPulseProps {
-  data: PortfolioPulse;
-  onFilterChange?: (filters: PortfolioPulse["filters"]) => void;
+  data: PortfolioPulseType;
+  onFilterChange?: (filters: PortfolioPulseType["filters"]) => void;
   onPropertyClick?: (propertyId: string) => void;
   isLoading?: boolean;
 }

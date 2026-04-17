@@ -10,12 +10,11 @@ import {
   PLATFORM_ROLES,
   AGENCY_ROLES,
 } from "@/types/permissions";
+import { useParams } from "next/navigation";
 
-interface UsersPageProps {
-  params: { organizationId: string };
-}
-
-export default function UsersPage({ params }: UsersPageProps) {
+export default function UsersPage() {
+  const params = useParams();
+  const organizationId = params.organizationId as string;
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 

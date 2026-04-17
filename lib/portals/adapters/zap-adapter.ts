@@ -1,7 +1,7 @@
-import { BasePortalAdapter } from './base-adapter';
-import { xmlGenerator } from '../xml-generator';
-import type { PropertyData } from '../xml-generator';
-import type { PortalAdapter, PropertyValidation } from '../../../types/portals';
+import { BasePortalAdapter } from "./base-adapter";
+import { xmlGenerator } from "../xml-generator";
+import type { PropertyData } from "../xml-generator";
+import type { PortalAdapter, PropertyValidation } from "../../../types/portals";
 
 /**
  * Adaptador específico para o Portal Zap Imóveis (VRSync)
@@ -24,27 +24,30 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
 
     // Zap exige endereço completo
     if (!property.address?.street) {
-      errors.push('Endereço completo (logradouro) é obrigatório para Zap');
+      errors.push("Endereço completo (logradouro) é obrigatório para Zap");
     }
 
     // Zap exige pelo menos 3 fotos
     if (property.photos && property.photos.length < 3) {
-      errors.push('Zap exige pelo menos 3 fotos para publicar');
+      errors.push("Zap exige pelo menos 3 fotos para publicar");
     }
 
     // Zap tem limite de 60 caracteres no título
     if (property.title && property.title.length > 60) {
-      errors.push('Título do Zap não pode ultrapassar 60 caracteres');
+      errors.push("Título do Zap não pode ultrapassar 60 caracteres");
     }
 
     // Cálculo de score específico do Zap
-    const hasFullAddress = property.address?.street && property.address?.city && property.address?.state;
+    const hasFullAddress =
+      property.address?.street &&
+      property.address?.city &&
+      property.address?.state;
     const hasMinPhotos = property.photos && property.photos.length >= 3;
 
     const score = Math.round(
-      (baseValidation.score * 0.7) + // Score base
-      (hasFullAddress ? 15 : 0) + // Endereço completo
-      (hasMinPhotos ? 15 : 0) // Fotos mínimas
+      baseValidation.score * 0.7 + // Score base
+        (hasFullAddress ? 15 : 0) + // Endereço completo
+        (hasMinPhotos ? 15 : 0), // Fotos mínimas
     );
 
     return {
@@ -58,7 +61,7 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
         minimumRequirements: errors.length === 0,
         qualityStandards: warnings.length <= 2,
         completeness: score >= 75,
-      }
+      },
     };
   }
 
@@ -70,16 +73,19 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
       // Validação prévia
       const validation = this.validateProperty(data as unknown as PropertyData);
       if (!validation.valid) {
-        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+        throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
       }
 
       // Geração de XML VRSync
-      const xmlPayload = xmlGenerator.generate(data as unknown as PropertyData, 'zap');
+      const xmlPayload = xmlGenerator.generate(
+        data as unknown as PropertyData,
+        "zap",
+      );
 
       const response = await this.makeRequest(`${this.getEndpoint()}/imoveis`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
           ...this.getAuthHeaders(),
         },
         body: xmlPayload,
@@ -90,34 +96,44 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
       // Extrair ID do imóvel da resposta XML
       const match = result.match(/<CodigoImovel>(\d+)<\/CodigoImovel>/);
       if (!match) {
-        throw new Error('Failed to extract property ID from Zap response');
+        throw new Error("Failed to extract property ID from Zap response");
       }
 
       return match[1];
     } catch (error) {
-      console.error('[ZapAdapter] Error creating property:', error);
-      throw new Error(`Failed to create property on Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error creating property:", error);
+      throw new Error(
+        `Failed to create property on Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Atualizar imóvel existente no Zap
    */
-  async updateProperty(externalId: string, data: Record<string, unknown>): Promise<void> {
+  async updateProperty(
+    externalId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     try {
-      const xmlPayload = xmlGenerator.generate(data as unknown as PropertyData, 'zap');
+      const xmlPayload = xmlGenerator.generate(
+        data as unknown as PropertyData,
+        "zap",
+      );
 
       await this.makeRequest(`${this.getEndpoint()}/imoveis/${externalId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
           ...this.getAuthHeaders(),
         },
         body: xmlPayload,
       });
     } catch (error) {
-      console.error('[ZapAdapter] Error updating property:', error);
-      throw new Error(`Failed to update property on Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error updating property:", error);
+      throw new Error(
+        `Failed to update property on Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -127,12 +143,14 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
   async deleteProperty(externalId: string): Promise<void> {
     try {
       await this.makeRequest(`${this.getEndpoint()}/imoveis/${externalId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: this.getAuthHeaders(),
       });
     } catch (error) {
-      console.error('[ZapAdapter] Error deleting property:', error);
-      throw new Error(`Failed to delete property on Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error deleting property:", error);
+      throw new Error(
+        `Failed to delete property on Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -141,15 +159,20 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
    */
   async getProperty(externalId: string): Promise<Record<string, unknown>> {
     try {
-      const response = await this.makeRequest(`${this.getEndpoint()}/imoveis/${externalId}`, {
-        headers: this.getAuthHeaders(),
-      });
+      const response = await this.makeRequest(
+        `${this.getEndpoint()}/imoveis/${externalId}`,
+        {
+          headers: this.getAuthHeaders(),
+        },
+      );
 
       const xml = await response.text();
       return this.parseXmlResponse(xml);
     } catch (error) {
-      console.error('[ZapAdapter] Error getting property:', error);
-      throw new Error(`Failed to get property from Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error getting property:", error);
+      throw new Error(
+        `Failed to get property from Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -173,15 +196,22 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
         receivedAt: new Date(lead.data as string),
       }));
     } catch (error) {
-      console.error('[ZapAdapter] Error getting leads:', error);
-      throw new Error(`Failed to get leads from Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error getting leads:", error);
+      throw new Error(
+        `Failed to get leads from Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Obter analytics do Zap
    */
-  async getAnalytics(propertyId?: string): Promise<Record<string, unknown>> {
+  async getAnalytics(propertyId?: string): Promise<{
+    totalProperties: number;
+    activeProperties: number;
+    totalViews: number;
+    totalLeads: number;
+  }> {
     try {
       const url = propertyId
         ? `${this.getEndpoint()}/imoveis/${propertyId}/estatisticas`
@@ -191,10 +221,18 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
         headers: this.getAuthHeaders(),
       });
 
-      return response.json();
+      const data = await response.json();
+      return {
+        totalProperties: data.totalProperties || 0,
+        activeProperties: data.activeProperties || 0,
+        totalViews: data.totalViews || 0,
+        totalLeads: data.totalLeads || 0,
+      };
     } catch (error) {
-      console.error('[ZapAdapter] Error getting analytics:', error);
-      throw new Error(`Failed to get analytics from Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error getting analytics:", error);
+      throw new Error(
+        `Failed to get analytics from Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -203,24 +241,29 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
    */
   async activateHighlight(
     externalId: string,
-    packageType: 'destaque' | 'super-destaque' | 'patrocinado',
-    days: number = 30
+    packageType: "destaque" | "super-destaque" | "patrocinado",
+    days: number = 30,
   ): Promise<void> {
     try {
-      await this.makeRequest(`${this.getEndpoint()}/imoveis/${externalId}/destaque`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
+      await this.makeRequest(
+        `${this.getEndpoint()}/imoveis/${externalId}/destaque`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            tipo: packageType,
+            dias: days,
+          }),
         },
-        body: JSON.stringify({
-          tipo: packageType,
-          dias: days,
-        }),
-      });
+      );
     } catch (error) {
-      console.error('[ZapAdapter] Error activating highlight:', error);
-      throw new Error(`Failed to activate highlight on Zap: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[ZapAdapter] Error activating highlight:", error);
+      throw new Error(
+        `Failed to activate highlight on Zap: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -244,13 +287,13 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
   }
 
   getEndpoint(): string {
-    return this.baseUrl || 'https://api.zapimoveis.com.br/v1';
+    return this.baseUrl || "https://api.zapimoveis.com.br/v1";
   }
 
   getAuthHeaders(): Record<string, string> {
     return {
-      'Authorization': `Bearer ${this.apiKey}`,
-      'X-Client-ID': this.config.clientId || '',
+      Authorization: `Bearer ${this.apiKey}`,
+      "X-Client-ID": this.config.clientId || "",
     };
   }
 
@@ -262,16 +305,16 @@ export class ZapAdapter extends BasePortalAdapter implements PortalAdapter {
 
     const extractValue = (tag: string): string => {
       const match = xml.match(new RegExp(`<${tag}>([^<]*)</${tag}>`));
-      return match ? match[1] : '';
+      return match ? match[1] : "";
     };
 
-    result['titulo'] = extractValue('Titulo');
-    result['descricao'] = extractValue('Descricao');
-    result['price'] = parseFloat(extractValue('Valor')) || 0;
-    result['status'] = extractValue('Status');
-    result['bairro'] = extractValue('Bairro');
-    result['cidade'] = extractValue('Cidade');
-    result['estado'] = extractValue('Estado');
+    result["titulo"] = extractValue("Titulo");
+    result["descricao"] = extractValue("Descricao");
+    result["price"] = parseFloat(extractValue("Valor")) || 0;
+    result["status"] = extractValue("Status");
+    result["bairro"] = extractValue("Bairro");
+    result["cidade"] = extractValue("Cidade");
+    result["estado"] = extractValue("Estado");
 
     return result;
   }

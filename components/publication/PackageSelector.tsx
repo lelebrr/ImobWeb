@@ -89,12 +89,12 @@ const DEFAULT_PACKAGES: PublicationPackage[] = [
   },
 ];
 
-const PACKAGE_ICONS: Record<string, React.ReactNode> = {
-  BASIC: <Home className="w-5 h-5" />,
-  HIGHLIGHT: <Star className="w-5 h-5" />,
-  SUPER_HIGHLIGHT: <Crown className="w-5 h-5" />,
-  PREMIUM: <Crown className="w-5 h-5" />,
-  CUSTOM: <Package className="w-5 h-5" />,
+const PACKAGE_ICONS: Record<string, React.FC<{ className?: string }>> = {
+  BASIC: Home,
+  HIGHLIGHT: Star,
+  SUPER_HIGHLIGHT: Crown,
+  PREMIUM: Crown,
+  CUSTOM: Package,
 };
 
 const PACKAGE_COLORS: Record<string, string> = {
@@ -152,7 +152,7 @@ export function PackageSelector({
                       PACKAGE_COLORS[pkg.type].split(" ")[1],
                     )}
                   >
-                    {Icon}
+                    <Icon className="w-5 h-5" />
                   </div>
                   {isSelected && (
                     <CheckCircle className="w-5 h-5 text-green-400" />

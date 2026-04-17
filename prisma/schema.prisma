@@ -321,9 +321,11 @@ model Organization {
   apiKeys            ApiKey[] // Chaves de API da organizaÃ§Ã£o
   auditLogs          AuditLog[]
   contracts          Contract[] // Contratos da organizaÃ§Ã£o
-  portalIntegrations PortalIntegration[] // IntegraÃ§Ã£o com portais
+  portalIntegrations PortalIntegration[] // IntegraÃ§Ãµes com portais
   communicationUsage  CommunicationUsage[]
   communicationQuota  CommunicationQuota[]
+  integrationEvents  IntegrationEvent[]
+  autoBlockConfigs   AutoBlockConfig[]
 
   // ComentÃ¡rios
   /// OrganizaÃ§Ã£o principal para suporte multi-tenant
@@ -531,6 +533,11 @@ model Property {
   announcements Announcement[] // AnÃºncios do imÃ³vel
   features      PropertyFeature[] // CaracterÃ­sticas do imÃ³vel
   contracts     Contract[] // Contratos relacionados ao imÃ³vel
+  propertyScores          PropertyScore[]
+  propertyScoreHistories  PropertyScoreHistory[]
+  autoBlockRecords        AutoBlockRecord[]
+  aiRecommendations       AIRecommendation[]
+  integrationEvents       IntegrationEvent[]
 
   // ComentÃ¡rios
   /// Modelo principal de imÃ³veis com +80 campos detalhados

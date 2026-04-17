@@ -462,7 +462,6 @@ export default function NewPropertyPage() {
       hasSquashCourt: false,
       hasGolfCourse: false,
       hasMiniGolf: false,
-      hasSportsCourt: false,
       hasSauna: false,
       hasSaunaType: "",
       hasSpa: false,
@@ -3479,7 +3478,7 @@ export default function NewPropertyPage() {
                         label="Distância até Praia"
                         icon={Waves}
                         value={formData.proximity.beachDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("beachDistance", v, "proximity")
                         }
                       />
@@ -3487,7 +3486,7 @@ export default function NewPropertyPage() {
                         label="Distância até Parque"
                         icon={TreePine}
                         value={formData.proximity.parkDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("parkDistance", v, "proximity")
                         }
                       />
@@ -3495,7 +3494,7 @@ export default function NewPropertyPage() {
                         label="Distância até Escola"
                         icon={Star}
                         value={formData.proximity.schoolDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("schoolDistance", v, "proximity")
                         }
                       />
@@ -3503,7 +3502,7 @@ export default function NewPropertyPage() {
                         label="Distância até Universidade"
                         icon={Star}
                         value={formData.proximity.universityDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "universityDistance",
                             v,
@@ -3515,7 +3514,7 @@ export default function NewPropertyPage() {
                         label="Distância até Hospital"
                         icon={Star}
                         value={formData.proximity.hospitalDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("hospitalDistance", v, "proximity")
                         }
                       />
@@ -3523,7 +3522,7 @@ export default function NewPropertyPage() {
                         label="Distância até Clínica Saúde"
                         icon={Star}
                         value={formData.proximity.healthClinicDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "healthClinicDistance",
                             v,
@@ -3535,7 +3534,7 @@ export default function NewPropertyPage() {
                         label="Distância até Farmácia"
                         icon={Star}
                         value={formData.proximity.pharmacyDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("pharmacyDistance", v, "proximity")
                         }
                       />
@@ -3543,7 +3542,7 @@ export default function NewPropertyPage() {
                         label="Distância até Supermercado"
                         icon={Star}
                         value={formData.proximity.supermarketDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "supermarketDistance",
                             v,
@@ -3555,7 +3554,7 @@ export default function NewPropertyPage() {
                         label="Distância até Shopping"
                         icon={Store}
                         value={formData.proximity.mallDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("mallDistance", v, "proximity")
                         }
                       />
@@ -3563,7 +3562,7 @@ export default function NewPropertyPage() {
                         label="Distância até Centro Comercial"
                         icon={Store}
                         value={formData.proximity.shoppingCenterDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "shoppingCenterDistance",
                             v,
@@ -3575,7 +3574,7 @@ export default function NewPropertyPage() {
                         label="Distância até Metrô"
                         icon={Star}
                         value={formData.proximity.metroDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("metroDistance", v, "proximity")
                         }
                       />
@@ -3583,7 +3582,7 @@ export default function NewPropertyPage() {
                         label="Estação Metrô mais próxima"
                         icon={Star}
                         value={formData.proximity.metroStation}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("metroStation", v, "proximity")
                         }
                       />
@@ -3591,7 +3590,7 @@ export default function NewPropertyPage() {
                         label="Distância até Trem"
                         icon={Star}
                         value={formData.proximity.trainStationDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "trainStationDistance",
                             v,
@@ -3603,7 +3602,7 @@ export default function NewPropertyPage() {
                         label="Distância até Ponto de Ônibus"
                         icon={Star}
                         value={formData.proximity.busStopDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("busStopDistance", v, "proximity")
                         }
                       />
@@ -3611,7 +3610,7 @@ export default function NewPropertyPage() {
                         label="Distância até Aeroporto"
                         icon={Plane}
                         value={formData.proximity.airportDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("airportDistance", v, "proximity")
                         }
                       />
@@ -3619,7 +3618,7 @@ export default function NewPropertyPage() {
                         label="Distância até Rodovia"
                         icon={Star}
                         value={formData.proximity.highwayDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("highwayDistance", v, "proximity")
                         }
                       />
@@ -3627,7 +3626,7 @@ export default function NewPropertyPage() {
                         label="Distância até Av. Principal"
                         icon={Star}
                         value={formData.proximity.mainAvenueDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "mainAvenueDistance",
                             v,
@@ -3639,7 +3638,7 @@ export default function NewPropertyPage() {
                         label="Área Comercial"
                         icon={Store}
                         value={formData.proximity.commercialAreaDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "commercialAreaDistance",
                             v,
@@ -3651,7 +3650,7 @@ export default function NewPropertyPage() {
                         label="Distância até Restaurante"
                         icon={Utensils}
                         value={formData.proximity.restaurantDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange(
                             "restaurantDistance",
                             v,
@@ -3663,7 +3662,7 @@ export default function NewPropertyPage() {
                         label="Distância até Academia"
                         icon={Dumbbell}
                         value={formData.proximity.gymDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("gymDistance", v, "proximity")
                         }
                       />
@@ -3671,7 +3670,7 @@ export default function NewPropertyPage() {
                         label="Distância até Banco"
                         icon={Star}
                         value={formData.proximity.bankDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("bankDistance", v, "proximity")
                         }
                       />
@@ -3679,7 +3678,7 @@ export default function NewPropertyPage() {
                         label="Distância até ATM"
                         icon={Star}
                         value={formData.proximity.atmDistance}
-                        onChange={(v) =>
+                        onChange={(v: string) =>
                           handleInputChange("atmDistance", v, "proximity")
                         }
                       />
@@ -4948,7 +4947,7 @@ function RoomToggle({
   label: string;
   area: string;
   checked: boolean;
-  onAreaChange: (v: string) => void;
+  onAreaChange?: (v: string) => void;
   onToggle: () => void;
 }) {
   return (
@@ -4989,7 +4988,7 @@ function RoomToggle({
               value={area}
               onChange={(e) => {
                 e.stopPropagation();
-                onAreaChange(e.target.value);
+                onAreaChange?.(e.target.value);
               }}
               placeholder="m²"
               className="h-8 text-xs font-bold rounded-lg glass border-none bg-black/20"

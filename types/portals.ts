@@ -1,12 +1,37 @@
-export type PortalType = 'ZAP' | 'VIVAREAL' | 'OLX' | 'IMOVELWEB' | 'CHAVES_NA_MAO' | 'VRSYNC' | 'MERCADO_LIVRE' | 'PROPRIETARIO_DIRETO' | 'IMOBIBRASIL' | 'LOFT' | 'QUINTO_ANDAR' | 'CUSTOM';
-export type PortalId = 'zap' | 'viva' | 'olx' | 'imovelweb' | 'chaves' | 'mercado_livre' | 'proprietario_direto' | 'imobibrasil' | 'loft' | 'quinto_andar' | 'meta' | 'vrsync' | 'custom';
+export type PortalType =
+  | "ZAP"
+  | "VIVAREAL"
+  | "OLX"
+  | "IMOVELWEB"
+  | "CHAVES_NA_MAO"
+  | "VRSYNC"
+  | "MERCADO_LIVRE"
+  | "PROPRIETARIO_DIRETO"
+  | "IMOBIBRASIL"
+  | "LOFT"
+  | "QUINTO_ANDAR"
+  | "CUSTOM";
+export type PortalId =
+  | "zap"
+  | "viva"
+  | "olx"
+  | "imovelweb"
+  | "chaves"
+  | "mercado_livre"
+  | "proprietario_direto"
+  | "imobibrasil"
+  | "loft"
+  | "quinto_andar"
+  | "meta"
+  | "vrsync"
+  | "custom";
 
 export enum PortalIntegrationStatus {
-  ATIVO = 'ATIVO',
-  INATIVO = 'INATIVO',
-  SUSPENSO = 'SUSPENSO',
-  ERRO = 'ERRO',
-  AGUARDANDO_CONFIG = 'AGUARDANDO_CONFIG'
+  ATIVO = "ATIVO",
+  INATIVO = "INATIVO",
+  SUSPENSO = "SUSPENSO",
+  ERRO = "ERRO",
+  AGUARDANDO_CONFIG = "AGUARDANDO_CONFIG",
 }
 
 export interface LeadFromPortal {
@@ -22,7 +47,12 @@ export interface LeadFromPortal {
   receivedAt: Date | string;
 }
 
-export type SyncStatus = 'PENDING' | 'SYNCING' | 'SUCCESS' | 'ERROR' | 'CONFLICT';
+export type SyncStatus =
+  | "PENDING"
+  | "SYNCING"
+  | "SUCCESS"
+  | "ERROR"
+  | "CONFLICT";
 
 export interface PortalConfig {
   id: string;
@@ -45,7 +75,7 @@ export interface PortalSettings {
   clientId?: string;
   clientSecret?: string;
   baseUrl?: string;
-  authType: 'api_key' | 'oauth' | 'basic_auth' | 'bearer_token';
+  authType: "api_key" | "oauth" | "basic_auth" | "bearer_token";
   webhookUrl?: string;
   defaultCategory?: string;
   defaultPackage?: string;
@@ -110,16 +140,19 @@ export interface PortalAnalytics {
     clicks: number;
     leads: number;
   }>;
-  performanceByCategory: Record<string, {
-    listings: number;
-    views: number;
-    clicks: number;
-    leads: number;
-  }>;
+  performanceByCategory: Record<
+    string,
+    {
+      listings: number;
+      views: number;
+      clicks: number;
+      leads: number;
+    }
+  >;
 }
 
 export interface IntegrationHealth {
-  status: 'healthy' | 'warning' | 'critical' | 'down';
+  status: "healthy" | "warning" | "critical" | "down";
   lastCheck: Date;
   uptime: number; // percentage
   responseTime: number; // average in ms
@@ -138,12 +171,21 @@ export interface IntegrationHealth {
 }
 
 export interface PortalAdapter {
+  checkHealth(): Promise<{ status: string; message?: string }>;
   createProperty(data: Record<string, unknown>): Promise<string>;
-  updateProperty(externalId: string, data: Record<string, unknown>): Promise<void>;
+  updateProperty(
+    externalId: string,
+    data: Record<string, unknown>,
+  ): Promise<void>;
   deleteProperty(externalId: string): Promise<void>;
   getProperty(externalId: string): Promise<Record<string, unknown>>;
   getLeads(): Promise<any[]>;
-  getAnalytics(propertyId?: string): Promise<Record<string, unknown>>;
+  getAnalytics(propertyId?: string): Promise<{
+    totalProperties: number;
+    activeProperties: number;
+    totalViews: number;
+    totalLeads: number;
+  }>;
   validateProperty(property: any): { valid: boolean; errors?: string[] };
 }
 
@@ -155,12 +197,20 @@ export interface FieldMapping {
 }
 
 export interface PortalConnector {
-  format: 'XML_VRSYNC' | 'XML_IMOBILEWEB' | 'XML_CHAVES_NA_MAO' | 'XML_DEDICADO' | 'API_MERCADO_LIVRE' | 'API_PARCEIRO' | 'MANUAL' | 'FECHADA';
+  format:
+    | "XML_VRSYNC"
+    | "XML_IMOBILEWEB"
+    | "XML_CHAVES_NA_MAO"
+    | "XML_DEDICADO"
+    | "API_MERCADO_LIVRE"
+    | "API_PARCEIRO"
+    | "MANUAL"
+    | "FECHADA";
   generateFeed?: (properties: any[]) => string;
   pushUpdate?: (property: any) => Promise<SyncResult>;
   validateProperty: (property: any) => { valid: boolean; errors?: string[] };
   requiresAuth?: boolean;
-  authMethod?: 'api_key' | 'oauth' | 'basic_auth' | 'bearer_token';
+  authMethod?: "api_key" | "oauth" | "basic_auth" | "bearer_token";
   endpoint?: string;
   rateLimit?: number; // requests per minute
   supportsBatch?: boolean;

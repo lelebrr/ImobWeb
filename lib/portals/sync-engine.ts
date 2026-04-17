@@ -1,10 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import { SyncResult, SyncStatus, PortalType, PortalId } from '../../types/portals';
-import { portalValidator } from './validator';
-import { autoMaintenance } from './auto-maintenance';
-import { getPortalAdapter } from './adapters';
-import { generateXml } from './xml-generator';
-import { selectPortalsAutomatically, PortalConfig } from './auto-selector';
+import { PrismaClient } from "@prisma/client";
+import {
+  SyncResult,
+  SyncStatus,
+  PortalType,
+  PortalId,
+} from "../../types/portals";
+import { portalValidator } from "./validator";
+import { autoMaintenance } from "./auto-maintenance";
+import { getPortalAdapter } from "./adapters";
+import { generateXml } from "./xml-generator";
+import { selectPortalsAutomatically, PortalConfig } from "./auto-selector";
 
 const prisma = new PrismaClient();
 
@@ -12,20 +17,29 @@ const prisma = new PrismaClient();
  * Interface para adaptadores de portais externos
  */
 export interface PortalAdapter {
+  checkHealth(): Promise<{ status: string; message?: string }>;
   createProperty(data: Record<string, unknown>): Promise<string>;
-  updateProperty(externalId: string, data: Record<string, unknown>): Promise<void>;
+  updateProperty(
+    externalId: string,
+    data: Record<string, unknown>,
+  ): Promise<void>;
   deleteProperty(externalId: string): Promise<void>;
   getProperty(externalId: string): Promise<Record<string, unknown>>;
   getLeads(): Promise<any[]>;
-  getAnalytics(propertyId?: string): Promise<Record<string, unknown>>;
+  getAnalytics(propertyId?: string): Promise<{
+    totalProperties: number;
+    activeProperties: number;
+    totalViews: number;
+    totalLeads: number;
+  }>;
 }
 
 /**
  * Detalhes de sincronização bidirecional
  */
 export interface SyncDetails {
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'SYNC';
-  direction: 'PUSH' | 'PULL' | 'BIDIRECTIONAL';
+  action: "CREATE" | "UPDATE" | "DELETE" | "SYNC";
+  direction: "PUSH" | "PULL" | "BIDIRECTIONAL";
   externalId?: string;
   portalData?: Record<string, unknown>;
   localData?: Record<string, unknown>;
@@ -37,11 +51,15 @@ export interface SyncDetails {
  * Representa um conflito de sincronização
  */
 export interface Conflict {
-  type: 'DATA_MISMATCH' | 'STATUS_CONFLICT' | 'PRICE_CONFLICT' | 'TITLE_CONFLICT';
+  type:
+    | "DATA_MISMATCH"
+    | "STATUS_CONFLICT"
+    | "PRICE_CONFLICT"
+    | "TITLE_CONFLICT";
   field: string;
   localValue: any;
   remoteValue: any;
-  resolution: 'LOCAL_WINS' | 'REMOTE_WINS' | 'MANUAL_REVIEW';
+  resolution: "LOCAL_WINS" | "REMOTE_WINS" | "MANUAL_REVIEW";
   timestamp: Date;
 }
 
@@ -51,7 +69,7 @@ export interface Conflict {
 export interface BidirectionalSyncResult extends SyncResult {
   details: SyncDetails;
   conflicts: Conflict[];
-  resolution: 'SUCCESS' | 'CONFLICTS_RESOLVED' | 'CONFLICTS_PENDING' | 'FAILED';
+  resolution: "SUCCESS" | "CONFLICTS_RESOLVED" | "CONFLICTS_PENDING" | "FAILED";
   executionTime: number;
 }
 
@@ -63,7 +81,10 @@ export class SyncEngine {
   /**
    * Sincroniza um imóvel específico com um portal (bidirecional)
    */
-  async syncProperty(propertyId: string, portalId: PortalId): Promise<BidirectionalSyncResult> {
+  async syncProperty(
+    propertyId: string,
+    portalId: PortalId,
+  ): Promise<BidirectionalSyncResult> {
     const startTime = Date.now();
     const timestamp = new Date();
 
@@ -73,12 +94,12 @@ export class SyncEngine {
       include: {
         photos: true,
         announcements: { where: { portalId } },
-        owner: true
-      }
+        owner: true,
+      },
     });
 
     const integration = await prisma.portalIntegration.findUnique({
-      where: { id: portalId }
+      where: { id: portalId },
     });
 
     if (!property || !integration) {
@@ -87,11 +108,11 @@ export class SyncEngine {
         portalId,
         propertyId,
         timestamp,
-        error: 'Property or Integration not found',
-        details: { action: 'SYNC', direction: 'BIDIRECTIONAL' },
+        error: "Property or Integration not found",
+        details: { action: "SYNC", direction: "BIDIRECTIONAL" },
         conflicts: [],
-        resolution: 'FAILED',
-        executionTime: Date.now() - startTime
+        resolution: "FAILED",
+        executionTime: Date.now() - startTime,
       };
     }
 
@@ -106,30 +127,34 @@ export class SyncEngine {
       const conflicts = await this.detectConflicts(property, portalId, adapter);
 
       // 4. Validar imóvel para o portal específico
-      const { valid, errors } = portalValidator.validate(property, integration.type as any);
+      const { valid, errors } = portalValidator.validate(
+        property,
+        integration.type as any,
+      );
       if (!valid) {
         return {
           success: false,
           portalId,
           propertyId,
           timestamp,
-          error: `Validation failed: ${errors.join(', ')}`,
-          details: { action: 'SYNC', direction: 'BIDIRECTIONAL' },
+          error: `Validation failed: ${errors.join(", ")}`,
+          details: { action: "SYNC", direction: "BIDIRECTIONAL" },
           conflicts,
-          resolution: 'FAILED',
-          executionTime: Date.now() - startTime
+          resolution: "FAILED",
+          executionTime: Date.now() - startTime,
         };
       }
 
       // 5. Sincronização bidirecional
       const syncDetails: SyncDetails = {
-        action: 'SYNC',
-        direction: 'BIDIRECTIONAL',
-        metadata: { propertyId, portalId, startTime }
+        action: "SYNC",
+        direction: "BIDIRECTIONAL",
+        metadata: { propertyId, portalId, startTime },
       };
 
       const announcement = property.announcements[0];
-      const externalId = announcement?.externalId || `imob-${property.code || property.id}`;
+      const externalId =
+        announcement?.externalId || `imob-${property.code || property.id}`;
 
       // 6. Sincronização PULL (baixar dados do portal)
       if (announcement?.externalId) {
@@ -149,18 +174,18 @@ export class SyncEngine {
 
       // 7. Sincronização PUSH (enviar dados para o portal)
       const propertyData = this.preparePropertyData(property);
-      let pushAction: 'CREATE' | 'UPDATE' = 'CREATE';
+      let pushAction: "CREATE" | "UPDATE" = "CREATE";
 
       if (announcement?.externalId) {
         try {
           await adapter.updateProperty(externalId, propertyData);
-          pushAction = 'UPDATE';
+          pushAction = "UPDATE";
           syncDetails.action = pushAction;
         } catch (updateError) {
           // Se falhar ao atualizar, tentar criar
           try {
             await adapter.createProperty(propertyData);
-            pushAction = 'CREATE';
+            pushAction = "CREATE";
             syncDetails.action = pushAction;
           } catch (createError) {
             throw createError;
@@ -169,7 +194,7 @@ export class SyncEngine {
       } else {
         const newExternalId = await adapter.createProperty(propertyData);
         syncDetails.externalId = newExternalId;
-        syncDetails.action = 'CREATE';
+        syncDetails.action = "CREATE";
       }
 
       // 8. Atualizar status do anúncio no banco de dados
@@ -177,8 +202,8 @@ export class SyncEngine {
         where: {
           externalId_portalId: {
             externalId: syncDetails.externalId || externalId,
-            portalId
-          }
+            portalId,
+          },
         },
         create: {
           propertyId,
@@ -186,16 +211,16 @@ export class SyncEngine {
           externalId: syncDetails.externalId || externalId,
           title: property.title,
           portalType: integration.type,
-          status: 'PUBLICADO',
+          status: "PUBLICADO",
           lastSync: timestamp,
-          price: property.price
+          price: property.price,
         },
         update: {
           title: property.title,
-          status: 'PUBLICADO',
+          status: "PUBLICADO",
           lastSync: timestamp,
-          price: property.price
-        }
+          price: property.price,
+        },
       });
 
       // 9. Atualizar estatísticas da integração
@@ -204,8 +229,8 @@ export class SyncEngine {
         data: {
           lastSync: timestamp,
           syncCount: { increment: 1 },
-          errorCount: { increment: conflicts.length > 0 ? 1 : 0 }
-        }
+          errorCount: { increment: conflicts.length > 0 ? 1 : 0 },
+        },
       });
 
       return {
@@ -217,22 +242,24 @@ export class SyncEngine {
         error: undefined,
         details: syncDetails,
         conflicts,
-        resolution: conflicts.length > 0 ? 'CONFLICTS_RESOLVED' : 'SUCCESS',
-        executionTime: Date.now() - startTime
+        resolution: conflicts.length > 0 ? "CONFLICTS_RESOLVED" : "SUCCESS",
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error: any) {
-      console.error(`[SyncEngine] Error syncing property ${propertyId}:`, error);
+      console.error(
+        `[SyncEngine] Error syncing property ${propertyId}:`,
+        error,
+      );
       return {
         success: false,
         portalId,
         propertyId,
         timestamp,
         error: error.message,
-        details: { action: 'SYNC', direction: 'BIDIRECTIONAL' },
+        details: { action: "SYNC", direction: "BIDIRECTIONAL" },
         conflicts: [],
-        resolution: 'FAILED',
-        executionTime: Date.now() - startTime
+        resolution: "FAILED",
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -242,62 +269,65 @@ export class SyncEngine {
    */
   async syncPropertyWithMultiplePortals(
     propertyId: string,
-    priority: 'performance' | 'reach' | 'cost' | 'quality' = 'performance'
+    priority: "performance" | "reach" | "cost" | "quality" = "performance",
   ): Promise<BidirectionalSyncResult[]> {
-
     // 1. Buscar configurações de portais ativos
     const integrations = await prisma.portalIntegration.findMany({
       where: {
         enabled: true,
-        status: 'ATIVO',
-        organizationId: (await prisma.property.findUnique({
-          where: { id: propertyId }
-        }))?.organizationId
-      }
+        status: "ATIVO",
+        organizationId: (
+          await prisma.property.findUnique({
+            where: { id: propertyId },
+          })
+        )?.organizationId,
+      },
     });
 
     if (integrations.length === 0) {
-      throw new Error('No active integrations found');
+      throw new Error("No active integrations found");
     }
 
     // 2. Buscar dados do imóvel
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
-      include: { photos: true, owner: true }
+      include: { photos: true, owner: true },
     });
 
     if (!property) {
-      throw new Error('Property not found');
+      throw new Error("Property not found");
     }
 
     // 3. Converter para PortalConfig
-    const portalConfigs: PortalConfig[] = integrations.map(int => ({
+    const portalConfigs: PortalConfig[] = integrations.map((int) => ({
       id: int.id,
-      name: int.name || '',
+      name: int.name || "",
       type: int.type,
       enabled: int.enabled,
       settings: int.settings,
       lastSync: int.lastSync,
       syncCount: int.syncCount || 0,
       errorCount: int.errorCount || 0,
-      status: int.status
+      status: int.status,
     }));
 
     // 4. Selecionar portais automaticamente
     const selectedPortals = selectPortalsAutomatically(
       portalConfigs,
       property,
-      priority
+      priority,
     ).selectedPortals;
 
     // 5. Sincronizar com cada portal selecionado
     const results = await Promise.allSettled(
-      selectedPortals.map(portalId => this.syncProperty(propertyId, portalId as PortalId))
+      selectedPortals.map((portalId) =>
+        this.syncProperty(propertyId, portalId as PortalId),
+      ),
     );
 
     // 6. Processar resultados
     return results.map((result, index) => {
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         return result.value;
       } else {
         return {
@@ -306,10 +336,10 @@ export class SyncEngine {
           propertyId,
           timestamp: new Date(),
           error: (result.reason as Error).message,
-          details: { action: 'SYNC', direction: 'BIDIRECTIONAL' },
+          details: { action: "SYNC", direction: "BIDIRECTIONAL" },
           conflicts: [],
-          resolution: 'FAILED',
-          executionTime: 0
+          resolution: "FAILED",
+          executionTime: 0,
         };
       }
     });
@@ -318,14 +348,20 @@ export class SyncEngine {
   /**
    * Sincronização bidirecional completa (pull + push)
    */
-  async bidirectionalSync(propertyId: string, portalId: PortalId): Promise<BidirectionalSyncResult> {
+  async bidirectionalSync(
+    propertyId: string,
+    portalId: PortalId,
+  ): Promise<BidirectionalSyncResult> {
     return this.syncProperty(propertyId, portalId);
   }
 
   /**
    * Sincronização apenas de pull (baixar dados do portal)
    */
-  async pullSync(propertyId: string, portalId: PortalId): Promise<BidirectionalSyncResult> {
+  async pullSync(
+    propertyId: string,
+    portalId: PortalId,
+  ): Promise<BidirectionalSyncResult> {
     const startTime = Date.now();
     const timestamp = new Date();
 
@@ -333,16 +369,16 @@ export class SyncEngine {
       where: { id: propertyId },
       include: {
         photos: true,
-        announcements: { where: { portalId } }
-      }
+        announcements: { where: { portalId } },
+      },
     });
 
     const integration = await prisma.portalIntegration.findUnique({
-      where: { id: portalId }
+      where: { id: portalId },
     });
 
     if (!property || !integration) {
-      throw new Error('Property or Integration not found');
+      throw new Error("Property or Integration not found");
     }
 
     const adapter = getPortalAdapter(portalId, integration.settings);
@@ -353,7 +389,7 @@ export class SyncEngine {
     try {
       const announcement = property.announcements[0];
       if (!announcement?.externalId) {
-        throw new Error('No external ID found for pull sync');
+        throw new Error("No external ID found for pull sync");
       }
 
       const remoteData = await adapter.getProperty(announcement.externalId);
@@ -369,16 +405,15 @@ export class SyncEngine {
         timestamp,
         error: undefined,
         details: {
-          action: 'SYNC',
-          direction: 'PULL',
+          action: "SYNC",
+          direction: "PULL",
           portalData: remoteData,
-          localData: property
+          localData: property,
         },
         conflicts: [],
-        resolution: 'SUCCESS',
-        executionTime: Date.now() - startTime
+        resolution: "SUCCESS",
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error: any) {
       return {
         success: false,
@@ -386,10 +421,10 @@ export class SyncEngine {
         propertyId,
         timestamp,
         error: error.message,
-        details: { action: 'SYNC', direction: 'PULL' },
+        details: { action: "SYNC", direction: "PULL" },
         conflicts: [],
-        resolution: 'FAILED',
-        executionTime: Date.now() - startTime
+        resolution: "FAILED",
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -397,7 +432,10 @@ export class SyncEngine {
   /**
    * Sincronização apenas de push (enviar dados para o portal)
    */
-  async pushSync(propertyId: string, portalId: PortalId): Promise<BidirectionalSyncResult> {
+  async pushSync(
+    propertyId: string,
+    portalId: PortalId,
+  ): Promise<BidirectionalSyncResult> {
     return this.syncProperty(propertyId, portalId);
   }
 
@@ -406,53 +444,55 @@ export class SyncEngine {
    */
   async syncAll(portalId: PortalId): Promise<BidirectionalSyncResult[]> {
     const integration = await prisma.portalIntegration.findUnique({
-      where: { id: portalId }
+      where: { id: portalId },
     });
 
-    if (!integration) throw new Error('Integration not found');
+    if (!integration) throw new Error("Integration not found");
 
     const activeProperties = await prisma.property.findMany({
       where: {
-        status: 'DISPONIVEL',
-        organizationId: integration.id
+        status: "DISPONIVEL",
+        organizationId: integration.id,
       },
-      select: { id: true }
+      select: { id: true },
     });
 
     const results = await Promise.allSettled(
-      activeProperties.map(p => this.syncProperty(p.id, portalId))
+      activeProperties.map((p) => this.syncProperty(p.id, portalId)),
     );
 
     // Processar resultados
-    const processedResults: BidirectionalSyncResult[] = results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
-      } else {
-        return {
-          success: false,
-          portalId,
-          propertyId: activeProperties[index].id,
-          timestamp: new Date(),
-          error: (result.reason as Error).message,
-          details: { action: 'SYNC', direction: 'BIDIRECTIONAL' },
-          conflicts: [],
-          resolution: 'FAILED',
-          executionTime: 0
-        };
-      }
-    });
+    const processedResults: BidirectionalSyncResult[] = results.map(
+      (result, index) => {
+        if (result.status === "fulfilled") {
+          return result.value;
+        } else {
+          return {
+            success: false,
+            portalId,
+            propertyId: activeProperties[index].id,
+            timestamp: new Date(),
+            error: (result.reason as Error).message,
+            details: { action: "SYNC", direction: "BIDIRECTIONAL" },
+            conflicts: [],
+            resolution: "FAILED",
+            executionTime: 0,
+          };
+        }
+      },
+    );
 
     // Atualizar stats da integração
-    const successCount = processedResults.filter(r => r.success).length;
-    const errorCount = processedResults.filter(r => !r.success).length;
+    const successCount = processedResults.filter((r) => r.success).length;
+    const errorCount = processedResults.filter((r) => !r.success).length;
 
     await prisma.portalIntegration.update({
       where: { id: portalId },
       data: {
         lastSync: new Date(),
         syncCount: { increment: 1 },
-        errorCount: { increment: errorCount }
-      }
+        errorCount: { increment: errorCount },
+      },
     });
 
     return processedResults;
@@ -464,7 +504,9 @@ export class SyncEngine {
   async runMaintenance() {
     const staleListings = await autoMaintenance.checkStaleListings();
     if (staleListings.length > 0) {
-      await autoMaintenance.notifyOwnersOfStaleListings(staleListings.map(l => l.id));
+      await autoMaintenance.notifyOwnersOfStaleListings(
+        staleListings.map((l) => l.id),
+      );
     }
     return { count: staleListings.length };
   }
@@ -475,7 +517,7 @@ export class SyncEngine {
   private async detectConflicts(
     property: any,
     portalId: PortalId,
-    adapter: PortalAdapter
+    adapter: PortalAdapter,
   ): Promise<Conflict[]> {
     const conflicts: Conflict[] = [];
 
@@ -487,7 +529,10 @@ export class SyncEngine {
       const differences = this.compareData(property, remoteData);
       conflicts.push(...differences);
     } catch (error) {
-      console.warn(`[SyncEngine] Could not fetch remote data for conflict detection:`, error);
+      console.warn(
+        `[SyncEngine] Could not fetch remote data for conflict detection:`,
+        error,
+      );
     }
 
     return conflicts;
@@ -498,17 +543,17 @@ export class SyncEngine {
    */
   private compareData(local: any, remote: any): Conflict[] {
     const conflicts: Conflict[] = [];
-    const fieldsToCompare = ['title', 'price', 'description', 'status'];
+    const fieldsToCompare = ["title", "price", "description", "status"];
 
     for (const field of fieldsToCompare) {
       if (local[field] !== remote[field]) {
         conflicts.push({
-          type: 'DATA_MISMATCH',
+          type: "DATA_MISMATCH",
           field,
           localValue: local[field],
           remoteValue: remote[field],
-          resolution: 'LOCAL_WINS',
-          timestamp: new Date()
+          resolution: "LOCAL_WINS",
+          timestamp: new Date(),
         });
       }
     }
@@ -516,24 +561,24 @@ export class SyncEngine {
     // Verificar conflitos de preço específicos
     if (local.price !== remote.price) {
       conflicts.push({
-        type: 'PRICE_CONFLICT',
-        field: 'price',
+        type: "PRICE_CONFLICT",
+        field: "price",
         localValue: local.price,
         remoteValue: remote.price,
-        resolution: 'LOCAL_WINS',
-        timestamp: new Date()
+        resolution: "LOCAL_WINS",
+        timestamp: new Date(),
       });
     }
 
     // Verificar conflitos de título
     if (local.title !== remote.title) {
       conflicts.push({
-        type: 'TITLE_CONFLICT',
-        field: 'title',
+        type: "TITLE_CONFLICT",
+        field: "title",
         localValue: local.title,
         remoteValue: remote.title,
-        resolution: 'LOCAL_WINS',
-        timestamp: new Date()
+        resolution: "LOCAL_WINS",
+        timestamp: new Date(),
       });
     }
 
@@ -565,17 +610,22 @@ export class SyncEngine {
       owner: property.owner,
       status: property.status,
       createdAt: property.createdAt,
-      updatedAt: property.updatedAt
+      updatedAt: property.updatedAt,
     };
   }
 
   /**
    * Atualiza dados locais com dados remotos
    */
-  private async updateLocalPropertyData(propertyId: string, remoteData: any): Promise<void> {
+  private async updateLocalPropertyData(
+    propertyId: string,
+    remoteData: any,
+  ): Promise<void> {
     // Implementar lógica de atualização de dados locais
     // Isso pode envolver atualizar campos específicos do imóvel
-    console.log(`[SyncEngine] Updating local data for property ${propertyId} with remote data`);
+    console.log(
+      `[SyncEngine] Updating local data for property ${propertyId} with remote data`,
+    );
   }
 
   /**
@@ -584,14 +634,18 @@ export class SyncEngine {
   private validateForPortal(property: any, type: PortalType): string[] {
     const errors: string[] = [];
 
-    if (!property.title) errors.push('Title is required');
-    if (!property.price && !property.priceRent) errors.push('Price is required');
-    if (!property.photos || property.photos.length === 0) errors.push('At least one photo is required');
+    if (!property.title) errors.push("Title is required");
+    if (!property.price && !property.priceRent)
+      errors.push("Price is required");
+    if (!property.photos || property.photos.length === 0)
+      errors.push("At least one photo is required");
 
     // Regras específicas do Grupo OLX (Zap/VivaReal)
-    if (['ZAP', 'VIVAREAL'].includes(type)) {
-      if (!property.address) errors.push('Full address is required for Zap/VivaReal');
-      if (property.photos.length < 3) errors.push('Zap requires at least 3 photos for better ranking');
+    if (["ZAP", "VIVAREAL"].includes(type)) {
+      if (!property.address)
+        errors.push("Full address is required for Zap/VivaReal");
+      if (property.photos.length < 3)
+        errors.push("Zap requires at least 3 photos for better ranking");
     }
 
     return errors;

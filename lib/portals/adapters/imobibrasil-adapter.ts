@@ -13,7 +13,9 @@ export class ImobiBrasilAdapter
   }
 
   async createProperty(data: Record<string, unknown>): Promise<string> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -22,11 +24,11 @@ export class ImobiBrasilAdapter
         body: xml,
       });
 
-      const result = this.parseXmlResponse(response);
+      const result = this.parseXmlResponse(response) as { codigo: string };
       return result.codigo;
     } catch (error) {
       throw new Error(
-        `Failed to create property on ImobiBrasil: ${error.message}`,
+        `Failed to create property on ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -35,7 +37,9 @@ export class ImobiBrasilAdapter
     externalId: string,
     data: Record<string, unknown>,
   ): Promise<void> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -45,7 +49,7 @@ export class ImobiBrasilAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to update property on ImobiBrasil: ${error.message}`,
+        `Failed to update property on ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -57,7 +61,7 @@ export class ImobiBrasilAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to delete property on ImobiBrasil: ${error.message}`,
+        `Failed to delete property on ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -68,7 +72,7 @@ export class ImobiBrasilAdapter
       return this.parseXmlResponse(response);
     } catch (error) {
       throw new Error(
-        `Failed to get property from ImobiBrasil: ${error.message}`,
+        `Failed to get property from ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -76,22 +80,36 @@ export class ImobiBrasilAdapter
   async getLeads(): Promise<any[]> {
     try {
       const response = await this.makeApiCall("/leads");
-      return response.leads || [];
+      const parsed = this.parseXmlResponse(response);
+      return (parsed.leads as unknown as any[]) || [];
     } catch (error) {
-      throw new Error(`Failed to get leads from ImobiBrasil: ${error.message}`);
+      throw new Error(
+        `Failed to get leads from ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
-  async getAnalytics(propertyId?: string): Promise<Record<string, unknown>> {
+  async getAnalytics(propertyId?: string): Promise<{
+    totalProperties: number;
+    activeProperties: number;
+    totalViews: number;
+    totalLeads: number;
+  }> {
     try {
       const endpoint = propertyId
         ? `/imoveis/${propertyId}/analytics`
         : "/analytics";
       const response = await this.makeApiCall(endpoint);
-      return response;
+      const parsed = this.parseXmlResponse(response);
+      return {
+        totalProperties: (parsed.totalProperties as number) || 0,
+        activeProperties: (parsed.activeProperties as number) || 0,
+        totalViews: (parsed.totalViews as number) || 0,
+        totalLeads: (parsed.totalLeads as number) || 0,
+      };
     } catch (error) {
       throw new Error(
-        `Failed to get analytics from ImobiBrasil: ${error.message}`,
+        `Failed to get analytics from ImobiBrasil: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
