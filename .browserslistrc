@@ -1,0 +1,6 @@
+# Target browsers that support modern JavaScript features to avoid unnecessary transpilation
+Chrome >= 85
+Firefox >= 79
+Safari >= 14.1
+Edge >= 85
+not dead

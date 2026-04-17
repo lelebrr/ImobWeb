@@ -1,13 +1,10 @@
 // @ts-nocheck
+import { flexRender, useReactTable } from "@tanstack/react-table";
 import {
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
   ColumnFiltersState,
   SortingState,
   VisibilityState,
