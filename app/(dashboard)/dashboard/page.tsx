@@ -212,8 +212,8 @@ export default function DashboardPage() {
                   <span className="font-medium">
                     {portal.syncStatus?.lastSync
                       ? new Date(portal.syncStatus.lastSync).toLocaleString(
-                          "pt-BR",
-                        )
+                        "pt-BR",
+                      )
                       : "N/A"}
                   </span>
                 </div>
@@ -260,17 +260,16 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">
                         {portals.find((p) => p.id === log.portalId)?.icon ||
-                          "📋"}
+                          "📄"}
                       </span>
                       <span className="font-medium text-sm">{log.action}</span>
                       <span
-                        className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                          log.status === "SUCCESS"
+                        className={`ml-2 text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS"
                             ? "bg-emerald-500/20 text-emerald-400"
                             : log.status === "ERROR"
                               ? "bg-red-500/20 text-red-400"
                               : "bg-gray-500/20 text-gray-400"
-                        }`}
+                          }`}
                       >
                         {log.status}
                       </span>
@@ -379,8 +378,8 @@ export default function DashboardPage() {
                 <span className="text-xs font-medium">
                   {portal.syncStatus?.lastSync
                     ? new Date(portal.syncStatus.lastSync).toLocaleString(
-                        "pt-BR",
-                      )
+                      "pt-BR",
+                    )
                     : "N/A"}
                 </span>
               </div>
@@ -564,11 +563,10 @@ export default function DashboardPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeTab === tab.id
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "glass text-gray-600 hover:text-gray-900"
-              }`}
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}

@@ -54,9 +54,9 @@ export const WeeklyReportEmail: React.FC<WeeklyReportEmailProps> = ({
           </Section>
 
           <Section style={introSection}>
-            <Heading style={heading}>Olá, {agentName}! 👋</Heading>
+            <Heading style={heading}>Olá, {agentName}!</Heading>
             <Text style={introText}>
-              Aqui está o resumo da sua semana no imobWeb. Continue assim, você está mandando muito bem! 🚀
+              Aqui está o resumo da sua semana no imobWeb. Continue assim, você está mandando muito bem!
             </Text>
           </Section>
 
@@ -96,10 +96,10 @@ export const WeeklyReportEmail: React.FC<WeeklyReportEmailProps> = ({
                   <Text style={propertyAddress}>{property.address}</Text>
                   <Row>
                     <Column>
-                      <Text style={propertyMetric}>👁 {property.views} visualizações</Text>
+                      <Text style={propertyMetric}>{property.views} visualizações</Text>
                     </Column>
                     <Column align="right">
-                      <Text style={propertyMetric}>👤 {property.leads} leads</Text>
+                      <Text style={propertyMetric}>{property.leads} leads</Text>
                     </Column>
                   </Row>
                 </div>
@@ -109,7 +109,7 @@ export const WeeklyReportEmail: React.FC<WeeklyReportEmailProps> = ({
 
           {topPortal && (
             <Section style={section}>
-              <Heading style={sectionTitle}>📊 Portal Mais Eficiente</Heading>
+              <Heading style={sectionTitle}>Portal Mais Eficiente</Heading>
               <div style={portalCard}>
                 <Text style={portalName}>{topPortal.name}</Text>
                 <Text style={portalMetric}>{topPortal.leads} leads gerados</Text>
@@ -119,7 +119,7 @@ export const WeeklyReportEmail: React.FC<WeeklyReportEmailProps> = ({
 
           {insights && insights.length > 0 && (
             <Section style={section}>
-              <Heading style={sectionTitle}>💡 Insights da Semana</Heading>
+              <Heading style={sectionTitle}>Insights da Semana</Heading>
               {insights.map((insight, index) => (
                 <Text key={index} style={insightText}>• {insight}</Text>
               ))}

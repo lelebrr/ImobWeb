@@ -83,7 +83,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       type: "ZAP",
       status: "connected",
       health: { status: "healthy", lastCheck: new Date() },
-      icon: "🏠",
+      icon: "Home",
       stats: {
         activeProperties: 45,
         totalProperties: 50,
@@ -103,7 +103,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       type: "VIVAREAL",
       status: "connected",
       health: { status: "healthy", lastCheck: new Date() },
-      icon: "🏡",
+      icon: "Building",
       stats: {
         activeProperties: 42,
         totalProperties: 50,
@@ -127,7 +127,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         message: "Limite de anúncios próximo",
         lastCheck: new Date(),
       },
-      icon: "📦",
+      icon: "Package",
       stats: {
         activeProperties: 30,
         totalProperties: 30,
@@ -146,7 +146,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       name: "ImovelWeb",
       type: "IMOVELWEB",
       status: "disconnected",
-      icon: "🌐",
+      icon: "Globe",
       stats: {
         activeProperties: 0,
         totalProperties: 0,
@@ -164,7 +164,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         message: "Credenciais expiradas",
         lastCheck: new Date(),
       },
-      icon: "🛒",
+      icon: "ShoppingCart",
       stats: {
         activeProperties: 0,
         totalProperties: 0,
@@ -277,7 +277,7 @@ export function usePortals() {
           name: "ZAP Imóveis",
           type: "ZAP",
           status: "connected" as const,
-          icon: "🏠",
+          icon: "Home",
           syncStatus: {
             lastSync: new Date(),
             nextSync: new Date(Date.now() + 1000 * 60 * 60),
@@ -289,7 +289,7 @@ export function usePortals() {
           name: "Viva Real",
           type: "VIVAREAL",
           status: "connected" as const,
-          icon: "🏡",
+          icon: "Building",
           syncStatus: {
             lastSync: new Date(),
             nextSync: new Date(Date.now() + 1000 * 60 * 60),
@@ -301,7 +301,7 @@ export function usePortals() {
           name: "OLX",
           type: "OLX",
           status: "connected" as const,
-          icon: "📦",
+          icon: "Package",
           syncStatus: {
             lastSync: new Date(),
             nextSync: new Date(Date.now() + 1000 * 60 * 60),
@@ -312,11 +312,11 @@ export function usePortals() {
       loading: false,
       loadingPortals: false,
       error: null,
-      connectPortal: async () => {},
-      disconnectPortal: async () => {},
-      syncPortal: async () => {},
-      syncAllPortals: async () => {},
-      refreshPortals: async () => {},
+      connectPortal: async () => { },
+      disconnectPortal: async () => { },
+      syncPortal: async () => { },
+      syncAllPortals: async () => { },
+      refreshPortals: async () => { },
     };
   }
   return context;

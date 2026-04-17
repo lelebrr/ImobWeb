@@ -26,17 +26,17 @@ const FEATURES = [
     description: "Cadastre e gerencie todos os seus imóveis em um só lugar",
   },
   {
-    icon: "👥",
+    icon: "Users",
     title: "Gestão de Clientes",
     description: "Organize leads, proprietários e clientes",
   },
   {
-    icon: "📊",
+    icon: "BarChart3",
     title: "Analytics",
     description: "Dashboards executivos com métricas em tempo real",
   },
   {
-    icon: "💬",
+    icon: "MessageCircle",
     title: "WhatsApp Integrado",
     description: "Comunicação direta com clientes pelo WhatsApp",
   },

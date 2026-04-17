@@ -42,7 +42,7 @@ const MOCK_NOTIFICATIONS: NotificationWithMeta[] = [
     channels: ['whatsapp', 'push'],
     data: { propertyId: 'prop-1', leadId: 'lead-1' },
     formattedTime: '5 min',
-    icon: '👤'
+    icon: 'User'
   },
   {
     id: '2',
@@ -70,7 +70,7 @@ const MOCK_NOTIFICATIONS: NotificationWithMeta[] = [
     channels: ['whatsapp', 'push'],
     data: { visitId: 'visit-1', propertyId: 'prop-3' },
     formattedTime: '2h',
-    icon: '📅'
+    icon: 'Calendar'
   },
   {
     id: '4',
@@ -84,7 +84,7 @@ const MOCK_NOTIFICATIONS: NotificationWithMeta[] = [
     channels: ['email', 'in_app'],
     data: { reportId: 'report-1' },
     formattedTime: '1 dia',
-    icon: '📈'
+    icon: 'TrendingUp'
   },
   {
     id: '5',
@@ -141,8 +141,8 @@ export function NotificationBell({ userId, onNotificationClick, onMarkAllRead, o
     onNotificationClick?.(notification as Notification);
   };
 
-  const filteredNotifications = filter === 'unread' 
-    ? notifications.filter(n => !n.read) 
+  const filteredNotifications = filter === 'unread'
+    ? notifications.filter(n => !n.read)
     : notifications;
 
   const getPriorityColor = (priority: string) => {
