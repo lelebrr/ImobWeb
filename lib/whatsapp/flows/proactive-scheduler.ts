@@ -58,7 +58,7 @@ class ProactiveScheduler {
 
     const properties = await prisma.property.findMany({
       where: {
-        status: "ATIVO",
+        status: "ATIVO" as any,
         createdAt: { lte: thirtyDaysAgo },
       },
       include: { owner: true, announcements: true },
@@ -94,8 +94,44 @@ class ProactiveScheduler {
 
     const properties = await prisma.property.findMany({
       where: {
-        status: "ATIVO",
+        status: "ATIVO" as any,
         createdAt: { lte: fortyFiveDaysAgo },
+      },
+      include: { owner: true },
+    });
+
+    for (const property of properties) {
+      if (!property.owner?.whatsapp) continue;
+
+      const lastMessage = await this.getLastOwnerMessage(
+        property.owner.whatsapp,
+        "PROPERTY_UPDATE_45D",
+      );
+      if (lastMessage) continue;
+
+      const health = await this.calculatePropertyHealth(property);
+
+      console.log(
+        "[ProactiveScheduler] Sending 45-day update for:",
+        property.id,
+      );
+
+      await conversationEngine.startOwnerFlow(property.id, "PROPERTY_UPDATE", {
+        views30Days: health.views30Days,
+        healthScore: health.healthScore,
+        daysToExpire: health.daysToExpire,
+      });
+    }
+  }
+
+  private async check60DayUpdates() {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const properties = await prisma.property.findMany({
+      where: {
+        status: "ATIVO" as any,
+        createdAt: { lte: sixtyDaysAgo },
       },
       include: { owner: true },
     });
@@ -132,7 +168,7 @@ class ProactiveScheduler {
 
     const properties = await prisma.property.findMany({
       where: {
-        status: "ATIVO",
+        status: "ATIVO" as any,
         announcements: {
           some: {
             expiresAt: { lte: in15Days },
@@ -166,14 +202,14 @@ class ProactiveScheduler {
 
   private async checkLowViews() {
     const properties = await prisma.property.findMany({
-      where: { status: "ATIVO" },
+      where: { status: "ATIVO" as any },
       include: { owner: true },
     });
 
     for (const property of properties) {
-      if (!property.owner?.whatsapp) continue;
+      if (!(property as any).owner?.whatsapp) continue;
 
-      const health = await this.calculatePropertyHealth(property);
+      const health = await this.calculatePropertyHealth(property as any);
 
       if (health.views30Days < 10 && health.daysSinceListing > 14) {
         console.log("[ProactiveScheduler] Low views alert for:", property.id);

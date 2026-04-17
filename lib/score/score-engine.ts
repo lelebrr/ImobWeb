@@ -136,7 +136,7 @@ export class ScoreEngine {
     }
 
     const config: ScoreConfig = {
-      weights: DEFAULT_SCORE_WEIGHTS,
+      weights: DEFAULT_SCORE_WEIGHTS as any,
       thresholds: { healthyMin: 80, warningMin: 50 },
       recalculationInterval: 3600000,
       autoBlock: {
@@ -469,7 +469,7 @@ export class ScoreEngine {
       criticalCount: critical,
       averageScore: 65,
       calculatedAt: Date.now(),
-      filters,
+      filters: filters as any,
     };
   }
 

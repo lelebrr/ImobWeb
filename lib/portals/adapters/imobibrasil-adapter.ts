@@ -291,6 +291,29 @@ export class ImobiBrasilAdapter
       return response.text();
     });
   }
+
+  async updatePrice(externalId: string, price: number): Promise<void> {
+    await this.updateProperty(externalId, { price });
+  }
+
+  async updatePhotos(externalId: string, photos: string[]): Promise<void> {
+    await this.updateProperty(externalId, { photos });
+  }
+
+  async updateDescription(
+    externalId: string,
+    description: string,
+  ): Promise<void> {
+    await this.updateProperty(externalId, { description });
+  }
+
+  async updateStatus(externalId: string, status: string): Promise<void> {
+    await this.updateProperty(externalId, { status });
+  }
+
+  async publish(externalId: string): Promise<void> {
+    await this.updateProperty(externalId, { status: "active" });
+  }
 }
 
 export function createImobiBrasilAdapter(

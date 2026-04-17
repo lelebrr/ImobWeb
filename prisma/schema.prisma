@@ -1688,3 +1688,66 @@ model AIRecommendation {
   @@index([priority])
   @@index([isRead])
 }
+
+// ============================================
+// PUBLICAÇÃO EM MÚLTIPLOS PORTAIS
+// ============================================
+
+model Publication {
+  id               String   @id @default(cuid())
+  propertyId       String   @unique
+  organizationId   String
+  packageId       String
+  status          String   @default("DRAFT")
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  lastSyncAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+model PublicationPackage {
+  id               String   @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  type             String   @default("BASIC")
+  portals          Json?
+  durationDays    Int      @default(30)
+  isHighlight     Boolean  @default(false)
+  highlightLevel String   @default("NONE")
+  price           Decimal  @default(0)
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model PropertyAnnouncement {
+  id             String   @id @default(cuid())
+  publicationId  String
+  portalId       String
+  portalName    String
+  portalType    String?
+  externalId   String?   @unique
+  status       String   @default("NOT_PUBLISHED")
+  url          String?
+  errorMessage String?
+  publishedAt  DateTime?
+  lastSyncAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([publicationId])
+  @@index([portalId])
+  @@index([status])
+  @@unique([publicationId, portalId])
+}

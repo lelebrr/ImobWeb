@@ -68,14 +68,13 @@ export interface PublicationPackage {
 export interface Publication {
   id: string;
   propertyId: string;
-  tenantId: string;
+  organizationId: string;
   packageId: string;
   package?: PublicationPackage;
   status: PublicationStatus;
   publishedAt?: Date;
   expiresAt?: Date;
   lastSyncAt?: Date;
-  announcements: PropertyAnnouncement[];
   createdAt: Date;
   updatedAt: Date;
 }

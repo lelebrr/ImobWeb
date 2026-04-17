@@ -1,14 +1,11 @@
 import { BasePortalAdapter } from "./base-adapter";
-import { PortalAdapter } from "@/types/portals";
+import { PortalAdapter, PropertyValidation } from "@/types/portals";
 import type { PropertyData } from "@/lib/portals/xml-generator";
 
 export class QuintoAndarAdapter
   extends BasePortalAdapter
   implements PortalAdapter
 {
-  private apiKey: string;
-  private baseUrl: string;
-
   constructor(config: Record<string, any>) {
     super(config);
     this.apiKey = config.apiKey;
@@ -16,7 +13,9 @@ export class QuintoAndarAdapter
   }
 
   async createProperty(data: Record<string, unknown>): Promise<string> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -25,11 +24,11 @@ export class QuintoAndarAdapter
         body: xml,
       });
 
-      const result = this.parseXmlResponse(response);
+      const result = this.parseXmlResponse(response) as { id: string };
       return result.id;
     } catch (error) {
       throw new Error(
-        `Failed to create property on QuintoAndar: ${error.message}`,
+        `Failed to create property on QuintoAndar: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -38,7 +37,9 @@ export class QuintoAndarAdapter
     externalId: string,
     data: Record<string, unknown>,
   ): Promise<void> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -48,7 +49,7 @@ export class QuintoAndarAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to update property on QuintoAndar: ${error.message}`,
+        `Failed to update property on QuintoAndar: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -60,7 +61,7 @@ export class QuintoAndarAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to delete property on QuintoAndar: ${error.message}`,
+        `Failed to delete property on QuintoAndar: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -71,7 +72,7 @@ export class QuintoAndarAdapter
       return this.parseXmlResponse(response);
     } catch (error) {
       throw new Error(
-        `Failed to get property from QuintoAndar: ${error.message}`,
+        `Failed to get property from QuintoAndar: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -79,9 +80,12 @@ export class QuintoAndarAdapter
   async getLeads(): Promise<any[]> {
     try {
       const response = await this.makeApiCall("/leads");
-      return response.leads || [];
+      const parsed = this.parseXmlResponse(response);
+      return (parsed as any).leads || [];
     } catch (error) {
-      throw new Error(`Failed to get leads from QuintoAndar: ${error.message}`);
+      throw new Error(
+        `Failed to get leads from QuintoAndar: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -109,11 +113,12 @@ export class QuintoAndarAdapter
     }
   }
 
-  validateProperty(property: PropertyData): {
-    valid: boolean;
-    errors?: string[];
-  } {
-    const errors: string[] = [];
+  validateProperty(property: PropertyData): PropertyValidation {
+    const baseValidation = this.validatePropertyBase(property);
+
+    const errors = [...baseValidation.errors];
+    const warnings = [...baseValidation.warnings];
+    const suggestions = [...baseValidation.suggestions];
 
     if (!property.title || property.title.length < 10) {
       errors.push("Title must be at least 10 characters long");
@@ -154,9 +159,22 @@ export class QuintoAndarAdapter
       errors.push("Owner name is required");
     }
 
+    const score = Math.round(
+      baseValidation.score * 0.7 + (errors.length === 0 ? 30 : 0),
+    );
+
     return {
+      ...baseValidation,
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
+      errors,
+      warnings,
+      suggestions,
+      score,
+      compliance: {
+        minimumRequirements: errors.length === 0,
+        qualityStandards: warnings.length <= 2,
+        completeness: score >= 75,
+      },
     };
   }
 
@@ -294,6 +312,56 @@ export class QuintoAndarAdapter
       }
       return response.text();
     });
+  }
+
+  async updatePrice(externalId: string, price: number): Promise<void> {
+    await this.updateProperty(externalId, { price });
+  }
+
+  async updatePhotos(externalId: string, photos: string[]): Promise<void> {
+    await this.updateProperty(externalId, { photos });
+  }
+
+  async updateDescription(
+    externalId: string,
+    description: string,
+  ): Promise<void> {
+    await this.updateProperty(externalId, { description });
+  }
+
+  async updateStatus(externalId: string, status: string): Promise<void> {
+    await this.updateProperty(externalId, { status });
+  }
+
+  async publish(externalId: string): Promise<void> {
+    await this.updateProperty(externalId, { status: "active" });
+  }
+
+  getMaxTitleLength(): number {
+    return 100;
+  }
+
+  getMaxDescriptionLength(): number {
+    return 5000;
+  }
+
+  getMinPhotos(): number {
+    return 1;
+  }
+
+  getMaxPhotos(): number {
+    return 30;
+  }
+
+  getEndpoint(): string {
+    return this.baseUrl;
+  }
+
+  getAuthHeaders(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+      "Content-Type": "application/xml",
+    };
   }
 }
 

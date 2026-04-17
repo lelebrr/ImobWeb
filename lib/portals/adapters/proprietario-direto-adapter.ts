@@ -1,14 +1,11 @@
 import { BasePortalAdapter } from "./base-adapter";
-import { PortalAdapter } from "@/types/portals";
+import { PortalAdapter, PropertyValidation } from "@/types/portals";
 import type { PropertyData } from "@/lib/portals/xml-generator";
 
 export class ProprietarioDiretoAdapter
   extends BasePortalAdapter
   implements PortalAdapter
 {
-  private apiKey: string;
-  private baseUrl: string;
-
   constructor(config: Record<string, any>) {
     super(config);
     this.apiKey = config.apiKey;
@@ -16,7 +13,9 @@ export class ProprietarioDiretoAdapter
   }
 
   async createProperty(data: Record<string, unknown>): Promise<string> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -25,11 +24,13 @@ export class ProprietarioDiretoAdapter
         body: xml,
       });
 
-      const result = this.parseXmlResponse(response);
+      const result = this.parseXmlResponse(response) as {
+        codigo_imovel: string;
+      };
       return result.codigo_imovel;
     } catch (error) {
       throw new Error(
-        `Failed to create property on Proprietário Direto: ${error.message}`,
+        `Failed to create property on Proprietário Direto: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -38,7 +39,9 @@ export class ProprietarioDiretoAdapter
     externalId: string,
     data: Record<string, unknown>,
   ): Promise<void> {
-    const propertyData = this.preparePropertyData(data as PropertyData);
+    const propertyData = this.preparePropertyData(
+      data as unknown as PropertyData,
+    );
     const xml = this.generateXml(propertyData);
 
     try {
@@ -48,7 +51,7 @@ export class ProprietarioDiretoAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to update property on Proprietário Direto: ${error.message}`,
+        `Failed to update property on Proprietário Direto: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -60,7 +63,7 @@ export class ProprietarioDiretoAdapter
       });
     } catch (error) {
       throw new Error(
-        `Failed to delete property on Proprietário Direto: ${error.message}`,
+        `Failed to delete property on Proprietário Direto: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -71,7 +74,7 @@ export class ProprietarioDiretoAdapter
       return this.parseXmlResponse(response);
     } catch (error) {
       throw new Error(
-        `Failed to get property from Proprietário Direto: ${error.message}`,
+        `Failed to get property from Proprietário Direto: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -79,10 +82,11 @@ export class ProprietarioDiretoAdapter
   async getLeads(): Promise<any[]> {
     try {
       const response = await this.makeApiCall("/leads");
-      return response.leads || [];
+      const parsed = this.parseXmlResponse(response);
+      return (parsed as any).leads || [];
     } catch (error) {
       throw new Error(
-        `Failed to get leads from Proprietário Direto: ${error.message}`,
+        `Failed to get leads from Proprietário Direto: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -111,11 +115,12 @@ export class ProprietarioDiretoAdapter
     }
   }
 
-  validateProperty(property: PropertyData): {
-    valid: boolean;
-    errors?: string[];
-  } {
-    const errors: string[] = [];
+  validateProperty(property: PropertyData): PropertyValidation {
+    const baseValidation = this.validatePropertyBase(property);
+
+    const errors = [...baseValidation.errors];
+    const warnings = [...baseValidation.warnings];
+    const suggestions = [...baseValidation.suggestions];
 
     if (!property.title || property.title.length < 5) {
       errors.push("Title must be at least 5 characters long");
@@ -148,9 +153,22 @@ export class ProprietarioDiretoAdapter
       errors.push("Apartments must have at least 1 bedroom");
     }
 
+    const score = Math.round(
+      baseValidation.score * 0.7 + (errors.length === 0 ? 30 : 0),
+    );
+
     return {
+      ...baseValidation,
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
+      errors,
+      warnings,
+      suggestions,
+      score,
+      compliance: {
+        minimumRequirements: errors.length === 0,
+        qualityStandards: warnings.length <= 2,
+        completeness: score >= 75,
+      },
     };
   }
 
@@ -269,6 +287,33 @@ export class ProprietarioDiretoAdapter
       }
       return response.text();
     });
+  }
+
+  getMaxTitleLength(): number {
+    return 100;
+  }
+
+  getMaxDescriptionLength(): number {
+    return 3000;
+  }
+
+  getMinPhotos(): number {
+    return 1;
+  }
+
+  getMaxPhotos(): number {
+    return 20;
+  }
+
+  getEndpoint(): string {
+    return this.baseUrl;
+  }
+
+  getAuthHeaders(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+      "Content-Type": "application/xml",
+    };
   }
 }
 

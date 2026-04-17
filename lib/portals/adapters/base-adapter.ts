@@ -199,7 +199,7 @@ export abstract class BasePortalAdapter implements PortalAdapter {
   }
 
   /**
-   * Métodos abstratos para configurações específicas de cada portal
+   *Métodos abstratos para configurações específicas de cada portal
    */
   abstract getMaxTitleLength(): number;
   abstract getMaxDescriptionLength(): number;
@@ -207,6 +207,29 @@ export abstract class BasePortalAdapter implements PortalAdapter {
   abstract getMaxPhotos(): number;
   abstract getEndpoint(): string;
   abstract getAuthHeaders(): Record<string, string>;
+
+  async updatePrice(externalId: string, price: number): Promise<void> {
+    await this.updateProperty(externalId, { price });
+  }
+
+  async updatePhotos(externalId: string, photos: string[]): Promise<void> {
+    await this.updateProperty(externalId, { photos });
+  }
+
+  async updateDescription(
+    externalId: string,
+    description: string,
+  ): Promise<void> {
+    await this.updateProperty(externalId, { description });
+  }
+
+  async updateStatus(externalId: string, status: string): Promise<void> {
+    await this.updateProperty(externalId, { status });
+  }
+
+  async publish(externalId: string): Promise<void> {
+    await this.updateProperty(externalId, { status: "published" });
+  }
 
   /**
    * Validação de integridade dos dados

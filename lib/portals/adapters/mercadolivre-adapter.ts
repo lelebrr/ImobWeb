@@ -1,18 +1,42 @@
 import { BasePortalAdapter } from "./base-adapter";
-import { PortalAdapter } from "@/types/portals";
+import { PortalAdapter, PropertyValidation } from "@/types/portals";
 import type { PropertyData } from "@/lib/portals/xml-generator";
 
 export class MercadoLivreAdapter
   extends BasePortalAdapter
   implements PortalAdapter
 {
-  private apiKey: string;
   private apiSecret: string;
 
   constructor(config: Record<string, any>) {
     super(config);
-    this.apiKey = config.apiKey;
     this.apiSecret = config.apiSecret;
+  }
+
+  getMaxTitleLength(): number {
+    return 60;
+  }
+
+  getMaxDescriptionLength(): number {
+    return 5000;
+  }
+
+  getMinPhotos(): number {
+    return 1;
+  }
+
+  getMaxPhotos(): number {
+    return 12;
+  }
+
+  getEndpoint(): string {
+    return "https://api.mercadolivre.com";
+  }
+
+  getAuthHeaders(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
   }
 
   async createProperty(data: Record<string, unknown>): Promise<string> {
@@ -28,11 +52,10 @@ export class MercadoLivreAdapter
       });
 
       const result = this.parseXmlResponse(response);
-      return result.id;
+      return result.id as string;
     } catch (error) {
-      throw new Error(
-        `Failed to create property on Mercado Livre: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to create property on Mercado Livre: ${message}`);
     }
   }
 
@@ -51,9 +74,8 @@ export class MercadoLivreAdapter
         body: xml,
       });
     } catch (error) {
-      throw new Error(
-        `Failed to update property on Mercado Livre: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to update property on Mercado Livre: ${message}`);
     }
   }
 
@@ -63,9 +85,8 @@ export class MercadoLivreAdapter
         method: "DELETE",
       });
     } catch (error) {
-      throw new Error(
-        `Failed to delete property on Mercado Livre: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to delete property on Mercado Livre: ${message}`);
     }
   }
 
@@ -74,9 +95,8 @@ export class MercadoLivreAdapter
       const response = await this.makeApiCall(`/items/${externalId}`);
       return this.parseXmlResponse(response);
     } catch (error) {
-      throw new Error(
-        `Failed to get property from Mercado Livre: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to get property from Mercado Livre: ${message}`);
     }
   }
 
@@ -85,9 +105,8 @@ export class MercadoLivreAdapter
       const response = await this.makeApiLead("/leads");
       return response.leads || [];
     } catch (error) {
-      throw new Error(
-        `Failed to get leads from Mercado Livre: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Failed to get leads from Mercado Livre: ${message}`);
     }
   }
 
@@ -115,11 +134,10 @@ export class MercadoLivreAdapter
     }
   }
 
-  validateProperty(property: PropertyData): {
-    valid: boolean;
-    errors?: string[];
-  } {
+  validateProperty(property: PropertyData): PropertyValidation {
     const errors: string[] = [];
+    const warnings: string[] = [];
+    const suggestions: string[] = [];
 
     if (!property.title || property.title.length < 10) {
       errors.push("Title must be at least 10 characters long");
@@ -145,9 +163,19 @@ export class MercadoLivreAdapter
       errors.push("City and state are required");
     }
 
+    const score = errors.length === 0 ? 85 : 60;
+
     return {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
+      errors,
+      warnings,
+      suggestions,
+      score,
+      compliance: {
+        minimumRequirements: errors.length === 0,
+        qualityStandards: warnings.length <= 2,
+        completeness: score >= 75,
+      },
     };
   }
 
@@ -201,7 +229,7 @@ export class MercadoLivreAdapter
     return xmlDeclaration + "\n" + xmlContent;
   }
 
-  private escapeXml(str: string): string {
+  protected escapeXml(str: string): string {
     if (!str) return "";
     return str
       .replace(/&/g, "&amp;")
@@ -279,6 +307,29 @@ export class MercadoLivreAdapter
       }
       return response.json();
     });
+  }
+
+  async updatePrice(externalId: string, price: number): Promise<void> {
+    await this.updateProperty(externalId, { price });
+  }
+
+  async updatePhotos(externalId: string, photos: string[]): Promise<void> {
+    await this.updateProperty(externalId, { photos });
+  }
+
+  async updateDescription(
+    externalId: string,
+    description: string,
+  ): Promise<void> {
+    await this.updateProperty(externalId, { description });
+  }
+
+  async updateStatus(externalId: string, status: string): Promise<void> {
+    await this.updateProperty(externalId, { status });
+  }
+
+  async publish(externalId: string): Promise<void> {
+    await this.updateProperty(externalId, { status: "active" });
   }
 }
 

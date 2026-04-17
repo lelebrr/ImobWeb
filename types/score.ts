@@ -305,15 +305,15 @@ export const RECOMMENDATION_TYPE_LABELS: Record<
  * Configuração padrão de pesos para cálculo do score.
  */
 export const DEFAULT_SCORE_WEIGHTS = {
-  recency: 0.2, // 20% - Atualização recente é muito importante
-  photos: 0.15, // 15% - Fotos são essenciais para conversão
-  views: 0.1, // 10% - Visualizações indicam interesse
-  time_online: 0.1, // 10% - Imóveis muito antigos podem precisar de atualização
-  price_alignment: 0.2, // 20% - Preço competitivo é crucial
-  owner_response: 0.15, // 15% - Resposta do proprietário indica ativo
-  portal_compliance: 0.05, // 5% - Deve seguir regras dos portais
-  engagement: 0.05, // 5% - Favoritos e compartilhamentos
-} as const;
+  recency: 0.2,
+  photos: 0.15,
+  views: 0.1,
+  timeOnline: 0.1,
+  priceAlignment: 0.2,
+  ownerResponse: 0.15,
+  portalCompliance: 0.05,
+  engagement: 0.05,
+};
 
 /**
  * ============================================

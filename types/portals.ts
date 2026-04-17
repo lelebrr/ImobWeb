@@ -187,6 +187,17 @@ export interface PortalAdapter {
     totalLeads: number;
   }>;
   validateProperty(property: any): { valid: boolean; errors?: string[] };
+  updatePrice(externalId: string, price: number): Promise<void>;
+  updatePhotos(externalId: string, photos: string[]): Promise<void>;
+  updateDescription(externalId: string, description: string): Promise<void>;
+  updateStatus(externalId: string, status: string): Promise<void>;
+  publish(externalId: string): Promise<void>;
+  getMaxTitleLength(): number;
+  getMaxDescriptionLength(): number;
+  getMinPhotos(): number;
+  getMaxPhotos(): number;
+  getEndpoint(): string;
+  getAuthHeaders(): Record<string, string>;
 }
 
 export interface FieldMapping {

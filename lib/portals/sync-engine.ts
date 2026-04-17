@@ -4,12 +4,14 @@ import {
   SyncStatus,
   PortalType,
   PortalId,
+  PortalConfig,
 } from "../../types/portals";
 import { portalValidator } from "./validator";
 import { autoMaintenance } from "./auto-maintenance";
 import { getPortalAdapter } from "./adapters";
 import { generateXml } from "./xml-generator";
-import { selectPortalsAutomatically, PortalConfig } from "./auto-selector";
+import { selectPortalsAutomatically } from "./auto-selector";
+import type { PropertyData } from "./xml-generator";
 
 const prisma = new PrismaClient();
 
@@ -32,6 +34,18 @@ export interface PortalAdapter {
     totalViews: number;
     totalLeads: number;
   }>;
+  validateProperty(property: any): { valid: boolean; errors?: string[] };
+  updatePrice(externalId: string, price: number): Promise<void>;
+  updatePhotos(externalId: string, photos: string[]): Promise<void>;
+  updateDescription(externalId: string, description: string): Promise<void>;
+  updateStatus(externalId: string, status: string): Promise<void>;
+  publish(externalId: string): Promise<void>;
+  getMaxTitleLength(): number;
+  getMaxDescriptionLength(): number;
+  getMinPhotos(): number;
+  getMaxPhotos(): number;
+  getEndpoint(): string;
+  getAuthHeaders(): Record<string, string>;
 }
 
 /**
@@ -118,7 +132,10 @@ export class SyncEngine {
 
     try {
       // 2. Obter adaptador do portal
-      const adapter = getPortalAdapter(portalId, integration.settings);
+      const adapter = getPortalAdapter(
+        portalId,
+        (integration.settings as Record<string, any>) || {},
+      );
       if (!adapter) {
         throw new Error(`Adapter not found for portal ${portalId}`);
       }
@@ -274,7 +291,6 @@ export class SyncEngine {
     // 1. Buscar configurações de portais ativos
     const integrations = await prisma.portalIntegration.findMany({
       where: {
-        enabled: true,
         status: "ATIVO",
         organizationId: (
           await prisma.property.findUnique({
@@ -298,23 +314,67 @@ export class SyncEngine {
       throw new Error("Property not found");
     }
 
-    // 3. Converter para PortalConfig
-    const portalConfigs: PortalConfig[] = integrations.map((int) => ({
+    // 3. Converter Property do Prisma para PropertyData
+    const propertyData: PropertyData = {
+      id: property.id,
+      title: property.title,
+      description: property.description || "",
+      price: Number(property.price) || 0,
+      transactionType: (property.businessType === "LOCACAO"
+        ? "rent"
+        : "sale") as "rent" | "sale",
+      propertyType: (property.type === "CASA"
+        ? "house"
+        : property.type === "APARTAMENTO"
+          ? "apartment"
+          : property.type === "TERRENO"
+            ? "land"
+            : property.type === "COMERCIAL"
+              ? "commercial"
+              : "industrial") as
+        | "house"
+        | "apartment"
+        | "land"
+        | "commercial"
+        | "industrial",
+      address: {
+        street: property.address || "",
+        neighborhood: property.neighborhood || "",
+        city: property.city || "",
+        state: property.state || "",
+        zipCode: property.cep || undefined,
+      },
+      features: {
+        bedrooms: property.bedrooms || undefined,
+        bathrooms: property.bathrooms || undefined,
+        parkingSpaces: property.garages || undefined,
+        area: property.areaPrivate || undefined,
+        totalArea: property.areaTotal || undefined,
+      },
+      photos: property.photos.map((p) => p.url),
+      status: property.status as any,
+    };
+
+    // 4. Converter para PortalConfig
+    const portalConfigs = integrations.map((int) => ({
       id: int.id,
       name: int.name || "",
-      type: int.type,
-      enabled: int.enabled,
-      settings: int.settings,
-      lastSync: int.lastSync,
+      type: int.type as any,
+      enabled: int.status === "ATIVO",
+      settings: {
+        authType: (int.settings as any)?.authType || "api_key",
+        ...((int.settings as Record<string, any>) || {}),
+      },
+      lastSync: int.lastSync || undefined,
       syncCount: int.syncCount || 0,
       errorCount: int.errorCount || 0,
-      status: int.status,
+      status: int.status as any,
     }));
 
     // 4. Selecionar portais automaticamente
     const selectedPortals = selectPortalsAutomatically(
       portalConfigs,
-      property,
+      propertyData,
       priority,
     ).selectedPortals;
 
@@ -381,7 +441,10 @@ export class SyncEngine {
       throw new Error("Property or Integration not found");
     }
 
-    const adapter = getPortalAdapter(portalId, integration.settings);
+    const adapter = getPortalAdapter(
+      portalId,
+      (integration.settings as Record<string, any>) || {},
+    );
     if (!adapter) {
       throw new Error(`Adapter not found for portal ${portalId}`);
     }
