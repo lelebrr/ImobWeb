@@ -51,7 +51,10 @@ import {
   Store,
   ShoppingBag,
   Heart,
-  Calendar
+  Calendar,
+  Building2,
+  CreditCard,
+  LogOut
 } from "lucide-react";
 import { SaleProbabilityScore } from "@/components/properties/SaleProbabilityScore";
 import { SaleProbabilityScore as SaleProbabilityType } from "@/types/ai";
@@ -176,6 +179,22 @@ export default function DashboardPage() {
   const [selectedPortal, setSelectedPortal] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: "alert", title: "Sincronização Pendente", message: "Vivareal precisa de atualização", time: "5 min atrás", read: false },
+    { id: 2, type: "success", title: "Lead Novo", message: "Novo lead do OLX", time: "1 hora atrás", read: false },
+    { id: 3, type: "info", title: "Atualização de Sistema", message: "Novos recursos disponíveis", time: "2 horas atrás", read: true },
+  ]);
+
+  const handleClearNotifications = () => {
+    setNotifications([]);
+    setShowNotifications(false);
+  };
+
+  const handleMarkAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -260,7 +279,7 @@ export default function DashboardPage() {
               </div>
               <ChevronRight className="w-6 h-6 text-blue-400" />
             </div>
-            
+
             {/* Decoration */}
             <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full" />
           </div>
@@ -385,16 +404,16 @@ export default function DashboardPage() {
             Ver Todos <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {MOCK_PROPERTIES.slice(0, 3).map((property, idx) => (
             <div key={property.id} className="glass border-none rounded-[2.5rem] p-5 relative overflow-hidden group">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
-                  <img 
-                    src={property.media[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750'} 
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110" 
-                    alt={property.title} 
+                  <img
+                    src={property.media[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750'}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                    alt={property.title}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -406,7 +425,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <SaleProbabilityScore 
+              <SaleProbabilityScore
                 propertyId={property.id}
                 variant="compact"
                 className="w-full bg-white/5"
@@ -452,10 +471,10 @@ export default function DashboardPage() {
                       <span className="font-medium text-sm">{log.action}</span>
                       <span
                         className={`ml-2 text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : log.status === "ERROR"
-                              ? "bg-red-500/20 text-red-400"
-                              : "bg-gray-500/20 text-gray-400"
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : log.status === "ERROR"
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-gray-500/20 text-gray-400"
                           }`}
                       >
                         {log.status}
@@ -669,14 +688,14 @@ export default function DashboardPage() {
             >
               <defs>
                 <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
               <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
               <YAxis hide />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
                 itemStyle={{ color: '#60a5fa' }}
               />
@@ -806,7 +825,7 @@ export default function DashboardPage() {
         </div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
       </div>
-      
+
       <div className="glass border-none rounded-3xl p-6">
         <h3 className="text-lg font-black mb-4">Monitoramento em Tempo Real</h3>
         <p className="text-muted-foreground text-sm mb-6">Lista de imóveis em ciclo de verificação ativa via WhatsApp.</p>
@@ -894,18 +913,195 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <Home className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-black tracking-tighter">
-                Dashboard de Gestão de Integrações
-              </h1>
-            </div>
+            {/* Logo - Link para página inicial (círculo vermelho) */}
+            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Home className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black tracking-tighter text-gray-900">
+                  Dashboard
+                </h1>
+                <p className="text-xs text-gray-500 font-medium">
+                  Gestão de Integrações
+                </p>
+              </div>
+            </Link>
+
+            {/* Central Actions - Notificações e Usuário (círculos amarelo e azul) */}
             <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-gray-500" />
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              {/* Menu de Notificações (círculo amarelo) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  {notifications.some(n => !n.read) && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Popup de Notificações */}
+                {showNotifications && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900">Notificações</h3>
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleClearNotifications();
+                          }}
+                          className="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          Limpar Todas
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                          <p className="text-sm">Nenhuma notificação</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''
+                              }`}
+                            onClick={() => {
+                              handleMarkAsRead(notification.id);
+                              setShowNotifications(false);
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-2 h-2 rounded-full mt-2 ${notification.type === 'alert' ? 'bg-red-500' :
+                                notification.type === 'success' ? 'bg-emerald-500' :
+                                  'bg-blue-500'
+                                }`} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-600'
+                                  }`}>
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {notification.time}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {notifications.length > 0 && (
+                      <div className="p-3 border-t border-gray-100 bg-gray-50">
+                        <button
+                          onClick={() => setShowNotifications(false)}
+                          className="w-full text-sm font-medium text-primary hover:text-primary/80 py-2 transition-colors"
+                        >
+                          Ver Todas
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Menu de Usuário (círculo azul) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {user?.name || "Usuário"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {organization?.name || "Organização"}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Popup de Menu de Usuário */}
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">
+                            {user?.name || "Usuário"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {organization?.name || "Organização"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        href="/settings/profile"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Configurações da Conta</span>
+                      </Link>
+                      <Link
+                        href="/settings/organization"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Building2 className="w-4 h-4" />
+                        <span>Organização</span>
+                      </Link>
+                      <Link
+                        href="/settings/billing"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>Faturamento</span>
+                      </Link>
+                      <div className="border-t border-gray-100 my-1" />
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Home className="w-4 h-4" />
+                        <span>Página Inicial</span>
+                      </Link>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          toast.success("Saindo...");
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sair</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -927,8 +1123,8 @@ export default function DashboardPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeTab === tab.id
-                  ? "bg-primary text-white shadow-lg shadow-primary/20"
-                  : "glass text-gray-600 hover:text-gray-900"
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "glass text-gray-600 hover:text-gray-900"
                 }`}
             >
               <tab.icon className="w-4 h-4" />
