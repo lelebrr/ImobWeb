@@ -88,7 +88,7 @@ const MarketplaceTeaser = () => {
                                             <addon.icon className="h-7 w-7" />
                                         </div>
                                         <div>
-                                            <h4 className="font-black text-xl text-white mb-1 tracking-tight">{addon.name}</h4>
+                                            <h3 className="font-black text-xl text-white mb-1 tracking-tight">{addon.name}</h3>
                                             <p className="text-slate-400 text-sm font-medium">{addon.desc}</p>
                                         </div>
                                     </div>

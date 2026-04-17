@@ -54,17 +54,17 @@ const Hero = () => {
                                     className="w-full sm:w-auto h-16 px-10 rounded-2xl text-lg font-black bg-brand-action hover:bg-amber-600 text-slate-900 shadow-glow-action transition-all hover:scale-105 active:scale-95" 
                                     asChild
                                 >
-                                    <Link href="/login">
+                                    <Link href="/login" aria-label="Começar grátis fazendo login">
                                         {t.hero.ctaPrimary} <ArrowRight className="ml-3 h-5 w-5" />
                                     </Link>
                                 </Button>
                                 <Button 
                                     variant="outline" 
                                     size="lg" 
-                                    className="w-full sm:w-auto h-16 px-10 rounded-2xl text-lg font-bold text-white border-white/10 hover:bg-white/5 transition-all hover:scale-105" 
+                                    className="w-full sm:w-auto h-16 px-10 rounded-2xl text-lg font-bold text-white border-white/30 hover:bg-white/10 transition-all hover:scale-105" 
                                     asChild
                                 >
-                                    <Link href="#pricing">{t.hero.ctaSecondary}</Link>
+                                    <Link href="#pricing" aria-label="Ver demonstração dos planos e preços">{t.hero.ctaSecondary}</Link>
                                 </Button>
                             </div>
 

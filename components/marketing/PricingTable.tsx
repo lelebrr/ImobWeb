@@ -139,7 +139,7 @@ const PricingTable = () => {
                                     : 'bg-brand-deep text-white hover:bg-slate-800'
                                     }`}
                             >
-                                <Link href="/onboarding">{plan.cta}</Link>
+                                <Link href="/onboarding" aria-label={`Comece grátis com o plano ${plan.name}`}>{plan.cta}</Link>
                             </Button>
 
                             <ul className="space-y-6 flex-1">
@@ -164,13 +164,13 @@ const PricingTable = () => {
                 
                 {/* Visual Trust Indicators Under Pricing */}
                 <div className="mt-24 flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-                    <div className="flex items-center gap-2 font-black text-brand-deep/60 tracking-widest text-xs uppercase">
+                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
                         <ShieldCheck className="h-4 w-4" /> SSL SECURE
                     </div>
-                    <div className="flex items-center gap-2 font-black text-brand-deep/60 tracking-widest text-xs uppercase">
+                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
                         <Zap className="h-4 w-4" /> CLOUD DEPLOY
                     </div>
-                    <div className="flex items-center gap-2 font-black text-brand-deep/60 tracking-widest text-xs uppercase">
+                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
                         <Heart className="h-4 w-4" /> 100% Brazilian
                     </div>
                 </div>

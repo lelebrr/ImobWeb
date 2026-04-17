@@ -43,18 +43,21 @@ const Footer = () => {
             <div className="flex items-center gap-5">
               <Link
                 href="#"
+                aria-label="Seguir imobWeb no Instagram"
                 className="p-3 bg-white/5 rounded-2xl text-slate-400 hover:bg-brand-growth hover:text-brand-deep transition-all duration-500 hover:-translate-y-1 shadow-sm"
               >
                 <Instagram className="h-6 w-6" />
               </Link>
               <Link
                 href="#"
+                aria-label="Seguir imobWeb no Facebook"
                 className="p-3 bg-white/5 rounded-2xl text-slate-400 hover:bg-brand-growth hover:text-brand-deep transition-all duration-500 hover:-translate-y-1 shadow-sm"
               >
                 <Facebook className="h-6 w-6" />
               </Link>
               <Link
                 href="#"
+                aria-label="Seguir imobWeb no LinkedIn"
                 className="p-3 bg-white/5 rounded-2xl text-slate-400 hover:bg-brand-growth hover:text-brand-deep transition-all duration-500 hover:-translate-y-1 shadow-sm"
               >
                 <Linkedin className="h-6 w-6" />
@@ -64,7 +67,7 @@ const Footer = () => {
 
           {/* Links Sections */}
           <div className="col-span-1 lg:pl-8">
-            <h4 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
+            <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.product}
             </h4>
             <ul className="space-y-4">
@@ -96,7 +99,7 @@ const Footer = () => {
           </div>
 
           <div className="col-span-1">
-            <h4 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
+            <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.resources}
             </h4>
             <ul className="space-y-4">
@@ -120,7 +123,7 @@ const Footer = () => {
           </div>
 
           <div className="col-span-1">
-            <h4 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
+            <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.company}
             </h4>
             <ul className="space-y-4">
@@ -144,7 +147,7 @@ const Footer = () => {
           </div>
 
           <div className="col-span-1">
-            <h4 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
+            <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               Seguran\u00e7a
             </h4>
             <div className="space-y-4">
@@ -165,7 +168,7 @@ const Footer = () => {
         </div>
 
         <div className="pt-12 border-t border-white/5 flex flex-col md:row justify-between items-center gap-8">
-          <div className="flex flex-col md:flex-row items-center gap-8 text-sm font-medium text-slate-500">
+          <div className="flex flex-col md:flex-row items-center gap-8 text-sm font-medium text-slate-400">
             <p>
               © {currentYear} imobWeb. {t.footer.rights}
             </p>
@@ -192,7 +195,7 @@ const Footer = () => {
                 Sistemas 100% Online
               </span>
             </div>
-            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
               v 3.0.0-PRO
             </div>
           </div>

@@ -109,7 +109,7 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "15.5.15",
     "fstream": "^1.0.12",
-    "glob": "^11.0.0",
+    "glob": "^13.0.6",
     "next-sitemap": "^4.2.3",
     "postcss": "^8.5.10",
     "prettier": "^3.4.2",
