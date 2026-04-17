@@ -27,14 +27,14 @@ const FinancialDashboard: React.FC = () => {
 
   const handleExport = () => {
     setIsExporting(true);
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2500)),
-      {
-        loading: "Gerando relatório financeiro consolidado...",
-        success: "Relatório exportado com sucesso! O download começará em instantes.",
-        error: "Erro ao gerar relatório.",
-      }
-    ).finally(() => setIsExporting(false));
+    const promise = new Promise((resolve) => setTimeout(resolve, 2500));
+    toast.promise(promise, {
+      loading: "Gerando relatório financeiro consolidado...",
+      success:
+        "Relatório exportado com sucesso! O download começará em instantes.",
+      error: "Erro ao gerar relatório.",
+    });
+    promise.finally(() => setIsExporting(false));
   };
 
   useEffect(() => {
@@ -125,8 +125,17 @@ const FinancialDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dashboard Financeiro</h1>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
-          {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 mr-2" />
+          )}
           {isExporting ? "Gerando..." : "Exportar Relatório"}
         </Button>
       </div>
