@@ -43,6 +43,14 @@ export interface AnalyticsData {
   syncRate: number;
   errorRate: number;
   coverage: number;
+  finance: {
+    stats: {
+      recipientType: "AGENCY" | "PARTNER" | "OWNER";
+      _sum: { amount: number };
+      status: "PENDING" | "PAID";
+    }[];
+    recentInvoices: any[];
+  };
 }
 
 interface AnalyticsContextType {
@@ -174,11 +182,21 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       { portalId: "olx", views: 8900, leads: 245, conversions: 15 },
       { portalId: "imovelweb", views: 5530, leads: 100, conversions: 8 },
     ],
+    finance: {
+      stats: [
+        { recipientType: "AGENCY", _sum: { amount: 15600 }, status: "PAID" },
+        { recipientType: "PARTNER", _sum: { amount: 4200 }, status: "PAID" },
+        { recipientType: "OWNER", _sum: { amount: 140000 }, status: "PAID" },
+        { recipientType: "AGENCY", _sum: { amount: 2400 }, status: "PENDING" },
+      ],
+      recentInvoices: [],
+    },
     uptime: 99.8,
     syncRate: 95.2,
     errorRate: 2.1,
     coverage: 87.5,
   });
+
 
   const refreshAnalytics = async () => {
     setLoading(true);
@@ -231,11 +249,16 @@ export function useAnalytics() {
         trends: { views: [], leads: [], sales: [] },
         topProperties: [],
         portals: [],
+        finance: {
+          stats: [],
+          recentInvoices: [],
+        },
         uptime: 99.8,
         syncRate: 95.2,
         errorRate: 2.1,
         coverage: 87.5,
       },
+
       loading: false,
       error: null,
       refreshAnalytics: async () => {},

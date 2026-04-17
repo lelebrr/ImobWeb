@@ -90,12 +90,81 @@ import FinancialDashboard from "@/components/finance/FinancialDashboard";
 import AutomaticSplitDashboard from "@/components/finance/AutomaticSplitDashboard";
 import ContractListComponent from "@/components/contracts/ContractListComponent";
 import FranchiseDashboard from "@/components/franchise/FranchiseDashboard";
-import MarketplaceGrid from "@/components/marketplace/MarketplaceGrid";
+import { MarketplaceGrid } from "@/components/marketplace/MarketplaceGrid";
 import { HealthScoreCard } from "@/components/insights/HealthScoreCard";
 import { PredictiveTimeline } from "@/components/insights/PredictiveTimeline";
 import { PriceRecommendationCard } from "@/components/insights/PriceRecommendationCard";
 
+const MOCK_CONTRACTS = [
+  { id: 1, numero: "2024-001", cliente: "João Silva", imovel: "Apartamento Itaim", valor: 5500, status: "Ativo" },
+  { id: 2, numero: "2024-002", cliente: "Maria Souza", imovel: "Casa Jardim Europa", valor: 12000, status: "Aguardando Assinatura" },
+  { id: 3, numero: "2024-003", cliente: "Pedro Oliveira", imovel: "Studio Pinheiros", valor: 3200, status: "Finalizado" }
+];
+
+const CONTRACT_COLUMNS = [
+  { accessorKey: "numero" as const, header: "Nº Contrato" },
+  { accessorKey: "cliente" as const, header: "Cliente" },
+  { accessorKey: "imovel" as const, header: "Imóvel" },
+  { accessorKey: "valor" as const, header: "Valor" },
+  { accessorKey: "status" as const, header: "Status" }
+];
+
+const SALES_PROB_DATA = {
+  probability: 0.85,
+  expectedDays: 14,
+  engagementScore: 92
+};
+
+const PRICE_REC_DATA = {
+  suggestedPrice: 850000,
+  minPrice: 820000,
+  maxPrice: 890000,
+  confidence: 0.94,
+  marketAverage: 865000,
+  reasoning: [
+    "Alta demanda por 3 dormitórios na região",
+    "Acabamento superior à média local",
+    "Proximidade com nova estação de metrô"
+  ],
+  comparablesCount: 12
+};
+
+const HEALTH_SCORE_DATA = {
+  score: 88,
+  factors: [
+    { label: "Qualidade das Fotos", impact: 15, description: "Fotos em HDR aumentam conversão" },
+    { label: "Descrição Completa", impact: 10, description: "Meta-tags otimizadas para SEO" },
+    { label: "Preço vs Mercado", impact: -5, description: "Levemente acima da média local" }
+  ],
+  recommendations: [
+    "Adicionar tour virtual 360°",
+    "Incluir valor do IPTU no cabeçalho"
+  ]
+};
+
+const MOCK_FRANCHISES: any[] = [
+  {
+    id: 'f1',
+    name: 'ImobWeb Jardins',
+    city: 'São Paulo',
+    state: 'SP',
+    status: 'active',
+    metrics: { totalProperties: 145, totalLeads: 450, convertedLeads: 22, mrr: 25000, activeUsers: 12 },
+    royalties: { percentage: 8, pendingAmount: 2000 }
+  },
+  {
+    id: 'f2',
+    name: 'ImobWeb Barra',
+    city: 'Rio de Janeiro',
+    state: 'RJ',
+    status: 'active',
+    metrics: { totalProperties: 98, totalLeads: 310, convertedLeads: 15, mrr: 18000, activeUsers: 8 },
+    royalties: { percentage: 8, pendingAmount: 1440 }
+  }
+];
+
 export default function DashboardPage() {
+
   const { user } = useAuth();
   const { organization } = useOrganization();
   const { portals, loadingPortals } = usePortals();
@@ -678,7 +747,8 @@ export default function DashboardPage() {
           <Zap className="w-6 h-6 text-primary" />
           Split Inteligente ImobPay
         </h2>
-        <AutomaticSplitDashboard data={analytics?.finance || {}} />
+        <AutomaticSplitDashboard data={analytics?.finance || { stats: [], recentInvoices: [] }} />
+
       </div>
     </div>
   );
@@ -692,7 +762,8 @@ export default function DashboardPage() {
           Novo Contrato
         </Button>
       </div>
-      <ContractListComponent />
+      <ContractListComponent contracts={MOCK_CONTRACTS} columns={CONTRACT_COLUMNS} />
+
     </div>
   );
 
@@ -774,11 +845,12 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <PredictiveTimeline />
+          <PredictiveTimeline data={SALES_PROB_DATA} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <PriceRecommendationCard />
-            <HealthScoreCard />
+            <PriceRecommendationCard recommendation={PRICE_REC_DATA} />
+            <HealthScoreCard scoreData={HEALTH_SCORE_DATA} />
           </div>
+
         </div>
         <div className="space-y-6">
           <div className="glass border-none rounded-3xl p-6 bg-primary/5 border border-primary/10">
@@ -798,7 +870,8 @@ export default function DashboardPage() {
 
   const renderFranchise = () => (
     <div className="space-y-6">
-      <FranchiseDashboard />
+      <FranchiseDashboard franchises={MOCK_FRANCHISES} />
+
     </div>
   );
 
