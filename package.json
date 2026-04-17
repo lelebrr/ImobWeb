@@ -22,7 +22,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:users": "tsx -r dotenv/config scripts/create-test-users.ts",
     "analyze": "ANALYZE=true next build",
-    "postbuild": "next-sitemap --config next-sitemap.config.js"
+    "postbuild": "next-sitemap --config next-sitemap.config.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.52",

@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
           ? {
               id: log.property.id,
               title: log.property.title,
-              type: log.property.propertyType,
+              type: log.property.type,
               price: log.property.price,
             }
           : null,
