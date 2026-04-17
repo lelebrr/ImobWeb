@@ -69,7 +69,7 @@ const Footer = () => {
           <div className="col-span-1 lg:pl-8">
             <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.product}
-            </h4>
+            </h3>
             <ul className="space-y-4">
               <li>
                 <Link
@@ -101,7 +101,7 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.resources}
-            </h4>
+            </h3>
             <ul className="space-y-4">
               <li>
                 <Link
@@ -125,7 +125,7 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
               {t.footer.company}
-            </h4>
+            </h3>
             <ul className="space-y-4">
               <li>
                 <Link
@@ -148,8 +148,8 @@ const Footer = () => {
 
           <div className="col-span-1">
             <h3 className="font-black text-white text-xs uppercase tracking-[0.2em] mb-8">
-              Seguran\u00e7a
-            </h4>
+              Segurança
+            </h3>
             <div className="space-y-4">
               <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-brand-growth" />
