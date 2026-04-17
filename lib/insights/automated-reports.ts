@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { ChurnPredictor } from '../predictive/churn-predictor';
-
-const prisma = new PrismaClient();
 
 /**
  * Motor de Insights Automatizados.
@@ -38,7 +36,7 @@ export class AutomatedInsightsEngine {
         }
       });
 
-      if (leadsCount === 0 && (prop.views || 0) > 100) {
+      if (leadsCount === 0 && (prop.viewCount || 0) > 100) {
         priceOptimizableProperties.push(prop.title);
       }
     }

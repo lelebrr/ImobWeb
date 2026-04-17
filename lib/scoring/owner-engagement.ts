@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * Motor de Engajamento do Proprietário.
@@ -48,7 +46,7 @@ export class OwnerEngagementScorer {
     else if (responseTimeHours > 24) score -= 15;
 
     // 3. Frequência de atualizações do imóvel pelo proprietário (através do corretor)
-    const propertyUpdates = owner.properties.reduce((acc, p) => acc + (p.views || 0), 0);
+    const propertyUpdates = owner.properties.reduce((acc, p) => acc + ((p as any).viewCount || 0), 0);
     if (propertyUpdates > 1000) score += 10;
 
     return Math.min(100, Math.max(0, score));

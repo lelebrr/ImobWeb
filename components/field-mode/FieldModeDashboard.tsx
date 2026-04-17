@@ -27,11 +27,11 @@ import { FieldSyncStatus } from '@/types/field-mode';
 import { FieldEngine } from '@/lib/field-mode/field-engine';
 import { db } from '@/lib/field-mode/db';
 import { cn } from '@/lib/utils';
-import { VoicePropertyCreator } from './VoicePropertyCreator';
-import { SmartCamera } from './SmartCamera';
-import { NearbyMap } from './NearbyMap';
-import { SyncCenter } from './SyncCenter';
-import { VisitNotes } from './VisitNotes';
+import { VoicePropertyCreator } from '@/components/field-mode/VoicePropertyCreator';
+import { SmartCamera } from '@/components/field-mode/SmartCamera';
+import { NearbyMap } from '@/components/field-mode/NearbyMap';
+import { SyncCenter } from '@/components/field-mode/SyncCenter';
+import { VisitNotes } from '@/components/field-mode/VisitNotes';
 
 /**
  * FIELD MODE DASHBOARD v2.0 - IMOBWEB 2026

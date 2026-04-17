@@ -41,7 +41,8 @@ export class ChurnPredictor {
     }
 
     // 2. Análise de visualizações e leads
-    if ((property.views ?? 0) > 200 && (await prisma.lead.count({ where: { propertyId } })) === 0) {
+    const viewsCount = property.viewCount || 0;
+    if (viewsCount > 200 && (await prisma.lead.count({ where: { propertyId } })) === 0) {
       probability += 0.15;
       factors.push('Alta exposição mas sem leads gerados (proprietário pode estar frustrado).');
       suggestedActions.push('Sugerir ajuste de preço baseado no relatório de mercado.');

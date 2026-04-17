@@ -1,4 +1,5 @@
-import { FieldVisit, VoiceRegistrationResult, OfflineAction, FieldSyncStatus, SmartCameraMedia } from '@/types/field-mode';
+import { FieldVisit, OfflineAction, FieldSyncStatus, SmartCameraMedia } from '@/types/field-mode';
+import { VoiceRegistrationResult } from '@/types/ai';
 import { Property } from '@/types/property';
 import { db } from './db';
 

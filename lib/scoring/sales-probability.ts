@@ -45,8 +45,8 @@ export class SalesProbabilityCalculator {
     // if (property.price < rec.suggestPrice) { probability += 0.1; expectedDays -= 10; }
 
     // 3. Escore de Engajamento (Views/Clicks)
-    const views = property.views || 0;
-    const engagementScore = views > 0 ? (recentLeads / (views / 100)) : 0;
+    const viewCount = (property as any).viewCount || 0;
+    const engagementScore = viewCount > 0 ? (recentLeads / (viewCount / 100)) : 0;
     
     if (engagementScore > 5) {
       probability += 0.1;

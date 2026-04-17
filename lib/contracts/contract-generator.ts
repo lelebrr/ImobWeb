@@ -294,6 +294,7 @@ export class ContractGenerator {
       status: ContractStatus.DRAFT,
       title: this.generateTitle(type, property),
       description: this.generateDescription(type, property, totalValue),
+      propertyId: property.id,
       property,
       parties: parties.map(p => ({
         id: p.id,

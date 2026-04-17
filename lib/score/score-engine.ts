@@ -37,8 +37,9 @@ interface PropertyData {
   updatedAt: Date;
   photos?: { isPrimary: boolean }[];
   viewCount?: number;
+  favorites?: number;
   owner?: {
-    lastContactAt?: Date;
+    lastContact?: Date;
     whatsapp?: string;
   };
   announcements?: {
@@ -128,7 +129,7 @@ export class ScoreEngine {
       where: { id: propertyId },
       include: {
         photos: { select: { isPrimary: true } },
-        owner: { select: { lastContactAt: true, whatsapp: true } },
+        owner: { select: { lastContact: true, whatsapp: true } },
         announcements: { select: { portalType: true, status: true } },
       },
     })) as any;
@@ -335,7 +336,7 @@ export class ScoreEngine {
     property: PropertyData,
     config: ScoreConfig,
   ): Promise<FactorDetail> {
-    const lastContact = property.owner?.lastContactAt;
+    const lastContact = property.owner?.lastContact;
     let score: number;
     let recommendation: string | undefined;
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, X, Check, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FieldEngine } from '@/lib/field-mode/field-engine';
-import { VoiceRegistrationResult } from '@/types/field-mode';
+import { VoiceRegistrationResult } from '@/types/ai';
 import { cn } from '@/lib/utils';
 
 interface VoicePropertyCreatorProps {
@@ -52,15 +52,19 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
 
       const mockResult: VoiceRegistrationResult = {
         transcript: text,
-        confidence: 0.98,
+        confidence: 0.95,
         extractedData: {
-          type: text.toLowerCase().includes('apartamento') ? 'APARTAMENTO' : 'CASA',
+          type: text.toLowerCase().includes('apartamento') ? 'APARTMENT' : 'HOUSE',
           bedrooms: text.match(/\d+ quartos/i) ? parseInt(text.match(/\d+/i)![0]) : 3,
           bathrooms: text.match(/\d+ banheiros/i) ? parseInt(text.match(/\d+/i)![0]) : 2,
+          area: 120,
           price: 280000,
           neighborhood: 'Savassi',
-          city: 'Belo Horizonte'
-        }
+          city: 'Belo Horizonte',
+          address: null,
+          description: null
+        },
+        suggestedActions: ['Verificar fotos', 'Confirmar valor condomínio']
       };
 
       setResult(mockResult);
@@ -173,9 +177,9 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
 
             <div className="grid grid-cols-2 gap-3 mb-8">
               <ResultTag label="Tipo" value={result.extractedData?.type || '-'} />
-              <ResultTag label="Quartos" value={`${result.extractedData?.bedrooms} Qts`} />
-              <ResultTag label="Bairro" value={result.extractedData?.neighborhood || '-'} />
-              <ResultTag label="Preço" value="R$ 280.000" />
+              <ResultTag label="Quartos" value={`${result.extractedData?.bedrooms || 0} Qts`} />
+              <ResultTag label="Preço" value={result.extractedData?.price ? `R$ ${result.extractedData.price.toLocaleString()}` : '-'} />
+              <ResultTag label="Confiança" value={`${Math.round(result.confidence * 100)}%`} />
             </div>
 
             <div className="flex gap-3">

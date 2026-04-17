@@ -17,7 +17,7 @@ export class SaleProbabilityEngine {
   ): Promise<SaleProbabilityScore> {
     try {
       // 1. Obter dados do imóvel
-      const property = await prisma.property.findUnique({
+      const property = await (prisma.property as any).findUnique({
         where: { id: propertyId },
         include: {
           leads: {
@@ -28,7 +28,7 @@ export class SaleProbabilityEngine {
             },
             select: { id: true, status: true },
           },
-          viewRecords: {
+          views: {
             where: {
               createdAt: {
                 gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -80,13 +80,13 @@ export class SaleProbabilityEngine {
       const recommendations = this.generateRecommendations(factorValues, probabilityValue);
 
       // Mapear fatores para o formato de array esperado pelo SaleProbabilityScore
-      const factorsArray = [
-        { label: 'Leads Recentes', score: factorValues.leadScore, impact: factorValues.leadScore > 60 ? 'positive' : 'negative' as const },
-        { label: 'Visualizações', score: factorValues.viewScore, impact: factorValues.viewScore > 60 ? 'positive' : 'negative' as const },
-        { label: 'Portais Ativos', score: factorValues.portalScore, impact: factorValues.portalScore > 60 ? 'positive' : 'negative' as const },
-        { label: 'Preço', score: factorValues.priceScore, impact: factorValues.priceScore > 60 ? 'positive' : 'negative' as const },
-        { label: 'Engajamento', score: factorValues.engagementScore, impact: factorValues.engagementScore > 60 ? 'positive' : 'negative' as const },
-        { label: 'Tempo Online', score: factorValues.timeOnlineScore, impact: factorValues.timeOnlineScore > 60 ? 'positive' : 'negative' as const },
+      const factorsArray: { label: string; score: number; impact: 'positive' | 'negative' | 'neutral' }[] = [
+        { label: 'Leads Recentes', score: factorValues.leadScore, impact: factorValues.leadScore > 60 ? 'positive' : 'negative' },
+        { label: 'Visualizações', score: factorValues.viewScore, impact: factorValues.viewScore > 60 ? 'positive' : 'negative' },
+        { label: 'Portais Ativos', score: factorValues.portalScore, impact: factorValues.portalScore > 60 ? 'positive' : 'negative' },
+        { label: 'Preço', score: factorValues.priceScore, impact: factorValues.priceScore > 60 ? 'positive' : 'negative' },
+        { label: 'Engajamento', score: factorValues.engagementScore, impact: factorValues.engagementScore > 60 ? 'positive' : 'negative' },
+        { label: 'Tempo Online', score: factorValues.timeOnlineScore, impact: factorValues.timeOnlineScore > 60 ? 'positive' : 'negative' },
       ];
 
       return {
@@ -133,7 +133,7 @@ export class SaleProbabilityEngine {
     const leadScore = this.calculateLeadScore(recentLeads);
 
     // 2. Fator de Visualizações
-    const viewsCount = property.viewRecords?.reduce((sum: number, v: any) => sum + (v.count || 0), 0) || 0;
+    const viewsCount = property.views?.reduce((sum: number, v: any) => sum + (v.count || 0), 0) || 0;
     const viewScore = this.calculateViewScore(viewsCount);
 
     // 3. Fator de Portais Ativos
@@ -160,9 +160,9 @@ export class SaleProbabilityEngine {
       views: viewsCount,
       activePortals,
       favorites: property.favorites || 0,
-      inquiries: property.inquiries || 0,
-      priceReductionsCount: property.priceReductionsCount || 0,
-      daysOnMarket: property.daysOnMarket || 0,
+      inquiries: recentLeads, // Usando leads como proxy para inquiries
+      priceReductionsCount: 0, // Campo não disponível no schema
+      daysOnMarket: Math.floor((Date.now() - new Date(property.publishedAt || property.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
     };
   }
 
@@ -411,9 +411,10 @@ export class SaleProbabilityEngine {
     try {
       const probability = await this.calculateSaleProbability(propertyId);
 
+      const probValue = (probability as any)?.score ? (probability as any).score / 100 : 0.5;
+      
       // Se probabilidade > 70%, sugere aumentar o preço
-      if (probability.probability > 0.7) {
-        const increase = 0.05 + (probability.probability - 0.7) * 0.1;
+      if (probValue > 0.7) {
         return {
           suggestedPrice: null,
           confidence: 85,
@@ -422,8 +423,7 @@ export class SaleProbabilityEngine {
       }
 
       // Se probabilidade < 30%, sugere reduzir o preço
-      if (probability.probability < 0.3) {
-        const decrease = 0.1 + (0.3 - probability.probability) * 0.2;
+      if (probValue < 0.3) {
         return {
           suggestedPrice: null,
           confidence: 80,

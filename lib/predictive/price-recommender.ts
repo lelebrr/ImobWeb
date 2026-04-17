@@ -1,11 +1,11 @@
-import { PrismaClient, Property } from '@prisma/client';
+import { Property } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { PriceRecommendation } from '../../types/insights';
 // @ts-ignore
 import { generateText } from 'ai';
 // @ts-ignore
 import { openai } from '@ai-sdk/openai';
 
-const prisma = new PrismaClient();
 
 /**
  * Motor de Recomendação Inteligente de Preços.
@@ -45,9 +45,9 @@ export class PriceRecommender {
     
     // 2. Analisar métricas de engajamento
     // Se tem muitas visualizações mas poucos leads, o preço pode estar alto.
-    const views = property.views || 0;
+    const viewCount = (property as any).viewCount || 0;
     const leadsCount = await prisma.lead.count({ where: { propertyId } });
-    const ctr = views > 0 ? (leadsCount / views) * 100 : 0;
+    const ctr = viewCount > 0 ? (leadsCount / viewCount) * 100 : 0;
 
     // 3. Heurística base
     let adjustmentFactor = 1.0;
@@ -61,7 +61,7 @@ export class PriceRecommender {
       reasoning.push('Seu preço está atrativo em relação à vizinhança.');
     }
 
-    if (views > 500 && leadsCount < 2) {
+    if (viewCount > 500 && leadsCount < 2) {
       adjustmentFactor -= 0.07;
       reasoning.push('Alto volume de tráfego com baixa conversão sugere preço acima do esperado pelo mercado.');
     }

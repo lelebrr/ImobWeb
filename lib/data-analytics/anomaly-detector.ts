@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * Detector de Anomalias em Imóveis e Leads.
@@ -25,7 +23,7 @@ export class AnomalyDetector {
       ? Math.floor((Date.now() - property.publishedAt.getTime()) / (1000 * 60 * 60 * 24))
       : 0;
 
-    if (daysSincePublish > 15 && (property.views || 0) < 5) {
+    if (daysSincePublish > 15 && (property.viewCount || 0) < 5) {
       return {
         type: 'LOW_VISIBILITY',
         severity: 'HIGH',
@@ -44,10 +42,10 @@ export class AnomalyDetector {
     if (!property) return null;
 
     const leadsCount = await prisma.lead.count({ where: { propertyId } });
-    const views = property.views || 0;
+    const viewCount = property.viewCount || 0;
 
     // Se tem muitas views mas zero leads, é uma anomalia de conversão (provavelmente preço ou fotos ruins)
-    if (views > 300 && leadsCount === 0) {
+    if (viewCount > 300 && leadsCount === 0) {
       return {
         type: 'CONVERSION_DROP',
         severity: 'CRITICAL',

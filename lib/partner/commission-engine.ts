@@ -33,16 +33,16 @@ export class CommissionEngine {
     // Calcula o valor da comissão (taxa fixa de 10% como exemplo)
     const commissionValue = amount * 0.10;
 
-    // Cria o registro de comissão usando PaymentHistory
-    const commission = await prisma.paymentHistory.create({
+    // Cria o registro de comissão
+    const commission = await (prisma as any).commission.create({
       data: {
         id: uuidv4(),
-        organizationId: partnerId,
-        userId: resellerClientId,
+        partnerId: partnerId,
+        resellerClientId: resellerClientId,
         amount: commissionValue,
-        type: "commission",
+        period,
         status: "pending",
-        description: `Comissão do período ${period}`,
+        calculatedAt: new Date(),
         createdAt: new Date(),
       },
     });
@@ -50,11 +50,11 @@ export class CommissionEngine {
     return {
       id: commission.id,
       partnerId,
-      resellerClientId: commission.userId,
-      amount: commission.amount,
+      resellerClientId: commission.resellerClientId,
+      amount: Number(commission.amount),
       period,
       status: commission.status,
-      calculatedAt: commission.createdAt,
+      calculatedAt: commission.calculatedAt,
     } as any;
   }
 
@@ -66,7 +66,7 @@ export class CommissionEngine {
     period: string, // YYYY-MM format
   ): Promise<Commission[]> {
     // Busca comissões pendentes do parceiro no período
-    const pendingCommissions = await prisma.commission.findMany({
+    const pendingCommissions = await (prisma as any).commission.findMany({
       where: {
         partnerId,
         period,
@@ -77,15 +77,18 @@ export class CommissionEngine {
     // Atualiza para processando (em um sistema real, isso dispararia um job de pagamento)
     const updatedCommissions = await Promise.all(
       pendingCommissions.map(async (commission: any) => {
-        return await prisma.commission.update({
+        const updated = await (prisma as any).commission.update({
           where: { id: commission.id },
           data: {
-            // Em um sistema real, teríamos um status 'processing' aqui
-            // Mas vamos direto para 'paid' para simplificação neste exemplo
             status: "paid",
             paidAt: new Date(),
           },
         });
+        
+        return {
+          ...updated,
+          amount: Number(updated.amount),
+        } as Commission;
       }),
     );
 
@@ -109,12 +112,12 @@ export class CommissionEngine {
     }
 
     // Busca todas as subfranquias (filiais) desta franquia
-    const subFranchises = await prisma.partner.findMany({
+    const subFranchises = await (prisma as any).partner.findMany({
       where: { parentId: franchiseId },
     });
 
     // Busca todas as franquias filiais e suas respectivas subcontas
-    const allSubAccounts = await prisma.resellerClient.findMany({
+    const allSubAccounts = await (prisma as any).resellerClient.findMany({
       where: {
         OR: [
           { partnerId: franchiseId }, // Subcontas diretas da franquia
@@ -125,7 +128,7 @@ export class CommissionEngine {
     });
 
     // Calcula o MRR total gerado por todas as subcontas
-    const totalMrr = await prisma.resellerClient.aggregate({
+    const totalMrr = await (prisma as any).resellerClient.aggregate({
       where: {
         OR: [
           { partnerId: franchiseId },
@@ -140,16 +143,16 @@ export class CommissionEngine {
 
     // Aplica a taxa de royalties da franquia (ex: 10% do MRR das subfranquias)
     const royaltyRate = 0.1; // 10% - configurável por franquia
-    const royaltyAmount = (totalMrr._sum.monthlyValue || 0) * royaltyRate;
+    const royaltyAmount = Number(totalMrr._sum.monthlyValue || 0) * royaltyRate;
 
     // Detalhes para transparência
     const details = [
       {
         type: "direct_clients",
-        count: await prisma.resellerClient.count({
+        count: await (prisma as any).resellerClient.count({
           where: { partnerId: franchiseId, status: "active" },
         }),
-        mrr: await prisma.resellerClient
+        mrr: await (prisma as any).resellerClient
           .aggregate({
             where: { partnerId: franchiseId, status: "active" },
             _sum: { monthlyValue: true },
@@ -158,13 +161,13 @@ export class CommissionEngine {
       },
       {
         type: "sub_franchise_clients",
-        count: await prisma.resellerClient.count({
+        count: await (prisma as any).resellerClient.count({
           where: {
             partnerId: { in: subFranchises.map((sf: any) => sf.id) },
             status: "active",
           },
         }),
-        mrr: await prisma.resellerClient
+        mrr: await (prisma as any).resellerClient
           .aggregate({
             where: {
               partnerId: { in: subFranchises.map((sf: any) => sf.id) },
@@ -192,7 +195,7 @@ export class CommissionEngine {
     levels: number = 3, // Número máximo de níveis na hierarquia
   ): Promise<void> {
     // Busca a parceiro e sua hierarquia
-    const partner = await prisma.partner.findUnique({
+    const partner = await (prisma as any).partner.findUnique({
       where: { id: partnerId },
     });
 
@@ -208,7 +211,7 @@ export class CommissionEngine {
     let level = 0;
 
     while (remainingAmount > 0 && level < levels && currentPartnerId) {
-      const levelPartner = await prisma.partner.findUnique({
+      const levelPartner = await (prisma as any).partner.findUnique({
         where: { id: currentPartnerId },
       });
 
@@ -220,7 +223,7 @@ export class CommissionEngine {
       );
 
       // Cria o registro de comissão para este nível
-      await prisma.commission.create({
+      await (prisma as any).commission.create({
         data: {
           id: uuidv4(),
           partnerId: currentPartnerId,
@@ -236,7 +239,7 @@ export class CommissionEngine {
       level++;
 
       // Move para o próximo nível na hierarquia (pai)
-      currentPartnerId = levelPartner.parentId;
+      currentPartnerId = levelPartner.parentId || "";
     }
   }
 
@@ -255,7 +258,7 @@ export class CommissionEngine {
     topClients: Array<{ clientName: string; amount: number }>;
   }> {
     // Busca comissões do parceiro no período
-    const commissions = await prisma.commission.findMany({
+    const commissions = await (prisma as any).commission.findMany({
       where: {
         partnerId,
         calculatedAt: {
@@ -316,7 +319,7 @@ export class CommissionEngine {
    * Verifica se um parceiro tem direito a comissão recorrente
    */
   static async hasRecurringCommission(partnerId: string): Promise<boolean> {
-    const partner = await prisma.partner.findUnique({
+    const partner = await (prisma as any).partner.findUnique({
       where: { id: partnerId },
     });
 
@@ -332,7 +335,7 @@ export class CommissionEngine {
     amount: number,
   ): Promise<void> {
     // Busca o registro do addon instalado pelo parceiro
-    const partnerAddon = await prisma.partnerAddon.findFirst({
+    const partnerAddon = await (prisma as any).partnerAddon.findFirst({
       where: {
         partnerId,
         addonId,

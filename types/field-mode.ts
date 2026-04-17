@@ -146,18 +146,7 @@ export interface SmartCameraMedia {
   detectedRoom?: string;
 }
 
-export interface VoiceRegistrationResult {
-  propertyId: string;
-  transcription: string;
-  entities: {
-    price?: number;
-    bedrooms?: number;
-    bathrooms?: number;
-    area?: number;
-    type?: string;
-  };
-  confidence: number;
-}
+
 
 export interface FieldSyncStatus {
   lastSyncAt: string;
