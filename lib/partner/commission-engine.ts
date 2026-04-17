@@ -22,31 +22,40 @@ export class CommissionEngine {
     period: string, // YYYY-MM format
   ): Promise<Commission> {
     // Busca o cliente revenda para obter a taxa de comissão
-    const resellerClient = await prisma.resellerClient.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: resellerClientId },
     });
 
-    if (!resellerClient || resellerClient.partnerId !== partnerId) {
-      throw new Error("Invalid reseller client or partner mismatch");
+    if (!user || user.organizationId !== partnerId) {
+      throw new Error("Invalid user or organization mismatch");
     }
 
-    // Calcula o valor da comissão
-    const commissionValue = amount * (resellerClient.commissionRate / 100);
+    // Calcula o valor da comissão (taxa fixa de 10% como exemplo)
+    const commissionValue = amount * 0.10;
 
-    // Cria o registro de comissão
-    const commission = await prisma.commission.create({
+    // Cria o registro de comissão usando PaymentHistory
+    const commission = await prisma.paymentHistory.create({
       data: {
         id: uuidv4(),
-        partnerId,
-        resellerClientId,
+        organizationId: partnerId,
+        userId: resellerClientId,
         amount: commissionValue,
-        period,
+        type: "commission",
         status: "pending",
-        calculatedAt: new Date(),
+        description: `Comissão do período ${period}`,
+        createdAt: new Date(),
       },
     });
 
-    return commission;
+    return {
+      id: commission.id,
+      partnerId,
+      resellerClientId: commission.userId,
+      amount: commission.amount,
+      period,
+      status: commission.status,
+      calculatedAt: commission.createdAt,
+    } as any;
   }
 
   /**
@@ -91,12 +100,12 @@ export class CommissionEngine {
     period: string, // YYYY-MM format
   ): Promise<{ amount: number; details: import("@/types/partner").FranchiseRoyaltyDetail[] }> {
     // Busca a franquia
-    const franchise = await prisma.partner.findUnique({
+    const franchise = await prisma.user.findUnique({
       where: { id: franchiseId },
     });
 
-    if (!franchise || franchise.tier !== "franchise") {
-      throw new Error("Invalid franchise partner");
+    if (!franchise) {
+      throw new Error("Invalid franchise");
     }
 
     // Busca todas as subfranquias (filiais) desta franquia

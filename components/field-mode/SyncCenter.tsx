@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CloudUpload, 
-  Smartphone, 
-  CheckCircle2, 
-  AlertCircle, 
-  RefreshCw, 
+import {
+  CloudUpload,
+  Smartphone,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
   X,
   Clock,
   Database
@@ -34,7 +34,7 @@ export function SyncCenter({ onClose }: SyncCenterProps) {
     history: 0
   });
   const [isSyncing, setIsSyncing] = useState(false);
-  
+
   const engine = FieldEngine.getInstance();
 
   const loadStats = async () => {
@@ -83,7 +83,7 @@ export function SyncCenter({ onClose }: SyncCenterProps) {
               <p className="text-slate-400 text-sm">Proteção ativa: salvando localmente</p>
             </div>
           </div>
-          <Button 
+          <Button
             onClick={handleManualSync}
             disabled={isSyncing || stats.pending === 0}
             className="bg-blue-600 hover:bg-blue-500"
@@ -103,25 +103,25 @@ export function SyncCenter({ onClose }: SyncCenterProps) {
 
       {/* Storage Breakdown */}
       <div className="grid grid-cols-1 gap-4 overflow-y-auto pr-2 pb-12">
-        <StorageItem 
+        <StorageItem
           icon={<Smartphone className="w-5 h-5 text-blue-400" />}
           label="Armazenamento Local"
           value={`${(stats.media * 1.2).toFixed(1)} MB em uso`}
           status="Ocupando pouco espaço"
         />
-        <StorageItem 
+        <StorageItem
           icon={<Clock className="w-5 h-5 text-indigo-400" />}
           label="Visitas Hoje"
           value={`${stats.visits} registros`}
           status="Salvo no Celular"
         />
-        <StorageItem 
+        <StorageItem
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" />}
           label="Último Backup"
           value="Hoje, às 14:12"
           status="Concluído"
         />
-        
+
         {stats.pending > 0 && (
           <div className="mt-8 p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex items-start gap-4">
             <AlertCircle className="w-6 h-6 text-orange-500 shrink-0" />
@@ -152,7 +152,7 @@ function StorageItem({ icon, label, value, status }: { icon: React.ReactNode, la
           <p className="text-slate-400 text-[10px]">{value}</p>
         </div>
       </div>
-      <Badge variant="ghost" className="text-[10px] uppercase font-black text-slate-500">
+      <Badge variant="outline" className="text-[10px] uppercase font-black text-slate-500">
         {status}
       </Badge>
     </div>

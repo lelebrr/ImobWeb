@@ -21,7 +21,7 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
   const [photos, setPhotos] = useState<SmartCameraMedia[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [detectingRoom, setDetectingRoom] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = FieldEngine.getInstance();
@@ -37,9 +37,9 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
 
   const startCamera = async () => {
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }, 
-        audio: false 
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false
       });
       setStream(s);
       if (videoRef.current) {
@@ -52,28 +52,28 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
 
   const takePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
+
     setIsCapturing(true);
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
-    
+
     const blob = await new Promise<Blob>((resolve) => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.8));
     const previewUrl = URL.createObjectURL(blob);
-    
+
     const newMedia: SmartCameraMedia = {
       id: Math.random().toString(36).substr(2, 9),
       blob,
       previewUrl,
       takenAt: new Date().toISOString()
     };
-    
+
     setPhotos(prev => [newMedia, ...prev]);
     setIsCapturing(false);
-    
+
     // Auto-detect room for the new photo
     analyzePhoto(newMedia.id);
   };
@@ -84,8 +84,8 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
     const rooms = ['SALA', 'QUARTO', 'COZINHA', 'BANHEIRO', 'FACHADA'];
     const detected = rooms[Math.floor(Math.random() * rooms.length)];
     const caption = await engine.suggestCaption(detected);
-    
-    setPhotos(prev => prev.map(p => 
+
+    setPhotos(prev => prev.map(p =>
       p.id === id ? { ...p, detectedRoom: detected, aiCaption: caption } : p
     ));
     setDetectingRoom(false);
@@ -95,19 +95,19 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
     <div className="fixed inset-0 z-[100] bg-black flex flex-col overflow-hidden">
       {/* Viewfinder */}
       <div className="relative flex-1 bg-slate-900 overflow-hidden">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
         />
-        
+
         {/* Overlay Tools */}
         <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-10">
           <Button variant="ghost" size="icon" onClick={onClose} className="bg-black/40 hover:bg-black/60 rounded-full text-white">
             <X className="w-6 h-6" />
           </Button>
-          
+
           <div className="bg-emerald-600 px-3 py-1 rounded-full flex items-center gap-2 shadow-lg scale-90 md:scale-100">
             <Zap className="w-4 h-4 text-white fill-white" />
             <span className="text-white text-xs font-bold uppercase tracking-widest">IA Active</span>
@@ -116,7 +116,7 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
 
         {/* Dynamic Caption Display (Last photo) */}
         {photos.length > 0 && photos[0].aiCaption && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="absolute bottom-32 left-6 right-6 z-20"
@@ -143,7 +143,7 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
             </div>
           )}
           {photos.map((p, idx) => (
-            <motion.div 
+            <motion.div
               key={p.id}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -161,8 +161,8 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
 
         <div className="flex items-center justify-between gap-8">
           <div className="w-12" /> {/* Spacer */}
-          
-          <button 
+
+          <button
             onClick={takePhoto}
             disabled={isCapturing}
             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
@@ -170,7 +170,7 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
             <div className="w-16 h-16 rounded-full bg-white scale-90 active:scale-100 transition-transform" />
           </button>
 
-          <Button 
+          <Button
             className="bg-blue-600 hover:bg-blue-500 rounded-xl px-6 font-bold h-12"
             disabled={photos.length === 0}
             onClick={onClose}
@@ -179,8 +179,10 @@ export function SmartCamera({ onClose }: SmartCameraProps) {
           </Button>
         </div>
       </div>
-      
+
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
+
+export default SmartCamera;

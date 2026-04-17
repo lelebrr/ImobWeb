@@ -22,7 +22,7 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
   const [transcript, setTranscript] = useState('');
   const [result, setResult] = useState<VoiceRegistrationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   const engine = FieldEngine.getInstance();
 
   const startListening = async () => {
@@ -30,11 +30,11 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
       setError(null);
       setIsRecording(true);
       setTranscript('Ouvindo...');
-      
+
       const text = await engine.listen();
       setTranscript(text);
       setIsRecording(false);
-      
+
       // Process with AI
       processWithAI(text);
     } catch (err: any) {
@@ -49,7 +49,7 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
       // In a real implementation, this would call a server action that uses OpenAI/DeepSeek
       // For this optimized prototype, we simulate a very fast extraction
       await new Promise(r => setTimeout(r, 1500));
-      
+
       const mockResult: VoiceRegistrationResult = {
         transcript: text,
         confidence: 0.98,
@@ -62,7 +62,7 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
           city: 'Belo Horizonte'
         }
       };
-      
+
       setResult(mockResult);
     } catch (err) {
       setError('Erro ao processar informações. Tente novamente.');
@@ -91,7 +91,7 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
         <div className="relative mb-12">
           <AnimatePresence>
             {isRecording && (
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.1, 0.3] }}
                 exit={{ scale: 0.8, opacity: 0 }}
@@ -100,7 +100,7 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
               />
             )}
           </AnimatePresence>
-          
+
           <motion.div
             whileTap={{ scale: 0.9 }}
             onClick={!isRecording && !isProcessing ? startListening : undefined}
@@ -192,6 +192,8 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
     </div>
   );
 }
+
+export default VoicePropertyCreator;
 
 function ResultTag({ label, value }: { label: string, value: string }) {
   return (

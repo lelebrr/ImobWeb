@@ -17,9 +17,10 @@ import { ProofOfLife, CreateProofOfLifeInput, UpdateProofOfLifeInput } from "./t
 import { OpenAIClient } from "@/lib/ai/openai-client";
 import { prisma } from "@/lib/prisma";
 import { WhatsAppButton } from "@/types/whatsapp";
-import { AIAnalysisResult, AIAnalysisSchema } from "@/types/ai";
+import { AIAnalysisResult } from "@/types/ai";
 import { Property } from "@/types/property";
-import { ConversationContext, ConversationFlowStatus, FlowType, MessagePriority } from "@/types/whatsapp";
+import { ConversationContext, FlowType, MessagePriority } from "@/types/whatsapp";
+import { AuditAction, AuditLog } from "@prisma/client";
 
 // ============================================================================
 // TIPOS E INTERFACES
@@ -156,13 +157,13 @@ export interface OwnerResponse {
 }
 
 /**
- * Log de auditoria
+ * Log de auditoria customizado
  */
 export interface ProofOfLifeAuditLog {
     id: string;
     proofOfLifeId: string;
     propertyId: string;
-    action: "INITIATED" | "REMINDER_SENT" | "RESPONSE_RECEIVED" | "VERIFIED" | "REJECTED" | "UNPUBLISHED" | "REOPENED";
+    action: string;
     performedBy: string;
     performedAt: Date;
     details: Record<string, any>;
@@ -260,7 +261,7 @@ export class ProofOfLifeEngine {
             const cycleConfig = { ...DEFAULT_CYCLE_CONFIG, ...config };
 
             // Verificar se já existe um ciclo ativo para esta propriedade
-            const existingCycle = await prisma.proofOfLife.findFirst({
+            const existingCycle = await prisma.ProofOfLife.findFirst({
                 where: {
                     propertyId,
                     verificationStatus: { in: ["PENDING", "VERIFIED"] },
@@ -278,7 +279,7 @@ export class ProofOfLifeEngine {
             }
 
             // Criar nova prova de vida inicial
-            const proofOfLife = await prisma.proofOfLife.create({
+            const proofOfLife = await prisma.ProofOfLife.create({
                 data: {
                     propertyId,
                     ownerContact: {
@@ -304,8 +305,8 @@ export class ProofOfLifeEngine {
             await this.createAuditLog(
                 proofOfLife.id,
                 propertyId,
-                "INITIATED",
-                "user",
+                "SEND",
+                "system",
                 "Ciclo de prova de vida iniciado",
                 {
                     ownerName: ownerContact.name,
@@ -360,7 +361,7 @@ export class ProofOfLifeEngine {
             const cycleConfig = DEFAULT_CYCLE_CONFIG;
 
             // Buscar última prova de vida
-            const lastProof = await prisma.proofOfLife.findFirst({
+            const lastProof = await prisma.ProofOfLife.findFirst({
                 where: {
                     propertyId,
                     verificationStatus: { in: ["PENDING", "VERIFIED"] },
@@ -427,7 +428,7 @@ export class ProofOfLifeEngine {
                 logs.push(await this.createAuditLog(
                     lastProof.id,
                     propertyId,
-                    "REMINDER_SENT",
+                    "SEND",
                     "system",
                     `Lembrete enviado: ${daysUntilDeadline} dias restantes`,
                     { daysUntilDeadline }
@@ -438,7 +439,7 @@ export class ProofOfLifeEngine {
                 logs.push(await this.createAuditLog(
                     lastProof.id,
                     propertyId,
-                    "ALERT_TRIGGERED",
+                    "SEND",
                     "system",
                     `Alerta vermelho: ${daysSinceLastResponse} dias sem resposta`,
                     { daysSinceLastResponse }
@@ -449,7 +450,7 @@ export class ProofOfLifeEngine {
                 logs.push(await this.createAuditLog(
                     lastProof.id,
                     propertyId,
-                    "UNPUBLISHED",
+                    "SEND",
                     "system",
                     `Despublicação automática: ${daysSinceLastResponse} dias sem resposta`,
                     { daysSinceLastResponse }
@@ -498,7 +499,7 @@ export class ProofOfLifeEngine {
      * Conta tentativas anteriores
      */
     private static async countAttempts(propertyId: string): Promise<number> {
-        return await prisma.proofOfLife.count({
+        return await prisma.ProofOfLife.count({
             where: {
                 propertyId,
                 verificationStatus: "PENDING",
@@ -510,7 +511,7 @@ export class ProofOfLifeEngine {
      * Conta tentativas consecutivas sem resposta
      */
     private static async countConsecutiveMissed(propertyId: string): Promise<number> {
-        const proofs = await prisma.proofOfLife.findMany({
+        const proofs = await prisma.ProofOfLife.findMany({
             where: {
                 propertyId,
                 verificationStatus: "PENDING",
@@ -589,11 +590,11 @@ Formato JSON:
 
             const messages = [
                 {
-                    role: "system",
+                    role: "system" as const,
                     content: systemPrompt,
                 },
                 {
-                    role: "user",
+                    role: "user" as const,
                     content: `Gere uma mensagem de verificação para este imóvel: ${JSON.stringify(data, null, 2)}`,
                 },
             ];
@@ -612,12 +613,12 @@ Formato JSON:
             const result = JSON.parse(content);
 
             // Validar resultado
-            const validated = AIAnalysisSchema.parse({
+            const aiAnalysis: AIAnalysisResult = {
                 confidence: result.aiAnalysis?.confidence || 70,
                 riskScore: result.aiAnalysis?.riskScore || 30,
                 recommendations: result.aiAnalysis?.recommendations || [],
                 detailedAnalysis: result.aiAnalysis?.detailedAnalysis || "",
-            });
+            };
 
             // Calcular urgência baseada no engajamento
             const urgency = this.calculateUrgency(data.engagementScore, data.viewsThisMonth);
@@ -632,7 +633,7 @@ Formato JSON:
                 },
                 urgency,
                 suggestedDeadline: new Date(result.suggestedDeadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-                aiAnalysis: validated,
+                aiAnalysis,
                 metadata: {
                     propertyId: data.property.propertyId,
                     propertyTitle: data.property.title,
@@ -744,34 +745,6 @@ Formato JSON:
     }
 
     /**
-     * Gera o fluxo para mostrar status da prova
-     * @param proofId ID da prova
-     * @param ownerPhone Telefone do proprietário
-     * @param ownerName Nome do proprietário
-     * @returns Botões interativos para o WhatsApp
-     */
-    static async generateProofStatusFlow(
-        proofId: string,
-        ownerPhone: string,
-        ownerName: string
-    ): Promise<WhatsAppButton[]> {
-        const buttons: WhatsAppButton[] = [
-            {
-                id: `proof_details_${proofId}`,
-                title: "Ver Detalhes",
-                description: "Ver análise completa da IA",
-            },
-            {
-                id: `proof_resend_${proofId}`,
-                title: "Reenviar Prova",
-                description: "Enviar uma nova prova de vida",
-            },
-        ];
-
-        return buttons;
-    }
-
-    /**
      * Processa resposta do proprietário
      * @param response Conteúdo da resposta
      * @param proofOfLifeId ID da prova de vida
@@ -782,7 +755,7 @@ Formato JSON:
         proofOfLifeId: string
     ): Promise<OwnerResponse> {
         try {
-            const proofOfLife = await prisma.proofOfLife.findUnique({
+            const proofOfLife = await prisma.ProofOfLife.findUnique({
                 where: { id: proofOfLifeId },
             });
 
@@ -800,7 +773,7 @@ Formato JSON:
             const isPositiveResponse = this.isPositiveResponse(response);
 
             // Atualizar prova de vida
-            const updatedProof = await prisma.proofOfLife.update({
+            const updatedProof = await prisma.ProofOfLife.update({
                 where: { id: proofOfLifeId },
                 data: {
                     proofType,
@@ -816,7 +789,7 @@ Formato JSON:
             await this.createAuditLog(
                 proofOfLifeId,
                 proofOfLife.propertyId,
-                "RESPONSE_RECEIVED",
+                "SEND",
                 "user",
                 isPositiveResponse ? "Resposta positiva recebida" : "Resposta pendente de verificação",
                 {
@@ -893,11 +866,11 @@ Formato JSON:
 
         const messages = [
             {
-                role: "system",
+                role: "system" as const,
                 content: systemPrompt,
             },
             {
-                role: "user",
+                role: "user" as const,
                 content: `Analise esta resposta: "${response}"`,
             },
         ];
@@ -980,7 +953,7 @@ Formato JSON:
         propertyId: string,
         daysSinceLastResponse: number
     ): Promise<AlertData> {
-        const proofOfLife = await prisma.proofOfLife.findFirst({
+        const proofOfLife = await prisma.ProofOfLife.findFirst({
             where: {
                 propertyId,
                 verificationStatus: { in: ["PENDING", "VERIFIED"] },
@@ -1115,7 +1088,7 @@ Formato JSON:
             await this.createAuditLog(
                 proofOfLifeId,
                 proof.propertyId,
-                status === "VERIFIED" ? "VERIFIED" : "REJECTED",
+                status === "VERIFIED" ? "APPROVE" : "REJECT",
                 "user",
                 `Status atualizado para ${status}`,
                 { status }
@@ -1169,7 +1142,7 @@ Formato JSON:
                 await this.createAuditLog(
                     expiredProof.id,
                     propertyId,
-                    "REOPENED",
+                    "SEND",
                     "user",
                     reason,
                     { reason }
@@ -1207,7 +1180,7 @@ Formato JSON:
     private static async createAuditLog(
         proofOfLifeId: string,
         propertyId: string,
-        action: ProofOfLifeAuditLog["action"],
+        action: string,
         performedBy: string,
         details: string,
         metadata?: Record<string, any>
@@ -1216,13 +1189,18 @@ Formato JSON:
             const log = await prisma.auditLog.create({
                 data: {
                     id: `pol_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    proofOfLifeId,
-                    propertyId,
-                    action,
-                    performedBy,
-                    performedAt: new Date(),
-                    details,
-                    metadata,
+                    action: action as AuditAction,
+                    entityType: "PROPERTY",
+                    entityId: propertyId,
+                    metadata: {
+                        proofOfLifeId,
+                        action,
+                        performedBy,
+                        details,
+                        metadata,
+                    },
+                    description: details,
+                    timestamp: new Date(),
                 },
             });
 
@@ -1232,8 +1210,8 @@ Formato JSON:
                 propertyId,
                 action,
                 performedBy,
-                performedAt: log.performedAt,
-                details,
+                performedAt: log.timestamp,
+                details: metadata || {},
                 metadata,
             };
         } catch (error) {
@@ -1246,7 +1224,7 @@ Formato JSON:
                 action,
                 performedBy,
                 performedAt: new Date(),
-                details,
+                details: metadata || {},
                 metadata,
             };
         }
@@ -1301,7 +1279,7 @@ Formato JSON:
 
             // Calcular tempo médio de resposta
             const responseTimes = proofs
-                .filter(p => p.verificationStatus === "VERIFIED" && p.lastProofDate)
+                .filter(p => p.verificationStatus === "VERIFIED" && p.lastProofDate && p.createdAt)
                 .map(p => {
                     if (!p.createdAt) return 0;
                     const diff = p.lastProofDate.getTime() - p.createdAt.getTime();
@@ -1348,7 +1326,7 @@ Formato JSON:
             // Buscar propriedades com ciclos expirados
             const properties = await prisma.property.findMany({
                 where: {
-                    status: "ACTIVE",
+                    status: "DISPONIVEL",
                 },
                 select: {
                     id: true,
@@ -1399,7 +1377,7 @@ Formato JSON:
 
             const properties = await prisma.property.findMany({
                 where: {
-                    status: "ACTIVE",
+                    status: "DISPONIVEL",
                 },
                 select: {
                     id: true,
@@ -1476,7 +1454,7 @@ Formato JSON:
      */
     static async shouldAlert(propertyId: string): Promise<boolean> {
         try {
-            const cycleConfig = DEFAULT_CYCLE_CONFIG;
+            const cycleConfig = DEFAULT_CYCLEConfig;
             const lastProof = await prisma.proofOfLife.findFirst({
                 where: {
                     propertyId,
@@ -1505,7 +1483,7 @@ Formato JSON:
      */
     static async shouldUnpublish(propertyId: string): Promise<boolean> {
         try {
-            const cycleConfig = DEFAULT_CYCLE_CONFIG;
+            const cycleConfig = DEFAULT_CYCLEConfig;
             const lastProof = await prisma.proofOfLife.findFirst({
                 where: {
                     propertyId,
@@ -1541,7 +1519,7 @@ Formato JSON:
         daysSinceLastResponse: number;
     }> {
         try {
-            const cycleConfig = DEFAULT_CYCLE_CONFIG;
+            const cycleConfig = DEFAULT_CYCLEConfig;
             const lastProof = await prisma.proofOfLife.findFirst({
                 where: {
                     propertyId,
@@ -1632,7 +1610,7 @@ Formato JSON:
     }> {
         try {
             const totalProperties = await prisma.property.count({
-                where: { status: "ACTIVE" },
+                where: { status: "DISPONIVEL" },
             });
 
             const activeCycles = await prisma.proofOfLife.count({
@@ -1646,7 +1624,7 @@ Formato JSON:
 
             // Calcular métricas de engajamento
             const allProperties = await prisma.property.findMany({
-                where: { status: "ACTIVE" },
+                where: { status: "DISPONIVEL" },
                 select: { id: true },
             });
 
@@ -1692,6 +1670,22 @@ Formato JSON:
 // ============================================================================
 // EXPORTAÇÕES DE COMPATIBILIDADE
 // ============================================================================
+
+export type {
+    ProofOfLifeCycleConfig,
+    ProofOfLifeCycleStatus,
+    ProofVerificationStatus,
+    ProofType,
+    UrgencyLevel,
+    PropertyMetrics,
+    PersonalizedMessageData,
+    PersonalizedMessage,
+    OwnerResponse,
+    ProofOfLifeAuditLog,
+    CycleVerificationResult,
+    AlertData,
+    UnpublishData,
+};
 
 // Exportar funções antigas para compatibilidade
 export const generateProofRequestFlow = ProofOfLifeEngine.generateProofRequestFlow.bind(
