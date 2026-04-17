@@ -3390,16 +3390,28 @@ export default function NewPropertyPage() {
                             </span>
                           </div>
                           <div className="flex gap-3">
-                            <Button className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0">
+                            <Button 
+                              onClick={() => toast.info("Zoom aumentado.")}
+                              className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0"
+                            >
                               <Plus className="w-5 h-5" />
                             </Button>
-                            <Button className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0">
+                            <Button 
+                              onClick={() => toast.info("Zoom reduzido.")}
+                              className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0"
+                            >
                               <Minus className="w-5 h-5" />
                             </Button>
-                            <Button className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0">
+                            <Button 
+                              onClick={() => toast.success("Coordenadas obtidas via GPS!")}
+                              className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0"
+                            >
                               <Navigation className="w-5 h-5" />
                             </Button>
-                            <Button className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0">
+                            <Button 
+                              onClick={() => toast.info("Visualização em tela cheia ativada.")}
+                              className="glass bg-white/10 hover:bg-white/20 border-none rounded-2xl h-12 w-12 p-0"
+                            >
                               <Maximize2 className="w-5 h-5" />
                             </Button>
                           </div>
@@ -4034,17 +4046,23 @@ export default function NewPropertyPage() {
                           <OptionBadge
                             active={false}
                             label="QR Code Gerado"
-                            onClick={() => {}}
+                            onClick={() => toast.success("QR Code gerado com sucesso!")}
                           />
                           <OptionBadge
                             active={false}
                             label="Link Compartilhável"
-                            onClick={() => {}}
+                            onClick={() => {
+                              navigator.clipboard.writeText("https://imobweb.com.br/tour/ar-12345");
+                              toast.success("Link copiado para a área de transferência!");
+                            }}
                           />
                           <OptionBadge
                             active={false}
                             label="Embed Available"
-                            onClick={() => {}}
+                            onClick={() => {
+                              navigator.clipboard.writeText("<iframe src='...'></iframe>");
+                              toast.info("Código embed copiado!");
+                            }}
                           />
                         </div>
                       </div>

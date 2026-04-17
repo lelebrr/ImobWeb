@@ -41,28 +41,33 @@ Sua imobiliária não faz mais nada. O dinheiro flui sozinho:
 
 ---
 
-## 🤖 As 20 Inteligências Artificiais da ImobWeb
+## 🤖 As 25+ Inteligências Artificiais da ImobWeb (The 2026 Advantage)
 
-1.  **IA Insights**: Recomendações estratégicas para gestão de equipe e estoque.
-2.  **Sugestão de Preço Preditiva**: Analisa o mercado local para o valor ideal.
-3.  **Gerador de Descrições Magnéticas**: Textos otimizados para conversão em segundos.
-4.  **Staging Virtual Instantâneo**: Mobília fotos digitalmente.
-5.  **Melhoria de Foto por IA**: Edição profissional automática.
-6.  **Reconstrução de Planta Baixa**: 2D/3D a partir de fotos.
-7.  **Chatbot 24/7**: Atendimento WhatsApp autônomo.
-8.  **Score de Lead**: Priorização inteligente de clientes prontos para fechar.
-9.  **WhatsApp Proativo**: Notifica proprietários sobre atualizações necessárias.
-10. **Tradução Global**: Multi-idioma dinâmico.
-11. **Reconhecimento de Itens**: Detecta piscinas, suítes e mais em fotos.
-12. **Privacidade Automática**: Blur em rostos e placas.
-13. **SEO Master**: Meta tags e schema automático.
-14. **Editor de Vídeo Reels**: Gera clipes para redes sociais.
-15. **Análise de Sentimentos**: Detecta o tom do lead no chat.
-16. **Match Engine**: Recomendações personalizadas de busca.
-17. **Rastreador de Concorrência**: Monitora preços da região.
-18. **Leitura de Documentos (OCR)**: Extração de dados de matrículas.
-19. **Narrador de Tour**: Voz profissional para vídeos.
-20. **Roteirização Inteligente**: Otimização de visitas para corretores.
+1.  **Garantia de Vida AI**: Anti-fraude em tempo real que verifica se o imóvel ainda está disponível via WhatsApp.
+2.  **ImobPay Split**: Motor financeiro que automatiza o repasse entre proprietário, imobiliária e impostos em D+1.
+3.  **Closing Mastery (Contratos)**: Geração e assinatura digital de minutas com validade jurídica e reconhecimento facial.
+4.  **IA Insights Estratégicos**: Recomendações de estoque e equipe baseadas em padrões de mercado.
+5.  **Sugestão de Preço Preditiva**: Algoritmo que analisa o valor ideal baseado em vizinhos e liquidez.
+6.  **Gerador de Descrições Magnéticas**: Copywriting otimizado para portais imobiliários.
+7.  **Smart Photo Staging**: Mobília virtual e melhoria de iluminação automática em fotos.
+8.  **Reconstrução de Planta 3D**: Converte fotos de cômodos em plantas baixas interativas.
+9.  **Lead Scoring Pro**: Priorização automática de leads com base no comportamento e perfil financeiro.
+10. **WhatsApp AI Flows**: Chatbots que qualificam leads e agendam visitas de forma autônoma.
+11. **Análise de Sentimento**: Detecta se o lead está "quente" ou frustrado durante a conversa.
+12. **Match Engine Real-Time**: Recomenda o imóvel perfeito assim que o lead entra em contato.
+13. **Rastreador de Concorrência**: Alerta quando vizinhos baixam o preço ou vendem.
+14. **Leitura de Documentos (OCR)**: Extração de dados de matrículas e RG para onboarding veloz.
+15. **SEO Dynamic Master**: Otimização automática de títulos e meta-tags para busca orgânica.
+16. **Editor de Vídeo Reels**: Transforma fotos em clipes dinâmicos para redes sociais com trilha sonoras.
+17. **Narrador de Tour AI**: Vozes premium que guiam o usuário em tours virtuais.
+18. **Roteirização Inteligente**: Otimiza a logística de visitas diárias para corretores em campo.
+19. **Privacidade Pro**: Blur automático em rostos, placas e itens pessoais nas fotos.
+20. **Reconhecimento de Itens**: Taggeamento automático de amenidades (suítes, closets, vagas).
+21. **Predictive Revenue**: Projeção de faturamento baseada no funil de vendas atual.
+22. **Churn Prevention**: Identifica proprietários com risco de retirar o imóvel da imobiliária.
+23. **Franchise Auditor**: Monitora performance e compliance em redes de franquias de forma global.
+24. **Lead Marketplace**: Ecossistema de colaboração para compra e venda de oportunidades qualificadas.
+25. **Backup Central Centralizado**: Recuperação de desastres e histórico de dados imutável.
 
 ---
 

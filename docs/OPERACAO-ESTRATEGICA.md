@@ -1,58 +1,63 @@
-# Guia de Operação Estratégica: O Ciclo da Inteligência
+# Guia de Operação Estratégica: O Ciclo da Inteligência 2026
 
-Este documento detalha como os três grandes pilares da **ImobWeb** (Insights, Fechamento e Repasse) trabalham em conjunto para criar uma imobiliária autônoma de alta performance.
+Este documento detalha como os grandes pilares da **ImobWeb** (Garantia de Vida, Insights, Fechamento e Repasse) trabalham em conjunto para criar uma imobiliária autônoma de alta performance.
+
+---
+
+## 0. Garantia de Vida (O Alicerce da Qualidade)
+
+Antes mesmo da inteligência sugerir ações, a **IA de Garantia de Vida** assegura que o seu estoque é real e atualizado.
+- **Ciclo de Verificação**: A IA entra em contato com proprietários via WhatsApp para confirmar a permanência do imóvel no mercado.
+- **Prevenção de Fraude**: Analisa fotos e documentos enviados para garantir a autenticidade do anúncio.
+- **Auto-Limpeza**: Imóveis sem prova de vida são despublicados automaticamente, mantendo um portal 100% confiável.
 
 ---
 
 ## 1. O Motor de Inteligência (Insights)
 
-Tudo começa com a detecção de oportunidades e riscos. O módulo `ActionableInsights` monitora o banco de dados em tempo real.
+Com dados limpos, o módulo `Insights AI` monitora o banco de dados em tempo real.
 
 ### Casos de Uso:
-*   **Gestão de Estoque**: Se um imóvel (`Property`) não recebe visitas há 30 dias, a IA dispara um alerta no dashboard sugerindo uma revisão de preço baseada no `SuggestedPrice`.
-*   **Gestão de Equipe**: Se o volume de novos contratos (`Contract`) de um corretor cai 20% em comparação à média do trimestre, o gestor recebe um insight de intervenção.
+*   **Gestão de Estoque**: Identifica imóveis sem visitas e cruza com a **Garantia de Vida** para sugerir atualizações de preço.
+*   **Gestão de Equipe**: Alerta sobre queda de produtividade ou leads negligenciados antes que impacte o faturamento.
 
 ---
 
-## 2. O Fechamento (Assinatura Digital)
+## 2. O Fechamento (Closing Mastery)
 
-Uma vez que o insight gerou uma visita e o lead decidiu fechar, entra o `SignatureWizard`.
+Uma vez que o insight gerou uma visita e o lead decidiu fechar, entra o `SignatureWizard` e o gerador de contratos.
 
 ### Fluxo de Validade Jurídica:
-1.  **Geração**: O contrato é gerado em PDF (em desenvolvimento) e os signatários são cadastrados.
-2.  **Verificação**: O signatário recebe o link, acessa pelo celular e realiza a **Biometria Facial**.
-3.  **Auditoria**: Armazenamos o hash da biometria, IP, Timestamp e geolocalização no modelo `Signature`.
-4.  **Confirmado**: O contrato muda o status para `ACTIVE` automaticamente.
+1.  **Geração Automatizada**: O contrato é gerado instantaneamente com todas as cláusulas e dados das partes.
+2.  **Verificação Biométrica**: O signatário realiza a **Biometria Facial** via celular (Zero App).
+3.  **Auditoria Imutável**: Armazenamos o rastro digital completo (IP, Timestamp, Geo) para segurança total.
+4.  **Ativação Automática**: O contrato muda o status para `ACTIVE` e aciona o motor financeiro.
 
 ---
 
-## 3. O Repasse Autônomo (Split Inteligente)
+## 3. O Repasse Autônomo (ImobPay Split)
 
 Com o contrato ativo, as finanças são orquestradas pelo `ImobPay Split Engine`.
 
-### Como funciona o Split:
-1.  **Configuração**: Ao criar o contrato, define-se a `BillingRule` (ex: 10% Imobiliária / 90% Proprietário).
-2.  **Cobrança**: O sistema gera a `Invoice` mensal.
-3.  **Pagamento**: Quando o inquilino paga, o `SplitEngine` detecta a liquidação.
-4.  **Distribuição**:
-    *   **Imobiliária**: Recebe a comissão instantaneamente.
-    *   **Proprietário**: O repasse é agendado (padrão D+1) para garantir segurança e liquidez.
-5.  **Reconciliação**: O painel `AutomaticSplitDashboard` mostra 100% de transparência sobre para onde cada centavo foi distribuído.
+### Como funciona o Split Inteligente:
+1.  **Billing Rules**: Regras de divisão pré-definidas (ex: corretor, imobiliária, proprietário).
+2.  **Liquidação Instantânea**: O sistema detecta o pagamento e processa o split no próximo dia útil (D+1).
+3.  **Transparência Total**: O painel `AutomaticSplitDashboard` mostra o caminho de cada centavo.
 
 ---
 
 ## 🛠️ Manutenção e Extensibilidade
 
-### Adicionando novas Regras de Split
-Para adicionar novos tipos de repasse (ex: Taxa de Condomínio repassada a terceiros), basta estender o enum `RecipientType` no `schema.prisma` e atualizar a lógica de cálculo no `app/actions/finance.ts`.
+### Adicionando novas Regras
+Para adicionar novos tipos de repasse, basta estender o logicamente o `SplitEngine` no motor financeiro.
 
-### Segurança de Dados Biométricos
-As fotos faciais e metadados de assinatura são armazenados em buckets seguros no **Supabase Storage**, com acesso restrito via tokens temporários.
+### Segurança de Dados
+Em conformidade com a LGPD, todos os dados sensíveis são criptografados e armazenados em buckets seguros.
 
 ---
 
 > [!TIP]
-> **Dica de Performance**: Para garantir que os insights sejam sempre precisos, certifique-se de que os corretores registrem todas as visitas no sistema, pois isso alimenta o algoritmo de "Estoque Estagnado".
+> **Dica de Performance**: Utilize os **Insights AI** diariamente para identificar gargalos no seu funil de vendas antes que eles se tornem prejuízos.
 
 > [!WARNING]
-> **Privacidade**: Em conformidade com a LGPD, os dados biométricos são usados exclusivamente para a finalidade de assinatura de contrato e não são compartilhados com terceiros.
+> **Manutenção**: Certifique-se de que as chaves de API dos portais e do WhatsApp estejam sempre ativas para não interromper os ciclos de **Garantia de Vida**.

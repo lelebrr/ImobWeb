@@ -44,7 +44,14 @@ import {
   Zap,
   Smartphone,
   Flame,
-  Navigation
+  Navigation,
+  FileText,
+  ShieldCheck,
+  Brain,
+  Store,
+  ShoppingBag,
+  Heart,
+  Calendar
 } from "lucide-react";
 import { SaleProbabilityScore } from "@/components/properties/SaleProbabilityScore";
 import { SaleProbabilityScore as SaleProbabilityType } from "@/types/ai";
@@ -53,6 +60,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/responsive/tailwind-utils";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +85,16 @@ import { usePortals } from "@/providers/portal-provider";
 import { useLogs } from "@/providers/log-provider";
 import { useAnalytics } from "@/providers/analytics-provider";
 
+// New Components for Dashboard
+import FinancialDashboard from "@/components/finance/FinancialDashboard";
+import AutomaticSplitDashboard from "@/components/finance/AutomaticSplitDashboard";
+import ContractListComponent from "@/components/contracts/ContractListComponent";
+import FranchiseDashboard from "@/components/franchise/FranchiseDashboard";
+import MarketplaceGrid from "@/components/marketplace/MarketplaceGrid";
+import { HealthScoreCard } from "@/components/insights/HealthScoreCard";
+import { PredictiveTimeline } from "@/components/insights/PredictiveTimeline";
+import { PriceRecommendationCard } from "@/components/insights/PriceRecommendationCard";
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { organization } = useOrganization();
@@ -80,9 +106,26 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPortal, setSelectedPortal] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast.promise(refreshLogs(), {
+      loading: 'Sincronizando dados...',
+      success: 'Dados atualizados com sucesso!',
+      error: 'Erro ao sincronizar dados.',
+    });
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   const tabs = [
     { id: "overview", label: "Visão Geral", icon: BarChart3 },
+    { id: "finance", label: "ImobPay", icon: DollarSign },
+    { id: "contracts", label: "Contratos", icon: FileText },
+    { id: "proof-of-life", label: "Garantia de Vida", icon: ShieldCheck },
+    { id: "insights", label: "Insights AI", icon: Brain },
+    { id: "franchise", label: "Franquias", icon: Store },
+    { id: "marketplace", label: "Marketplace", icon: ShoppingBag },
     { id: "integrations", label: "Integrações", icon: Database },
     { id: "monitoring", label: "Monitoramento", icon: Activity },
     { id: "alerts", label: "Alertas", icon: AlertCircle },
@@ -197,9 +240,9 @@ export default function DashboardPage() {
           <h2 className="text-xl font-black tracking-tighter">
             Status de Saúde
           </h2>
-          <Button variant="outline" size="sm" onClick={() => refreshLogs()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+            {isRefreshing ? "Atualizando..." : "Atualizar"}
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -538,15 +581,39 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Performance Chart */}
       <div className="glass border-none rounded-3xl p-6">
         <h2 className="text-xl font-black tracking-tighter mb-4">
-          Desempenho de Sincronização
+          Velocidade de Processamento (Sinc)
         </h2>
-        <div className="h-64 bg-white/5 rounded-xl p-4">
-          <p className="text-center text-gray-400">
-            Gráfico de desempenho a ser implementado
-          </p>
+        <div className="h-64 rounded-xl p-4 overflow-hidden">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={[
+                { time: "00:00", val: 400 },
+                { time: "04:00", val: 300 },
+                { time: "08:00", val: 600 },
+                { time: "12:00", val: 800 },
+                { time: "16:00", val: 500 },
+                { time: "20:00", val: 700 },
+                { time: "23:59", val: 900 },
+              ]}
+            >
+              <defs>
+                <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
+              <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
+                itemStyle={{ color: '#60a5fa' }}
+              />
+              <Area type="monotone" dataKey="val" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
@@ -603,6 +670,154 @@ export default function DashboardPage() {
     </div>
   );
 
+  const renderFinance = () => (
+    <div className="space-y-6">
+      <FinancialDashboard />
+      <div className="mt-12">
+        <h2 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-2">
+          <Zap className="w-6 h-6 text-primary" />
+          Split Inteligente ImobPay
+        </h2>
+        <AutomaticSplitDashboard data={analytics?.finance || {}} />
+      </div>
+    </div>
+  );
+
+  const renderContracts = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-black tracking-tight">Gestão de Contratos</h2>
+        <Button className="rounded-2xl font-bold">
+          <FileText className="w-4 h-4 mr-2" />
+          Novo Contrato
+        </Button>
+      </div>
+      <ContractListComponent />
+    </div>
+  );
+
+  const renderProofOfLife = () => (
+    <div className="space-y-6">
+      <div className="glass border-none rounded-3xl p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500 flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tighter">Garantia de Vida AI</h2>
+              <p className="text-blue-200 text-sm">Anti-fraude e Verificação de Status Ativos</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
+              <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-1">Verificados de Hoje</p>
+              <p className="text-3xl font-black">24</p>
+              <div className="h-1 w-full bg-blue-500/30 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-blue-500 w-[80%]" />
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
+              <p className="text-xs font-bold text-yellow-300 uppercase tracking-widest mb-1">Aguardando Resposta</p>
+              <p className="text-3xl font-black">7</p>
+              <div className="h-1 w-full bg-yellow-500/30 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-yellow-500 w-[30%]" />
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
+              <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-1">Alertas de Fraude</p>
+              <p className="text-3xl font-black">0</p>
+              <div className="h-1 w-full bg-emerald-500/30 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-emerald-500 w-0" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
+      </div>
+      
+      <div className="glass border-none rounded-3xl p-6">
+        <h3 className="text-lg font-black mb-4">Monitoramento em Tempo Real</h3>
+        <p className="text-muted-foreground text-sm mb-6">Lista de imóveis em ciclo de verificação ativa via WhatsApp.</p>
+        <div className="space-y-3">
+          {MOCK_PROPERTIES.slice(0, 5).map((property, i) => (
+            <div key={property.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-slate-700 overflow-hidden shadow-inner">
+                  <img src={property.media[0]?.url || `https://images.unsplash.com/photo-1512917${i}774080-9991f1c4c750`} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm tracking-tight">{property.title}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Última prova: {i === 0 ? "Agora" : `${i * 2}h atrás`}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Status Ativo</p>
+                  <p className="text-xs font-black text-emerald-500">CONFIRMADO</p>
+                </div>
+                <Badge className={cn(
+                  "border-none font-black text-[10px] px-3 py-1 rounded-full",
+                  i === 2 ? "bg-yellow-500/10 text-yellow-500" : "bg-emerald-500/10 text-emerald-500"
+                )}>
+                  {i === 2 ? "PENDENTE" : "VERIFICADO"}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderInsights = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <PredictiveTimeline />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PriceRecommendationCard />
+            <HealthScoreCard />
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="glass border-none rounded-3xl p-6 bg-primary/5 border border-primary/10">
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="w-5 h-5 text-primary" />
+              <h3 className="font-black">IA Strategist</h3>
+            </div>
+            <p className="text-sm text-balance">
+              "Baseado nos dados da última semana, notei que o **Itaim Bibi** está com alta demanda mas seu estoque lá diminuiu 15%. Recomendo focar captação nesta região."
+            </p>
+            <Button className="w-full mt-4 rounded-xl text-xs font-bold" variant="outline">Ver Análise Completa</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFranchise = () => (
+    <div className="space-y-6">
+      <FranchiseDashboard />
+    </div>
+  );
+
+  const renderMarketplace = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight">Marketplace de Oportunidades</h2>
+          <p className="text-muted-foreground text-sm">Colaboração e troca de leads entre parceiros da rede.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="rounded-xl font-bold text-xs">Meus Anúncios</Button>
+          <Button className="rounded-xl font-bold text-xs text-white">Criar Oferta</Button>
+        </div>
+      </div>
+      <MarketplaceGrid />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -651,6 +866,12 @@ export default function DashboardPage() {
 
         {/* Content */}
         {activeTab === "overview" && renderOverview()}
+        {activeTab === "finance" && renderFinance()}
+        {activeTab === "contracts" && renderContracts()}
+        {activeTab === "proof-of-life" && renderProofOfLife()}
+        {activeTab === "insights" && renderInsights()}
+        {activeTab === "franchise" && renderFranchise()}
+        {activeTab === "marketplace" && renderMarketplace()}
         {activeTab === "integrations" && renderIntegrations()}
         {activeTab === "monitoring" && renderMonitoring()}
         {activeTab === "alerts" && renderAlerts()}

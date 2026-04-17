@@ -15,7 +15,13 @@ import {
   LogOut,
   CalendarDays,
   Menu,
-  X
+  X,
+  DollarSign,
+  FileText,
+  ShieldCheck,
+  Brain,
+  Store,
+  ShoppingBag
 } from 'lucide-react'
 import { cn } from '@/lib/responsive/tailwind-utils'
 import { useAuth } from '@/providers/auth-provider'
@@ -26,6 +32,12 @@ const menuItems = [
   { icon: Users, label: 'Leads', href: '/leads' },
   { icon: MessageSquare, label: 'Mensagens', href: '/conversations' },
   { icon: CalendarDays, label: 'Agenda', href: '/schedule' },
+  { icon: DollarSign, label: 'ImobPay', href: '/finance' },
+  { icon: FileText, label: 'Contratos', href: '/contracts' },
+  { icon: ShieldCheck, label: 'Garantia de Vida', href: '/proof-of-life' },
+  { icon: Brain, label: 'Insights AI', href: '/insights' },
+  { icon: Store, label: 'Franquias', href: '/franchise' },
+  { icon: ShoppingBag, label: 'Marketplace', href: '/marketplace' },
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
   { icon: Zap, label: 'Automações', href: '/integrations' },
   { icon: Settings, label: 'Configurações', href: '/settings' },

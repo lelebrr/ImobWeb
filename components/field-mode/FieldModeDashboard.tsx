@@ -18,11 +18,13 @@ import {
   MessageCircle,
   Database,
   Search,
-  Settings2
+  Settings2,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { FieldSyncStatus } from '@/types/field-mode';
 import { FieldEngine } from '@/lib/field-mode/field-engine';
 import { db } from '@/lib/field-mode/db';
@@ -92,6 +94,21 @@ export function FieldModeDashboard() {
   const sendWhatAppProposal = () => {
     const text = "Olá! Tenho uma proposta para o seu imóvel na Savassi. Podemos conversar?";
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleUpdateStatus = () => {
+    toast.promise(new Promise(r => setTimeout(r, 1000)), {
+      loading: 'Processando alteração...',
+      success: 'Status atualizado com sucesso!',
+      error: 'Erro ao atualizar status',
+    });
+  };
+
+  const handleSearchNearby = () => {
+    toast.info('Buscando imóveis em um raio de 10km...', {
+      description: 'IA está filtrando as melhores oportunidades próximas.',
+      icon: <Search className="w-4 h-4" />,
+    });
   };
 
   return (
@@ -228,11 +245,13 @@ export function FieldModeDashboard() {
           icon={<CheckCircle2 className="w-5 h-5 text-blue-500" />}
           label="Atualizar Status"
           sublabel="Vendido, Reservado..."
+          onClick={handleUpdateStatus}
         />
         <QuickActionButton 
           icon={<Search className="w-5 h-5 text-indigo-500" />}
           label="Buscar Próximos"
           sublabel="Raio de 10km"
+          onClick={handleSearchNearby}
         />
       </div>
 

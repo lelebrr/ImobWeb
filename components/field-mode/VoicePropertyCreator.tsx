@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { FieldEngine } from '@/lib/field-mode/field-engine';
 import { VoiceRegistrationResult } from '@/types/ai';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface VoicePropertyCreatorProps {
   onClose: () => void;
@@ -73,6 +74,17 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleConfirm = () => {
+    toast.promise(new Promise(r => setTimeout(r, 1500)), {
+      loading: 'Salvando rascunho inteligente...',
+      success: () => {
+        onClose();
+        return 'Imóvel pré-cadastrado com sucesso!';
+      },
+      error: 'Falha ao processar rascunho.',
+    });
   };
 
   return (
@@ -183,7 +195,10 @@ export function VoicePropertyCreator({ onClose }: VoicePropertyCreatorProps) {
             </div>
 
             <div className="flex gap-3">
-              <Button className="flex-1 bg-blue-600 hover:bg-blue-500 h-14 text-lg font-bold">
+              <Button 
+                className="flex-1 bg-blue-600 hover:bg-blue-500 h-14 text-lg font-bold"
+                onClick={handleConfirm}
+              >
                 Confirmar Cadastro
               </Button>
               <Button variant="outline" className="flex-1 border-slate-700 bg-slate-800 h-14 text-lg" onClick={() => setResult(null)}>

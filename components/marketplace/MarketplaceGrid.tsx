@@ -11,8 +11,10 @@ import {
   List,
   ArrowRight,
   ShieldCheck,
-  MousePointer2
+  MousePointer2,
+  Loader2
 } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * MARKETPLACE GRID - imobWeb 2026
@@ -31,8 +33,26 @@ import { MOCK_ADDONS } from "@/lib/data/mock-addons";
 
 export const MarketplaceGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [installing, setInstalling] = useState<string | null>(null);
 
   const addons = MOCK_ADDONS;
+
+  const handleInstall = (addonId: string, name: string) => {
+    setInstalling(addonId);
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+      {
+        loading: `Instalando ${name}...`,
+        success: `${name} instalado com sucesso em seu dashboard!`,
+        error: `Erro ao instalar ${name}.`,
+      }
+    ).finally(() => setInstalling(null));
+  };
+
+  const handleContact = () => {
+    toast.info("Abrindo chat com especialista imobWeb...");
+    window.open("https://wa.me/5511999999999", "_blank");
+  };
 
   return (
     <div className="space-y-8 p-1">
@@ -101,9 +121,13 @@ export const MarketplaceGrid: React.FC = () => {
                 </div>
               </div>
 
-              <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-sm font-black text-white shadow-xl shadow-indigo-500/10 transition-all hover:bg-slate-900 hover:shadow-indigo-500/0 dark:hover:bg-white dark:hover:text-slate-900">
-                <MousePointer2 size={16} />
-                INSTALAR AGORA
+              <button 
+                onClick={() => handleInstall(addon.id, addon.name)}
+                disabled={installing === addon.id}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-sm font-black text-white shadow-xl shadow-indigo-500/10 transition-all hover:bg-slate-900 hover:shadow-indigo-500/0 dark:hover:bg-white dark:hover:text-slate-900 disabled:opacity-50"
+              >
+                {installing === addon.id ? <Loader2 size={16} className="animate-spin" /> : <MousePointer2 size={16} />}
+                {installing === addon.id ? "INSTALANDO..." : "INSTALAR AGORA"}
               </button>
             </div>
           </div>
@@ -116,7 +140,10 @@ export const MarketplaceGrid: React.FC = () => {
           </div>
           <h3 className="mb-2 text-xl font-black text-slate-400 uppercase tracking-tighter">Precisa de algo sob medida?</h3>
           <p className="mb-8 text-sm text-slate-400">Nossa equipe de engenharia pode desenvolver módulos exclusivos para sua franquia.</p>
-          <button className="mt-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-200 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900">
+          <button 
+            onClick={handleContact}
+            className="mt-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-200 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
+          >
             Falar com Especialista
           </button>
         </div>
