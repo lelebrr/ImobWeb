@@ -41,9 +41,11 @@ export function Sidebar() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      router.push('/login')
+      // Redirecionamento forçado para limpar cache e estado
+      window.location.href = '/login'
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
+      window.location.href = '/login' // Tentar redirecionar mesmo se falhar
     }
   }
 

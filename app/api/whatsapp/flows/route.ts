@@ -1,58 +1,126 @@
 /**
- * WhatsApp Flows Webhook Handler - ImobWeb 2026
- * 
- * Processa respostas de botões interativos e listas.
- * Integra com a lógica de advanced-flows.ts para atualizar o CRM.
+ * WhatsApp Flows API - ImobWeb 2026
+ * Endpoints para управления fluxos conversacionais
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { processFlowResponse } from "@/lib/whatsapp/advanced-flows";
+import { conversationEngine } from "@/lib/whatsapp/flows/conversation-engine";
+import { proactiveScheduler } from "@/lib/whatsapp/flows/proactive-scheduler";
+import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/whatsapp/flows
+ * Inicia um fluxo para lead ou proprietário
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const { action, type, leadId, propertyId, phoneNumber, message } = body;
 
-    // Verificação de segurança (X-Hub-Signature etc - Omitido para foco na lógica funcional)
-    
-    // Extrai o payload da resposta do botão
-    // Estrutura padrão da Meta Cloud API
-    const entry = body.entry?.[0];
-    const change = entry?.changes?.[0];
-    const message = change?.value?.messages?.[0];
-
-    if (message?.type === "interactive") {
-      const interactive = message.interactive;
-      const buttonId = interactive.button_reply?.id || interactive.list_reply?.id;
-
-      if (buttonId) {
-        console.log(`[WhatsAppWebhook] Recebida interação: ${buttonId}`);
-        
-        // Processa a lógica de negócio (ex: confirma visita, altera preço)
-        const result = await processFlowResponse(buttonId);
-
-        return NextResponse.json(result);
-      }
+    if (action === "start_lead_flow" && leadId) {
+      await conversationEngine.startLeadFlow(leadId, "dashboard");
+      return NextResponse.json({
+        success: true,
+        message: "Fluxo de lead iniciado",
+      });
     }
 
-    return NextResponse.json({ status: "ignored" });
+    if (action === "start_owner_flow" && propertyId) {
+      const property = await prisma.property.findUnique({
+        where: { id: propertyId },
+        include: { owner: true },
+      });
+
+      if (!property?.owner?.whatsapp) {
+        return NextResponse.json(
+          { error: "Proprietário sem WhatsApp" },
+          { status: 400 },
+        );
+      }
+
+      await conversationEngine.startOwnerFlow(
+        propertyId,
+        type || "PROPERTY_UPDATE",
+        {
+          views30Days: property.views || 0,
+        },
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Fluxo de proprietário iniciado",
+      });
+    }
+
+    if (action === "send_message" && phoneNumber && message) {
+      const result = await conversationEngine.sendQuickReply(
+        phoneNumber,
+        message,
+      );
+      return NextResponse.json({ success: result });
+    }
+
+    if (action === "process_response" && phoneNumber && message) {
+      const response = await conversationEngine.processIncomingMessage(
+        phoneNumber,
+        message,
+      );
+      return NextResponse.json(response);
+    }
+
+    if (action === "get_stats") {
+      const stats = await conversationEngine.getConversationsStats();
+      return NextResponse.json(stats);
+    }
+
+    return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
   } catch (error) {
-    console.error("[WhatsAppWebhook] Erro ao processar webhook:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("[WhatsApp Flows API] Error:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 
 /**
- * Endpoint de Verificação (Webhook Challenge) - Obrigatório para Meta
+ * GET /api/whatsapp/flows
+ * Retorna estatísticas ehealth de fluxos
  */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
+  const searchParams = req.nextUrl.searchParams;
+  const action = searchParams.get("action");
 
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(challenge);
+  try {
+    if (action === "stats") {
+      const stats = await conversationEngine.getConversationsStats();
+      return NextResponse.json(stats);
+    }
+
+    if (action === "conversations") {
+      const conversations =
+        await conversationEngine.listActiveConversations("");
+      return NextResponse.json(conversations);
+    }
+
+    if (action === "trigger_proactive") {
+      proactiveScheduler.start();
+      return NextResponse.json({ message: "Scheduler iniciado" });
+    }
+
+    return NextResponse.json({
+      message: "WhatsApp Flows API",
+      endpoints: {
+        POST: {
+          start_lead_flow: "Inicia fluxo para lead",
+          start_owner_flow: "Inicia fluxo para proprietário",
+          send_message: "Envia mensagem rápida",
+          process_response: "Processa resposta do cliente",
+          get_stats: "Obtém estatísticas",
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[WhatsApp Flows API] Error:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
-
-  return new NextResponse("Forbidden", { status: 403 });
 }

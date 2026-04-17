@@ -1,300 +1,587 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
+  BarChart3,
+  Database,
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  ExternalLink,
+  Search,
+  Settings,
+  Power,
+  RefreshCw,
+  Loader2,
+  MessageSquare,
+  Globe,
+  SmartphoneNfc,
+  Cpu,
+  Sparkles,
+  Laptop,
+  ArrowRight,
   Home,
   Users,
-  MessageSquare,
+  DollarSign,
   TrendingUp,
-  ArrowRight,
-  Plus,
+  AlertOctagon,
+  ChevronRight,
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown,
+  Filter,
+  Download,
+  Bell,
+  User,
+  Shield,
+  Webhook,
+  Database as DatabaseIcon,
+  Activity as ActivityIcon,
   Zap,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Building2,
-  Globe,
-  MapPin,
-  Mail,
-  Share2,
-  Eye,
-  ArrowUpRight
-} from 'lucide-react'
-import { Button } from '@/components/design-system/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/design-system/card'
-import { Badge } from '@/components/design-system/badge'
-import { StatsCard } from '@/components/dashboard/stats-card'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { getDashboardStats, getDashboardLeads, getDashboardProperties } from '@/app/actions/dashboard'
-
-import { formatDistanceToNow } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-
-import { analytics } from '@/lib/analytics/posthog'
+  Smartphone,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/responsive/tailwind-utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useAuth } from "@/providers/auth-provider";
+import { useOrganization } from "@/providers/organization-provider";
+import { usePortals } from "@/providers/portal-provider";
+import { useLogs } from "@/providers/log-provider";
+import { useAnalytics } from "@/providers/analytics-provider";
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ totalLeads: 0, totalProperties: 0, activeProperties: 0 })
-  const [recentLeads, setRecentLeads] = useState<any[]>([])
-  const [recentProperties, setRecentProperties] = useState<any[]>([])
+  const { user } = useAuth();
+  const { organization } = useOrganization();
+  const { portals, loadingPortals } = usePortals();
+  const { logs, loadingLogs, refreshLogs } = useLogs();
+  const { analytics } = useAnalytics();
 
-  // Tracking e Simulação de carregamento
-  useEffect(() => {
-    analytics.capture('view_dashboard')
-    async function load() {
-       try {
-         const [st, ld, pr] = await Promise.all([
-           getDashboardStats(),
-           getDashboardLeads(),
-           getDashboardProperties()
-         ])
-         setStats(st)
-         setRecentLeads(ld.slice(0, 3))
-         setRecentProperties(pr.slice(0, 3))
-       } finally {
-         setLoading(false)
-       }
+  const [activeTab, setActiveTab] = useState("overview");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPortal, setSelectedPortal] = useState<string | null>(null);
+  const [showLogs, setShowLogs] = useState(false);
+
+  const tabs = [
+    { id: "overview", label: "Visão Geral", icon: BarChart3 },
+    { id: "integrations", label: "Integrações", icon: Database },
+    { id: "monitoring", label: "Monitoramento", icon: Activity },
+    { id: "alerts", label: "Alertas", icon: AlertCircle },
+  ];
+
+  const getPortalStatusColor = (status: string) => {
+    switch (status) {
+      case "connected":
+        return "bg-emerald-500/10 text-emerald-500";
+      case "disconnected":
+        return "bg-slate-400/10 text-slate-400";
+      case "error":
+        return "bg-red-500/10 text-red-500";
+      default:
+        return "bg-gray-400/10 text-gray-400";
     }
-    load()
-  }, [])
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-8 animate-pulse">
-        <div className="h-10 w-48 bg-secondary rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-secondary rounded-2xl" />)}
+  };
+
+  const getPortalHealthColor = (health: any) => {
+    if (!health) return "bg-gray-400/10 text-gray-400";
+    if (health.status === "healthy")
+      return "bg-emerald-500/10 text-emerald-500";
+    if (health.status === "warning") return "bg-yellow-500/10 text-yellow-500";
+    if (health.status === "error") return "bg-red-500/10 text-red-500";
+    return "bg-gray-400/10 text-gray-400";
+  };
+
+  const getPortalStats = (portal: any) => {
+    return {
+      totalProperties: portal.stats?.totalProperties || 0,
+      activeProperties: portal.stats?.activeProperties || 0,
+      totalViews: portal.stats?.totalViews || 0,
+      totalLeads: portal.stats?.totalLeads || 0,
+      lastSync: portal.syncStatus?.lastSync || null,
+      nextSync: portal.syncStatus?.nextSync || null,
+      isSyncing: portal.syncStatus?.isSyncing || false,
+    };
+  };
+
+  const getPortalFeatures = (portal: any) => {
+    return portal.features || [];
+  };
+
+  const getPortalDocumentation = (portal: any) => {
+    return portal.documentation || {};
+  };
+
+  const renderOverview = () => (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="glass border-none rounded-3xl p-4 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+            Portais Ativos
+          </p>
+          <p className="text-2xl font-black text-emerald-400">
+            {portals.filter((p) => p.status === "connected").length}
+          </p>
         </div>
-        <div className="h-96 bg-secondary rounded-2xl" />
+        <div className="glass border-none rounded-3xl p-4 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+            Propriedades Sincronizadas
+          </p>
+          <p className="text-2xl font-black text-primary">
+            {analytics?.overview?.totalPropertiesSynced || 0}
+          </p>
+        </div>
+        <div className="glass border-none rounded-3xl p-4 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+            Visualizações Hoje
+          </p>
+          <p className="text-2xl font-black text-emerald-400">
+            {analytics?.overview?.todayViews || 0}
+          </p>
+        </div>
+        <div className="glass border-none rounded-3xl p-4 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+            Leads Hoje
+          </p>
+          <p className="text-2xl font-black text-primary">
+            {analytics?.overview?.todayLeads || 0}
+          </p>
+        </div>
       </div>
-    )
-  }
 
-  // Derived stats handled in state now
-
-  return (
-    <div className="space-y-8 pb-10">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tighter">Resumo do Dia</h1>
-          <p className="text-muted-foreground font-medium">Bem-vindo de volta, aqui estão as métricas da sua imobiliária.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => router.push('/properties/new')} className="shadow-lg shadow-primary/20">
-            <Plus className="w-4 h-4 mr-2" /> Novo Imóvel
+      {/* Health Overview */}
+      <div className="glass border-none rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black tracking-tighter">
+            Status de Saúde
+          </h2>
+          <Button variant="outline" size="sm" onClick={() => refreshLogs()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
           </Button>
-          <Button variant="outline" className="glass bg-white/5">
-            <Zap className="w-4 h-4 mr-2 text-amber-500" /> IA Co-pilot
-          </Button>
         </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Imóveis Ativos"
-          value={stats.activeProperties.toString()}
-          icon={Home}
-          color="blue"
-          change={{ value: "15%", positive: true }}
-          description="Foco em captação comercial"
-        />
-        <StatsCard
-          title="Leads Novos"
-          value={stats.totalLeads.toString()}
-          icon={Users}
-          color="purple"
-          change={{ value: "42%", positive: true }}
-          description="Campanhas Ads ativas"
-        />
-        <StatsCard
-          title="Taxa de Resp."
-          value="94%"
-          icon={CheckCircle2}
-          color="green"
-          change={{ value: "2%", positive: true }}
-          description="IA atendendo 24/7"
-        />
-        <StatsCard
-          title="Vendas"
-          value="R$ 14.2M"
-          icon={TrendingUp}
-          color="amber"
-          change={{ value: "12%", positive: true }}
-          description="Propostas em aberto"
-        />
-      </div>
-
-      {/* Main Grid: Funnel and System Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Lead Funnel Visual */}
-        <Card className="glass lg:col-span-2 border-none overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <TrendingUp size={120} className="text-primary" />
-          </div>
-          <CardHeader>
-            <CardTitle className="text-xl font-black tracking-tighter flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary fill-primary" /> Funil de Conversão (Real-time)
-            </CardTitle>
-            <CardDescription className="font-medium">Acompanhe a jornada dos seus leads através do pipeline</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { label: 'Novos Contatos', value: stats.totalLeads, color: 'bg-primary' },
-                { label: 'Interessados', value: Math.floor(stats.totalLeads * 0.4), color: 'bg-indigo-500' },
-                { label: 'Visitas Agendadas', value: Math.floor(stats.totalLeads * 0.15), color: 'bg-purple-500' },
-                { label: 'Propostas', value: Math.floor(stats.totalLeads * 0.05), color: 'bg-emerald-500' }
-              ].map((step, idx) => (
-                <div key={step.label} className="relative">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-black uppercase text-muted-foreground tracking-widest">{step.label}</span>
-                    <span className="text-sm font-bold">{step.value}</span>
-                  </div>
-                  <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: (stats?.totalLeads || 0) > 0 ? `${(step.value / (stats?.totalLeads || 0)) * 100}%` : '0%' }}
-                      transition={{ duration: 1, delay: idx * 0.1 }}
-                      className={`h-full ${step.color} shadow-lg shadow-indigo-500/20`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Taxa de Conversão</p>
-                <p className="text-2xl font-black text-emerald-400">12.5%</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ticket Médio</p>
-                <p className="text-2xl font-black text-indigo-400">R$ 2.4M</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* System Health / News */}
-        <div className="space-y-8">
-          <Card className="glass border-none h-full">
-            <CardHeader>
-              <CardTitle className="text-xl font-black tracking-tighter">Saúde do Ecossistema</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-bold">
-                  <span>Sincronização Portais</span>
-                  <span className="text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> 100% OK</span>
-                </div>
-                <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 w-full" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-bold">
-                  <span>WhatsApp Agent IA</span>
-                  <span className="text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> Ativo</span>
-                </div>
-                <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 w-[98%]" />
-                </div>
-              </div>
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                <p className="text-xs font-bold text-amber-500 flex items-center gap-2 mb-1">
-                  <AlertTriangle size={14} /> Alerta de Performance
-                </p>
-                <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
-                  Seu portal ZapImóveis está com o feed XML lento. Recomenda-se atualizar manualmente os destaques.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Recent Activities Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Properties List */}
-        <Card className="glass border-none">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-black tracking-tighter">Imóveis Recém-adicionados</CardTitle>
-              <CardDescription className="font-medium">Últimas captações na sua carteira</CardDescription>
-            </div>
-            <Link href="/properties">
-              <Button variant="ghost" size="sm" className="font-black uppercase text-[10px] tracking-widest text-primary hover:bg-primary/10">Ver Todos</Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(recentProperties || []).map((property) => (
-              <div key={property.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-xl">
-                    <img src={property.media[0]?.url} alt={property.title} className="object-cover w-full h-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {portals.map((portal) => (
+            <div key={portal.id} className="glass border-none rounded-2xl p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}
+                  >
+                    <portal.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm tracking-tight line-clamp-1">{property.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-black text-primary uppercase">{property.price?.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'Consulte'}</span>
-                      <span className="text-[10px] text-muted-foreground font-bold">•</span>
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{property.address?.neighborhood || 'Bairro'}</span>
-                    </div>
+                    <h3 className="font-bold text-sm">{portal.name}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {portal.type}
+                    </p>
                   </div>
                 </div>
-                <Link href={`/properties/${property.slug}`}>
-                  <Button size="icon" variant="ghost" className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowUpRight size={18} />
-                  </Button>
-                </Link>
+                <span
+                  className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}
+                >
+                  {portal.status}
+                </span>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Recent Leads List */}
-        <Card className="glass border-none">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-black tracking-tighter">Novos Leads</CardTitle>
-              <CardDescription className="font-medium">Oportunidades recentes aguardando atenção</CardDescription>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Propriedades Ativas
+                  </span>
+                  <span className="font-black">
+                    {getPortalStats(portal).activeProperties}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Última Sincronização
+                  </span>
+                  <span className="font-medium">
+                    {portal.syncStatus?.lastSync
+                      ? new Date(portal.syncStatus.lastSync).toLocaleString(
+                          "pt-BR",
+                        )
+                      : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status de Saúde</span>
+                  <span className="font-medium">
+                    {portal.health?.status || "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
-            <Link href="/leads">
-              <Button variant="ghost" size="sm" className="font-black uppercase text-[10px] tracking-widest text-primary hover:bg-primary/10">Ver Todos</Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(recentLeads || []).map((lead) => (
-              <div key={lead.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
-                    {lead.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm tracking-tight">{lead.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-muted-foreground">
-                      <span className="text-[10px] font-bold">{lead.source}</span>
-                      <span className="text-[10px] font-bold">•</span>
-                      <span className="text-[10px] font-bold">
-                        {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true, locale: ptBR })}
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="glass border-none rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black tracking-tighter">
+            Atividade Recente
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowLogs(!showLogs)}
+          >
+            {showLogs ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+            {showLogs ? "Esconder" : "Mostrar"}
+          </Button>
+        </div>
+        {showLogs && (
+          <div className="space-y-3">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="glass border-none rounded-xl p-3 border border-white/10"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">
+                        {portals.find((p) => p.id === log.portalId)?.icon ||
+                          "📋"}
+                      </span>
+                      <span className="font-medium text-sm">{log.action}</span>
+                      <span
+                        className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                          log.status === "SUCCESS"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : log.status === "ERROR"
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        {log.status}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      {log.message}{" "}
+                      {log.property?.title && ` - ${log.property.title}`}
+                    </p>
                   </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest glass border-none text-primary">
-                    {lead.status}
-                  </Badge>
-                  <Button size="sm" variant="ghost" className="h-7 px-3 text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all rounded-lg">Atender</Button>
+                  <div className="flex items-center gap-2 ml-3">
+                    <span className="text-xs text-muted-foreground">
+                      {log.timestamp.toLocaleTimeString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Portal: {log.portalId}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
+
+  const renderIntegrations = () => (
+    <div className="space-y-6">
+      {/* Search and Filters */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar portal ou ação..."
+            className="pl-12 glass border-none h-12 sm:h-14 rounded-2xl"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Filter className="w-4 h-4 mr-2" />
+            Filtros
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
+      </div>
+
+      {/* Portals Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {portals.map((portal) => (
+          <div
+            key={portal.id}
+            className="glass border-none rounded-2xl p-5 group hover:translate-y-[-4px] transition-all duration-300"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}
+                >
+                  <portal.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">{portal.name}</h3>
+                  <p className="text-xs text-muted-foreground">{portal.type}</p>
+                </div>
+              </div>
+              <span
+                className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}
+              >
+                {portal.status}
+              </span>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Propriedades Ativas
+                </span>
+                <span className="font-medium">
+                  {getPortalStats(portal).activeProperties}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Visualizações</span>
+                <span className="font-medium">
+                  {getPortalStats(portal).totalViews}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Leads</span>
+                <span className="font-medium">
+                  {getPortalStats(portal).totalLeads}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <RefreshCw className="w-3 h-3" />
+                <span className="text-xs font-medium">
+                  {portal.syncStatus?.lastSync
+                    ? new Date(portal.syncStatus.lastSync).toLocaleString(
+                        "pt-BR",
+                      )
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedPortal(portal.id)}
+                >
+                  <Settings className="w-3 h-3 mr-1.5" />
+                  Configurar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refreshLogs()}
+                >
+                  <ActivityIcon className="w-3 h-3 mr-1.5" />
+                  Testar
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderMonitoring = () => (
+    <div className="space-y-6">
+      {/* Health Metrics */}
+      <div className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">
+          Métricas de Saúde
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="glass border-none rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <ActivityIcon className="w-5 h-5 text-emerald-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
+                Uptime
+              </span>
+            </div>
+            <p className="text-2xl font-black text-emerald-400">
+              {analytics?.uptime || "99.9%"}
+            </p>
+          </div>
+          <div className="glass border-none rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-500">
+                Taxa de Sincronização
+              </span>
+            </div>
+            <p className="text-2xl font-black text-blue-400">
+              {analytics?.syncRate || "98.2%"}
+            </p>
+          </div>
+          <div className="glass border-none rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <AlertCircle className="w-5 h-5 text-yellow-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-yellow-500">
+                Erros
+              </span>
+            </div>
+            <p className="text-2xl font-black text-yellow-400">
+              {analytics?.errorRate || "0.8%"}
+            </p>
+          </div>
+          <div className="glass border-none rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="w-5 h-5 text-green-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-green-500">
+                Cobertura
+              </span>
+            </div>
+            <p className="text-2xl font-black text-green-400">
+              {analytics?.coverage || "92.5%"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Performance Chart */}
+      <div className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">
+          Desempenho de Sincronização
+        </h2>
+        <div className="h-64 bg-white/5 rounded-xl p-4">
+          <p className="text-center text-gray-400">
+            Gráfico de desempenho a ser implementado
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAlerts = () => (
+    <div className="space-y-6">
+      <div className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">
+          Alertas e Notificações
+        </h2>
+        <div className="space-y-3">
+          <div className="glass border-none rounded-xl p-4 border-l-4 border-red-500">
+            <div className="flex items-start gap-3">
+              <AlertOctagon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-700">
+                  Portais com Erros
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Verifique os logs para portais com status de erro
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="glass border-none rounded-xl p-4 border-l-4 border-yellow-500">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-700">
+                  Sincronização Pendente
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Portais com sincronizações agendadas para o dia
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="glass border-none rounded-xl p-4 border-l-4 border-green-500">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-700">
+                  Sincronização Sucesso
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Todas as operações de hoje foram bem-sucedidas
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <Home className="w-6 h-6 text-primary" />
+              <h1 className="text-xl font-black tracking-tighter">
+                Dashboard de Gestão de Integrações
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-gray-500" />
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center gap-4 mb-6">
+          <User className="w-5 h-5 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">
+            {user?.name || "Usuário"} - {organization?.name}
+          </span>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                activeTab === tab.id
+                  ? "bg-primary text-white shadow-lg shadow-primary/20"
+                  : "glass text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        {activeTab === "overview" && renderOverview()}
+        {activeTab === "integrations" && renderIntegrations()}
+        {activeTab === "monitoring" && renderMonitoring()}
+        {activeTab === "alerts" && renderAlerts()}
+      </div>
+    </div>
+  );
 }

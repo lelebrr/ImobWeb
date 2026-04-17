@@ -1,0 +1,135 @@
+/// Publicação em Múltiplos Portais - ImobWeb 2026
+/// Adicionar ao schema.prisma existente
+
+// ============================================
+// Modelos de Publicação
+// ============================================
+
+model Publication {
+  id          String   @id @default(cuid())
+  propertyId  String   @unique
+  tenantId    String
+  packageId   String
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  package     PublicationPackage @relation(fields: [packageId], references: [id])
+  announcements PropertyAnnouncement[]
+
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+model PublicationPackage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  type        PublicationPackageType @default(BASIC)
+  portals     PortalConfig[]
+  durationDays Int      @default(30)
+  isHighlight Boolean  @default(false)
+  highlightLevel HighlightLevel @default(NONE)
+  price       Decimal   @default(0)
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  publications Publication[]
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model PropertyAnnouncement {
+  id            String   @id @default(cuid())
+  publicationId String
+  portalId      String
+  portalName    String
+  portalType    String?
+  externalId    String?   @unique
+  status        PortalStatus @default(NOT_PUBLISHED)
+  url           String?
+  errorMessage String?
+  publishedAt  DateTime?
+  lastSyncAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@index([publicationId])
+  @@index([portalId])
+  @@index([status])
+  @@unique([publicationId, portalId])
+}
+
+model PublicationLog {
+  id            String   @id @default(cuid())
+  publicationId String
+  portalId      String
+  type          PublicationLogType
+  status        String
+  message      String?
+  details      Json?
+  createdAt    DateTime  @default(now())
+
+  @@index([publicationId])
+  @@index([portalId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Tipos Enum
+// ============================================
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHING
+  PUBLISHED
+  SYNCING
+  ERROR
+  BLOCKED
+  EXPIRED
+}
+
+enum PortalStatus {
+  NOT_PUBLISHED
+  PENDING
+  PUBLISHED
+  ERROR
+  BLOCKED
+  DELETED
+}
+
+enum PublicationPackageType {
+  BASIC
+  HIGHLIGHT
+  SUPER_HIGHLIGHT
+  PREMIUM
+  CUSTOM
+}
+
+enum HighlightLevel {
+  NONE
+  STANDARD
+  PREMIUM
+  PREMIUM_PLUS
+  DESTAQUE
+  SUPER_DESTAQUE
+}
+
+enum PublicationLogType {
+  CREATE
+  UPDATE
+  DELETE
+  REPUBLISH
+  SYNC
+}

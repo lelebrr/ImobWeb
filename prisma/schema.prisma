@@ -1401,6 +1401,31 @@ model ImportResult {
   @@index([createdAt])
 }
 
+/// Modelo de Eventos de Integração
+model IntegrationEvent {
+  id          String   @id @default(cuid())
+  organizationId String // Chave estrangeira para multi-tenant
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  portalId    String   // ID do portal (zap, vivareal, etc.)
+  action      String   // Ação realizada (CREATE, UPDATE, SYNC, etc.)
+  status      String   // Status da operação (SUCCESS, ERROR, PENDING, etc.)
+  message     String?  // Mensagem descritiva
+  metadata    Json?    // Metadados adicionais
+  propertyId  String?  // ID do imóvel relacionado
+  timestamp   DateTime @default(now())
+
+  // Relacionamentos
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([portalId])
+  @@index([action])
+  @@index([status])
+  @@index([timestamp])
+  @@index([propertyId])
+}
+
 // ============================================
 // IA 5 - COMUNICAÇÃO (EMAIL & SMS)
 // ============================================
@@ -1528,4 +1553,131 @@ model FinancialDistribution {
   @@index([invoiceId])
   @@index([recipientType])
   @@index([status])
+}
+
+// ============================================
+// RELATÓRIOS DIÁRIOS DE INTEGRAÇÃO
+// ============================================
+
+model DailyReport {
+  id          String   @id @default(cuid())
+  organizationId String?
+  date        DateTime @default(now())
+  report      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([date])
+}
+
+// ============================================
+// SCORE DE SAÚDE DOS IMÓVEIS (PROMPT 3/9)
+// ============================================
+
+/// Nível de saúde do imóvel
+enum HealthLevel {
+  healthy   // 80-100
+  warning   // 50-79
+  critical  // 0-49
+}
+
+/// Score atual do imóvel
+model PropertyScore {
+  id               String     @id @default(cuid())
+  propertyId       String     @unique
+  overallScore     Int        // 0-100
+  healthLevel      HealthLevel
+  factors          Json       // Array de FactorDetail
+  calculatedAt     DateTime
+  nextCalculationAt DateTime
+  isRealTime       Boolean    @default(false)
+  
+  property         Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([propertyId])
+  @@index([healthLevel])
+  @@index([calculatedAt])
+}
+
+/// Histórico de scores do imóvel (tendências)
+model PropertyScoreHistory {
+  id             String     @id @default(cuid())
+  propertyId     String
+  overallScore   Int
+  healthLevel    HealthLevel
+  factors        Json       // Array de FactorDetail
+  calculatedAt   DateTime
+  trigger        String     // scheduled, manual, update, alert
+  
+  property       Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime   @default(now())
+
+  @@index([propertyId])
+  @@index([calculatedAt])
+  @@index([trigger])
+}
+
+/// Configurações de Bloqueio Automático
+model AutoBlockConfig {
+  id                      String   @id @default(cuid())
+  organizationId          String   @unique
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  enabled                 Boolean  @default(false)
+  daysWithoutOwnerResponse Int      @default(30)
+  daysBeforeNotification  Int      @default(3)
+  notifyOnBlock           Boolean  @default(true)
+  blockFromPortals         Boolean  @default(true)
+  keepOnPlatform          Boolean  @default(true)
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+/// Registro de bloqueios automáticos
+model AutoBlockRecord {
+  id             String    @id @default(cuid())
+  propertyId     String
+  reason         String    // no_owner_response, price_not_updated, photos_outdated, manual
+  blockedAt      DateTime
+  unblockedAt    DateTime?
+  isActive       Boolean   @default(true)
+  notifySent     Boolean   @default(false)
+  notificationSentAt DateTime?
+  metadata       Json?
+  
+  property       Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime  @default(now())
+
+  @@index([propertyId])
+  @@index([isActive])
+  @@index([blockedAt])
+}
+
+/// Recomendações da IA para melhorar score
+model AIRecommendation {
+  id                String   @id @default(cuid())
+  propertyId        String
+  type              String   // update_photos, adjust_price, update_description, contact_owner, check_portal_rules, refresh_announcement
+  priority          String   // high, medium, low
+  message           String
+  potentialScoreGain Int
+  actionUrl         String?
+  isRead            Boolean  @default(false)
+  isActioned        Boolean  @default(false)
+  actionedAt        DateTime?
+  
+  property          Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([priority])
+  @@index([isRead])
 }

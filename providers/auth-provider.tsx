@@ -111,11 +111,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * Fazer logout
      */
     const signOut = async () => {
-        const { error } = await supabase.auth.signOut()
-        if (error) throw error
-        setUser(null)
-        setSession(null)
-        setOrganizationId(null)
+        try {
+            await supabase.auth.signOut()
+        } catch (error) {
+            console.error('Erro na chamada de signOut do Supabase:', error)
+        } finally {
+            // Garantir que o estado local seja limpo independentemente do sucesso da API
+            setUser(null)
+            setSession(null)
+            setOrganizationId(null)
+            setLoading(false)
+        }
     }
 
     return (

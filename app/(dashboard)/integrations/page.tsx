@@ -3,15 +3,12 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Zap,
-  MessageSquare,
-  Globe,
-  Webhook,
-  Mail,
-  Database,
-  BarChart3,
-  Shield,
-  Smartphone,
+  Facebook,
+  Instagram,
+  SmartphoneNfc,
+  Cpu,
+  Sparkles,
+  Laptop,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -20,12 +17,33 @@ import {
   Search,
   Settings,
   Power,
-  RefreshCw
+  RefreshCw,
+  Loader2,
+  MessageSquare,
+  Globe,
+  Mail,
+  Shield,
+  BarChart3,
+  Webhook,
+  Database,
+  Zap,
+  Smartphone
 } from 'lucide-react'
 import { Button } from '@/components/design-system/button'
 import { Input } from '@/components/design-system/input'
 import { Badge } from '@/components/design-system/badge'
 import { cn } from '@/lib/responsive/tailwind-utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/design-system/label'
+import { toast } from 'sonner'
+import { useEffect } from 'react'
 
 interface Integration {
   id: string
@@ -156,6 +174,60 @@ const INTEGRATIONS: Integration[] = [
     stats: { label: 'Enviadas Hoje', value: '67' }
   },
   {
+    id: 'facebook',
+    name: 'Facebook Pixel & Ads',
+    description: 'Rastreie conversões e otimize suas campanhas de tráfego pago para imóveis.',
+    icon: Facebook,
+    category: 'communication',
+    status: 'disconnected',
+    premium: false,
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram Direct',
+    description: 'Integre mensagens diretas e automação de comentários para seus posts.',
+    icon: Instagram,
+    category: 'communication',
+    status: 'disconnected',
+    premium: false,
+  },
+  {
+    id: 'sms-gateway',
+    name: 'Portal SMS',
+    description: 'Envio de alertas por SMS para leads e notificações críticas de sistema.',
+    icon: SmartphoneNfc,
+    category: 'communication',
+    status: 'disconnected',
+    premium: true,
+  },
+  {
+    id: 'website-integration',
+    name: 'Meu Website',
+    description: 'Conecte seu site próprio para captura automática de leads e tracking.',
+    icon: Laptop,
+    category: 'communication',
+    status: 'disconnected',
+    premium: false,
+  },
+  {
+    id: 'google-gemini',
+    name: 'Google Gemini Pro',
+    description: 'Processamento de linguagem natural ultra-rápido para análise de documentos.',
+    icon: Sparkles,
+    category: 'automation',
+    status: 'disconnected',
+    premium: true,
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek AI',
+    description: 'Raciocínio lógico avançado e extração de dados técnicos de contratos.',
+    icon: Cpu,
+    category: 'automation',
+    status: 'disconnected',
+    premium: true,
+  },
+  {
     id: 'openai',
     name: 'OpenAI GPT-4o',
     description: 'Motor de IA para geração de descrições, sugestão de preços e chat inteligente.',
@@ -180,15 +252,61 @@ const CATEGORIES = [
 export default function IntegrationsPage() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
+  const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATIONS)
+  const [loading, setLoading] = useState(true)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null)
 
-  const filteredIntegrations = INTEGRATIONS.filter(i => {
+  useEffect(() => {
+    fetchIntegrations()
+  }, [])
+
+  const fetchIntegrations = async () => {
+    try {
+      const res = await fetch('/api/integrations/status')
+      const data = await res.json()
+
+      if (data.integrations) {
+        setIntegrations(prev => prev.map(integration => ({
+          ...integration,
+          status: data.integrations[integration.id]?.status || integration.status,
+          config: data.integrations[integration.id]?.config
+        })))
+      }
+    } catch (err) {
+      console.error('Failed to fetch integrations:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'connected' ? 'disconnected' : 'connected'
+
+    try {
+      const res = await fetch('/api/integrations/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integrationId: id, status: newStatus })
+      })
+
+      if (res.ok) {
+        setIntegrations(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i))
+        toast.success(`Integração ${newStatus === 'connected' ? 'conectada' : 'desconectada'} com sucesso!`)
+      }
+    } catch (err) {
+      toast.error('Erro ao atualizar status da integração.')
+    }
+  }
+
+  const filteredIntegrations = integrations.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(search.toLowerCase()) || i.description.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = activeCategory === 'all' || i.category === activeCategory
     return matchesSearch && matchesCategory
   })
 
-  const connectedCount = INTEGRATIONS.filter(i => i.status === 'connected').length
-  const totalCount = INTEGRATIONS.length
+  const connectedCount = integrations.filter(i => i.status === 'connected').length
+  const totalCount = integrations.length
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-10">
@@ -266,10 +384,27 @@ export default function IntegrationsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
           >
-            <IntegrationCard integration={integration} />
+            <IntegrationCard
+              integration={integration}
+              onConfigure={() => {
+                setSelectedIntegration(integration)
+                setConfigOpen(true)
+              }}
+              onToggle={() => handleToggleStatus(integration.id, integration.status)}
+            />
           </motion.div>
         ))}
       </div>
+
+      <ConfigDialog
+        open={configOpen}
+        onOpenChange={setConfigOpen}
+        integration={selectedIntegration}
+        onSave={() => {
+          fetchIntegrations()
+          setConfigOpen(false)
+        }}
+      />
 
       {filteredIntegrations.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -284,7 +419,15 @@ export default function IntegrationsPage() {
   )
 }
 
-function IntegrationCard({ integration }: { integration: Integration }) {
+function IntegrationCard({
+  integration,
+  onConfigure,
+  onToggle
+}: {
+  integration: Integration,
+  onConfigure: () => void,
+  onToggle: () => void
+}) {
   const Icon = integration.icon
   const statusConfig = {
     connected: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Conectado', icon: CheckCircle2 },
@@ -336,23 +479,140 @@ function IntegrationCard({ integration }: { integration: Integration }) {
             <span className="text-[10px] font-medium">{integration.lastSync}</span>
           </div>
         )}
-        <Button
-          variant={integration.status === 'connected' ? 'ghost' : 'default'}
-          size="sm"
-          className={cn(
-            "ml-auto h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest",
-            integration.status === 'connected' 
-              ? "hover:bg-white/5" 
-              : "shadow-lg shadow-primary/20"
+        <div className="flex items-center gap-2 ml-auto">
+          {integration.status === 'connected' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onConfigure}
+              className="h-8 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5"
+            >
+              <Settings className="w-3 h-3 mr-1.5" />
+            </Button>
           )}
-        >
-          {integration.status === 'connected' ? (
-            <><Settings className="w-3 h-3 mr-1.5" /> Configurar</>
-          ) : (
-            <><ArrowRight className="w-3 h-3 mr-1.5" /> Conectar</>
-          )}
-        </Button>
+          <Button
+            variant={integration.status === 'connected' ? 'ghost' : 'default'}
+            size="sm"
+            onClick={onToggle}
+            className={cn(
+              "h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest",
+              integration.status === 'connected'
+                ? "hover:bg-white/5"
+                : "shadow-lg shadow-primary/20"
+            )}
+          >
+            {integration.status === 'connected' ? (
+              <><Power className="w-3 h-3 mr-1.5" /> Desconectar</>
+            ) : (
+              <><ArrowRight className="w-3 h-3 mr-1.5" /> Conectar</>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
+  )
+}
+
+function ConfigDialog({
+  open,
+  onOpenChange,
+  integration,
+  onSave
+}: {
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+  integration: Integration | null,
+  onSave: () => void
+}) {
+  const [apiKey, setApiKey] = useState('')
+  const [provider, setProvider] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSave = async () => {
+    if (!integration) return
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/integrations/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          integrationId: integration.id,
+          status: 'connected',
+          settings: { apiKey, provider }
+        })
+      })
+
+      if (res.ok) {
+        toast.success('Configurações salvas e integração conectada!')
+        onSave()
+      }
+    } catch (err) {
+      toast.error('Erro ao salvar configurações.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!integration) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass border-none sm:max-w-[425px] rounded-[2rem] p-6">
+        <DialogHeader>
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+            <integration.icon className="w-6 h-6 text-primary" />
+          </div>
+          <DialogTitle className="text-xl font-black tracking-tighter">Configurar {integration.name}</DialogTitle>
+          <DialogDescription className="text-muted-foreground text-sm font-medium leading-relaxed">
+            Preencha as informações necessárias para ativar esta integração no seu dashboard.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          {integration.id.includes('sms') && (
+            <div className="grid gap-2">
+              <Label htmlFor="provider" className="text-[10px] font-black uppercase tracking-widest ml-1">Provedor</Label>
+              <Input
+                id="provider"
+                placeholder="Ex: Twilio, TotalVoice..."
+                className="glass border-none rounded-xl"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <Label htmlFor="apiKey" className="text-[10px] font-black uppercase tracking-widest ml-1">
+              {integration.id.includes('facebook') || integration.id.includes('instagram') ? 'Token de Acesso / Script ID' : 'Chave de API (API Key)'}
+            </Label>
+            <Input
+              id="apiKey"
+              type="password"
+              placeholder="••••••••••••••••"
+              className="glass border-none rounded-xl"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </div>
+
+          <p className="text-[10px] text-muted-foreground leading-tight italic">
+            * Seus dados são criptografados e armazenados com segurança máxima.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={handleSave}
+            disabled={loading}
+            className="w-full h-12 rounded-2xl shadow-lg shadow-primary/20 font-black uppercase tracking-widest text-xs"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+            Salvar e Ativar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

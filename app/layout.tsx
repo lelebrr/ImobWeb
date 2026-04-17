@@ -62,7 +62,6 @@ export const metadata: Metadata = {
 import { PostHogPageView } from "@/components/analytics/PostHogPageView"
 import { Suspense } from "react"
 
-import { AICopilot } from "@/components/ai/AICopilot"
 import { PWAHandler } from "@/components/pwa/PWAHandler"
 
 export default function RootLayout({
@@ -86,7 +85,6 @@ export default function RootLayout({
           <main className="relative flex min-h-screen flex-col">
             {children}
           </main>
-          <AICopilot />
         </RootProvider>
         <Analytics />
       </body>

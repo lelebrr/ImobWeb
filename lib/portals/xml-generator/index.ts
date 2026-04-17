@@ -52,6 +52,16 @@ export class XmlGenerator {
         return this.generateImovelWebXml(property);
       case 'chaves':
         return this.generateChavesXml(property);
+      case 'mercado_livre':
+        return this.generateMercadoLivreXml(property);
+      case 'proprietario_direto':
+        return this.generateProprietarioDiretoXml(property);
+      case 'imobibrasil':
+        return this.generateImobiBrasilXml(property);
+      case 'loft':
+        return this.generateLoftXml(property);
+      case 'quinto_andar':
+        return this.generateQuintoAndarXml(property);
       default:
         throw new Error(`Unsupported portal: ${portalId}`);
     }
@@ -258,6 +268,251 @@ export class XmlGenerator {
     return xml + xmlContent;
   }
 
+  private generateMercadoLivreXml(property: PropertyData): string {
+    const xml = this.createXmlDeclaration();
+    const category = property.transactionType === 'sale' ? 'MLB205874' : 'MLB205875';
+    const condition = property.transactionType === 'sale' ? 'new' : 'used';
+
+    const xmlContent = `<item>
+  <id>${this.escapeXml(property.id || '')}</id>
+  <title><![CDATA[${property.title}]]></title>
+  <description><![CDATA[${property.description}]]></description>
+  <category_id>${category}</category_id>
+  <price>${property.price}</price>
+  <currency>BRL</currency>
+  <condition>${condition}</condition>
+  <shipping>
+    <free_shipping>false</free_shipping>
+  </shipping>
+  <pictures>
+    ${property.photos.map((url, i) => `<picture>
+      <id>${i + 1}</id>
+      <url>${this.escapeXml(url)}</url>
+    </picture>`).join('')}
+  </pictures>
+  <attributes>
+    <attribute id="BRAND" value="Generico"/>
+    <attribute id="MODEL" value="${this.escapeXml(property.propertyType)}"/>
+    <attribute id="YEAR" value="${property.features?.age || new Date().getFullYear()}"/>
+  </attributes>
+  <location>
+    <state>${property.address.state}</state>
+    <city>${this.escapeXml(property.address.city)}</city>
+    <neighborhood>${this.escapeXml(property.address.neighborhood)}</neighborhood>
+  </location>
+</item>`;
+
+    return xml + xmlContent;
+  }
+
+  private generateProprietarioDiretoXml(property: PropertyData): string {
+    const xml = this.createXmlDeclaration();
+    const tipoImovel = this.mapPropertyType(property.propertyType, 'proprietario_direto');
+    const tipoNegocio = property.transactionType === 'sale' ? 'venda' : 'aluguel';
+
+    const xmlContent = `<imoveis>
+  <imovel>
+    <id>${this.escapeXml(property.id || '')}</id>
+    <tipo>${tipoImovel}</tipo>
+    <tipo_transacao>${tipoNegocio}</tipo_transacao>
+    <titulo><![CDATA[${property.title}]]></titulo>
+    <descricao><![CDATA[${property.description}]]></descricao>
+    <preco>${property.price}</preco>
+    <endereco>
+      <logradouro><![CDATA[${property.address.street}]]></logradouro>
+      <numero><![CDATA[${property.address.number || ''}]]></numero>
+      <bairro><![CDATA[${property.address.neighborhood}]]></bairro>
+      <cidade><![CDATA[${property.address.city}]]></cidade>
+      <uf>${property.address.state}</uf>
+      <cep>${this.escapeXml(property.address.zipCode || '')}</cep>
+    </endereco>
+    <caracteristicas>
+      <area_construida>${property.features?.builtArea || ''}</area_construida>
+      <area_total>${property.features?.area || ''}</area_total>
+      <quartos>${property.features?.bedrooms || ''}</quartos>
+      <banheiros>${property.features?.bathrooms || ''}</banheiros>
+      <vagas_garagem>${property.features?.parkingSpaces || ''}</vagas_garagem>
+      <pavimento>${this.escapeXml(property.features?.floor || '')}</pavimento>
+      <ano_construcao>${property.features?.age || ''}</ano_construcao>
+    </caracteristicas>
+    <imagens>
+      ${property.photos.map((url, i) => `
+        <imagem id="${i + 1}">
+          <url><![CDATA[${url}]]></url>
+        </imagem>`).join('')}
+    </imagens>
+    <contato>
+      <nome><![CDATA[${property.owner?.name || ''}]]></nome>
+      <telefone><![CDATA[${property.owner?.phone || ''}]]></telefone>
+      <email><![CDATA[${property.owner?.email || ''}]]></email>
+    </contato>
+  </imovel>
+</imoveis>`;
+
+    return xml + xmlContent;
+  }
+
+  private generateImobiBrasilXml(property: PropertyData): string {
+    const xml = this.createXmlDeclaration();
+    const tipoImovel = this.mapPropertyType(property.propertyType, 'imobibrasil');
+    const tipoNegocio = property.transactionType === 'sale' ? 'Venda' : 'Locação';
+
+    const xmlContent = `<imoveis>
+  <imovel>
+    <codigo>${this.escapeXml(property.id || '')}</codigo>
+    <tipo>${tipoImovel}</tipo>
+    <operacao>${tipoNegocio}</operacao>
+    <titulo><![CDATA[${property.title}]]></titulo>
+    <descricao><![CDATA[${property.description}]]></descricao>
+    <valor>${property.price}</valor>
+    <endereco>
+      <logradouro><![CDATA[${property.address.street}]]></logradouro>
+      <numero><![CDATA[${property.address.number || ''}]]></numero>
+      <bairro><![CDATA[${property.address.neighborhood}]]></bairro>
+      <cidade><![CDATA[${property.address.city}]]></cidade>
+      <uf>${property.address.state}</uf>
+      <cep>${this.escapeXml(property.address.zipCode || '')}</cep>
+    </endereco>
+    <detalhes>
+      <area_util>${property.features?.builtArea || ''}</area_util>
+      <area_total>${property.features?.area || ''}</area_total>
+      <quartos>${property.features?.bedrooms || ''}</quartos>
+      <banheiros>${property.features?.bathrooms || ''}</banheiros>
+      <vagas>${property.features?.parkingSpaces || ''}</vagas>
+      <pavimento>${this.escapeXml(property.features?.floor || '')}</pavimento>
+      <idade>${property.features?.age || ''}</idade>
+    </detalhes>
+    <fotos>
+      ${property.photos.map((url, i) => `
+        <foto id="${i + 1}">
+          <url><![CDATA[${url}]]></url>
+        </foto>`).join('')}
+    </fotos>
+    <contato>
+      <nome><![CDATA[${property.owner?.name || ''}]]></nome>
+      <telefone><![CDATA[${property.owner?.phone || ''}]]></telefone>
+      <email><![CDATA[${property.owner?.email || ''}]]></email>
+    </contato>
+  </imovel>
+</imoveis>`;
+
+    return xml + xmlContent;
+  }
+
+  private generateLoftXml(property: PropertyData): string {
+    const xml = this.createXmlDeclaration();
+    const tipoImovel = this.mapPropertyType(property.propertyType, 'loft');
+    const tipoNegocio = property.transactionType === 'sale' ? 'venda' : 'aluguel';
+
+    const xmlContent = `<listing>
+  <id>${this.escapeXml(property.id || '')}</id>
+  <type>${tipoImovel}</type>
+  <transaction_type>${tipoNegocio}</transaction_type>
+  <title><![CDATA[${property.title}]]></title>
+  <description><![CDATA[${property.description}]]></description>
+  <price>${property.price}</price>
+  <currency>BRL</currency>
+  <address>
+    <street><![CDATA[${property.address.street}]]></street>
+    <number><![CDATA[${property.address.number || ''}]]></number>
+    <complement><![CDATA[${property.address.complement || ''}]]></complement>
+    <neighborhood><![CDATA[${property.address.neighborhood}]]></neighborhood>
+    <city><![CDATA[${property.address.city}]]></city>
+    <state>${property.address.state}</state>
+    <zip_code>${this.escapeXml(property.address.zipCode || '')}</zip_code>
+  </address>
+  <characteristics>
+    <total_area>${property.features?.area || ''}</total_area>
+    <usable_area>${property.features?.builtArea || ''}</usable_area>
+    <bedrooms>${property.features?.bedrooms || ''}</bedrooms>
+    <bathrooms>${property.features?.bathrooms || ''}</bathrooms>
+    <parking_spaces>${property.features?.parkingSpaces || ''}</parking_spaces>
+    <floor>${this.escapeXml(property.features?.floor || '')}</floor>
+    <year_built>${property.features?.age || ''}</year_built>
+  </characteristics>
+  <media>
+    ${property.photos.map((url, i) => `
+      <image id="${i + 1}">
+        <url><![CDATA[${url}]]></url>
+      </image>`).join('')}
+    ${property.videos ? property.videos.map((url, i) => `
+      <video id="${i + 1}">
+        <url><![CDATA[${url}]]></url>
+      </video>`).join('') : ''}
+  </media>
+  <contact>
+    <name><![CDATA[${property.owner?.name || ''}]]></name>
+    <phone><![CDATA[${property.owner?.phone || ''}]]></phone>
+    <email><![CDATA[${property.owner?.email || ''}]]></email>
+  </contact>
+  <metadata>
+    <created_at>${new Date().toISOString()}</created_at>
+    <updated_at>${new Date().toISOString()}</updated_at>
+  </metadata>
+</listing>`;
+
+    return xml + xmlContent;
+  }
+
+  private generateQuintoAndarXml(property: PropertyData): string {
+    const xml = this.createXmlDeclaration();
+    const tipoImovel = this.mapPropertyType(property.propertyType, 'quinto_andar');
+    const tipoNegocio = property.transactionType === 'sale' ? 'sale' : 'rent';
+
+    const xmlContent = `<property>
+  <id>${this.escapeXml(property.id || '')}</id>
+  <type>${tipoImovel}</type>
+  <operation>${tipoNegocio}</operation>
+  <title><![CDATA[${property.title}]]></title>
+  <description><![CDATA[${property.description}]]></description>
+  <price>${property.price}</price>
+  <currency>BRL</currency>
+  <address>
+    <street><![CDATA[${property.address.street}]]></street>
+    <number><![CDATA[${property.address.number || ''}]]></number>
+    <complement><![CDATA[${property.address.complement || ''}]]></complement>
+    <neighborhood><![CDATA[${property.address.neighborhood}]]></neighborhood>
+    <city><![CDATA[${property.address.city}]]></city>
+    <state>${property.address.state}</state>
+    <zip_code>${this.escapeXml(property.address.zipCode || '')}</zip_code>
+  </address>
+  <features>
+    <area>${property.features?.area || ''}</area>
+    <built_area>${property.features?.builtArea || ''}</built_area>
+    <bedrooms>${property.features?.bedrooms || ''}</bedrooms>
+    <bathrooms>${property.features?.bathrooms || ''}</bathrooms>
+    <parking_spaces>${property.features?.parkingSpaces || ''}</parking_spaces>
+    <floor>${this.escapeXml(property.features?.floor || '')}</floor>
+    <year_built>${property.features?.age || ''}</year_built>
+    <total_area>${property.features?.totalArea || ''}</total_area>
+  </features>
+  <media>
+    ${property.photos.map((url, i) => `
+      <photo id="${i + 1}">
+        <url><![CDATA[${url}]]></url>
+        <order>${i + 1}</order>
+      </photo>`).join('')}
+    ${property.videos ? property.videos.map((url, i) => `
+      <video id="${i + 1}">
+        <url><![CDATA[${url}]]></url>
+        <order>${i + 1}</order>
+      </video>`).join('') : ''}
+  </media>
+  <contact>
+    <name><![CDATA[${property.owner?.name || ''}]]></name>
+    <phone><![CDATA[${property.owner?.phone || ''}]]></phone>
+    <email><![CDATA[${property.owner?.email || ''}]]></email>
+  </contact>
+  <metadata>
+    <created_at>${new Date().toISOString()}</created_at>
+    <updated_at>${new Date().toISOString()}</updated_at>
+    <status>${property.status}</status>
+  </metadata>
+</property>`;
+
+    return xml + xmlContent;
+  }
+
   private createXmlDeclaration(): string {
     return '<?xml version="1.0" encoding="UTF-8"?>\n';
   }
@@ -308,6 +563,41 @@ export class XmlGenerator {
         commercial: 'comercial',
         land: 'terreno',
         industrial: 'galpao'
+      },
+      mercado_livre: {
+        apartment: 'apartment',
+        house: 'house',
+        commercial: 'commercial',
+        land: 'land',
+        industrial: 'industrial'
+      },
+      proprietario_direto: {
+        apartment: 'apartamento',
+        house: 'casa',
+        commercial: 'comercial',
+        land: 'terreno',
+        industrial: 'galpao'
+      },
+      imobibrasil: {
+        apartment: 'apartamento',
+        house: 'casa',
+        commercial: 'comercial',
+        land: 'terreno',
+        industrial: 'galpao'
+      },
+      loft: {
+        apartment: 'apartment',
+        house: 'house',
+        commercial: 'commercial',
+        land: 'land',
+        industrial: 'industrial'
+      },
+      quinto_andar: {
+        apartment: 'apartment',
+        house: 'house',
+        commercial: 'commercial',
+        land: 'land',
+        industrial: 'industrial'
       },
       meta: {
         apartment: 'Apartment',
