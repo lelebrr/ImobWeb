@@ -1,189 +1,242 @@
-export type ContractType = 'sale' | 'rent' | 'proposal' | 'authorization' | 'commercial';
-
-export type ContractStatus = 
-  | 'draft'
-  | 'pending_review'
-  | 'pending_signature'
-  | 'partially_signed'
-  | 'fully_signed'
-  | 'expired'
-  | 'cancelled'
-  | 'completed';
-
-export type SigningMethod = 'email' | 'whatsapp' | 'certificate' | 'docusign' | 'clicksign' | 'assine_bem';
-
-export type SigningStatus = 'pending' | 'sent' | 'viewed' | 'signed' | 'rejected' | 'expired';
-
-export interface ContractParty {
-  id: string;
-  type: 'buyer' | 'seller' | 'tenant' | 'landlord' | 'witness' | 'guarantor';
-  name: string;
-  document: string;
-  documentType: 'cpf' | 'cnpj' | 'rg';
-  email: string;
-  phone: string;
-  address?: string;
-  signature?: {
-    status: SigningStatus;
-    signedAt?: Date;
-    method?: SigningMethod;
-    ip?: string;
-  };
+// types/contracts.ts
+export enum ContractType {
+  PURCHASE_SALE = "PURCHASE_SALE",
+  LEASE = "LEASE",
+  COMMERCIAL_PROPOSAL = "COMMERCIAL_PROPOSAL",
+  SALE_AUTHORIZATION = "SALE_AUTHORIZATION",
+  SERVICE_AGREEMENT = "SERVICE_AGREEMENT",
 }
 
-export interface ContractProperty {
-  id: string;
-  address: string;
-  type: 'apartment' | 'house' | 'commercial' | 'land' | 'industrial';
-  registration?: string;
+export enum ContractStatus {
+  DRAFT = "DRAFT",
+  GENERATED = "GENERATED",
+  PENDING_SIGNATURE = "PENDING_SIGNATURE",
+  SIGNED = "SIGNED",
+  ARCHIVED = "ARCHIVED",
+}
+
+export enum SignatureStatus {
+  PENDING = "PENDING",
+  SENT = "SENT",
+  SIGNED = "SIGNED",
+  REJECTED = "REJECTED",
+}
+
+export enum SignatureMethod {
+  SIMPLE = "SIMPLE",
+  DIGITAL_CERTIFICATE = "DIGITAL_CERTIFICATE",
+}
+
+export enum PartyType {
+  BUYER = "BUYER",
+  SELLER = "SELLER",
+  LANDLORD = "LANDLORD",
+  TENANT = "TENANT",
+  AGENT = "AGENT",
+  GUARANTOR = "GUARANTOR",
+}
+
+export interface Address {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
   city: string;
   state: string;
   zipCode: string;
+}
+
+export interface Party {
+  id: string;
+  type: PartyType;
+  name: string;
+  email: string;
+  phone?: string;
+  document: string; // CPF or CNPJ
+  address?: Address;
+}
+
+export interface PropertySnapshot {
+  id: string;
+  title: string;
+  address: string;
+  price?: number;
   area?: number;
   bedrooms?: number;
   bathrooms?: number;
   parkingSpaces?: number;
-  value?: number;
+  // Additional fields as needed for contract context
 }
 
-export interface ContractClause {
-  id: string;
-  title: string;
-  content: string;
-  order: number;
-  required: boolean;
-  custom?: boolean;
+export interface ContractTermsBase {
+  // Common terms across contract types
+  effectiveDate?: Date;
+  expirationDate?: Date;
+  governingLaw?: string;
 }
 
-export interface ContractTemplate {
-  id: string;
-  name: string;
-  type: ContractType;
-  description: string;
-  clauses: ContractClause[];
-  variables: string[];
-  version: number;
-  isDefault: boolean;
+export interface PurchaseSaleTerms extends ContractTermsBase {
+  salePrice: number;
+  paymentMethod: PaymentMethod;
+  downPayment?: number;
+  financingDetails?: FinancingDetails;
+  closingDate: Date;
+  possessionDate: Date;
+  inclusions: string[];
+  exclusions: string[];
+  // Additional purchase-specific terms
+}
+
+export interface LeaseTerms extends ContractTermsBase {
+  monthlyRent: number;
+  securityDeposit: number;
+  leaseStart: Date;
+  leaseEnd: Date;
+  renewalTerms?: RenewalTerms;
+  allowedUse: string;
+  petPolicy: PetPolicy;
+  // Additional lease-specific terms
+}
+
+export interface CommercialProposalTerms extends ContractTermsBase {
+  proposedPrice: number;
+  validityPeriod: number; // days
+  paymentConditions: string;
+  deliveryTerms: string;
+  // Additional proposal-specific terms
+}
+
+export interface SaleAuthorizationTerms extends ContractTermsBase {
+  authorizationPeriod: number; // days
+  commissionRate: number;
+  exclusivity: boolean;
+  marketingBudget?: number;
+  // Additional authorization-specific terms
+}
+
+export interface ServiceAgreementTerms extends ContractTermsBase {
+  serviceDescription: string;
+  serviceFrequency?: string;
+  startDate: Date;
+  endDate?: Date;
+  paymentTerms: PaymentTerms;
+  serviceLevelAgreement?: ServiceLevelAgreement;
+  // Additional service agreement terms
+}
+
+// Union type for all possible contract terms
+export type ContractTerms =
+  | PurchaseSaleTerms
+  | LeaseTerms
+  | CommercialProposalTerms
+  | SaleAuthorizationTerms
+  | ServiceAgreementTerms;
+
+export interface PaymentMethod {
+  type: "BANK_TRANSFER" | "FINANCING" | "ESCROW" | "OTHER";
+  details?: Record<string, any>;
+}
+
+export interface FinancingDetails {
+  bank: string;
+  interestRate: number;
+  termMonths: number;
+  monthlyPayment: number;
+}
+
+export interface RenewalTerms {
+  renewalNoticePeriod: number; // days before end
+  renewalDuration: number; // months
+  rentIncreaseCap?: number; // percentage
+}
+
+export interface PetPolicy {
+  allowed: boolean;
+  weightLimit?: number;
+  breedRestrictions?: string[];
+  additionalDeposit?: number;
+  additionalMonthlyFee?: number;
+}
+
+export interface PaymentTerms {
+  method: "BANK_TRANSFER" | "CHECK" | "CREDIT_CARD" | "OTHER";
+  dueDate: "START_OF_MONTH" | "END_OF_MONTH" | "DAY_OF_MONTH"; // if DAY_OF_MONTH, specify day
+  dayOfMonth?: number;
+  lateFeePercentage: number;
+  gracePeriodDays: number;
+}
+
+export interface ServiceLevelAgreement {
+  responseTime: string; // e.g., '24 hours'
+  resolutionTime: string; // e.g., '48 hours'
+  uptimeGuarantee?: number; // percentage
 }
 
 export interface Contract {
   id: string;
-  templateId: string;
   type: ContractType;
+  propertyId: string;
+  propertySnapshot?: PropertySnapshot; // Snapshot at time of contract generation
+  parties: Party[];
+  terms: ContractTerms;
   status: ContractStatus;
-  title: string;
-  description?: string;
-  property: ContractProperty;
-  parties: ContractParty[];
-  clauses: ContractClause[];
-  totalValue: number;
-  installments?: number;
-  startDate?: Date;
-  endDate?: Date;
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
-  expiresAt?: Date;
-  signedAt?: Date;
-  documentUrl?: string;
-  documentVersion: number;
-  metadata?: Record<string, unknown>;
+  currentVersionId: string | null;
 }
 
 export interface ContractVersion {
   id: string;
   contractId: string;
-  version: number;
-  documentUrl: string;
-  changes: string;
+  versionNumber: number;
+  content: string; // MDX or HTML content
   createdAt: Date;
-  createdBy: string;
+  createdBy: string; // userId
+  changeSummary?: string;
 }
 
-export interface SignatureRequest {
+export interface Signature {
   id: string;
-  contractId: string;
-  partyId: string;
-  method: SigningMethod;
-  status: SigningStatus;
-  sentAt?: Date;
+  contractVersionId: string;
+  signerId: string; // Could be userId or external party identifier
+  signerName: string;
+  signerEmail: string;
+  signerType: PartyType;
+  status: SignatureStatus;
+  method: SignatureMethod;
+  certificateId?: string; // For digital signatures (ICP-Brasil)
   signedAt?: Date;
-  expiresAt?: Date;
-  signingUrl?: string;
-  declineReason?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  rejectedReason?: string;
 }
 
-export interface DealStage {
+export interface DealPipelineStage {
   id: string;
   name: string;
+  description?: string;
   order: number;
-  color: string;
-  isFinal: boolean;
+  isActive: boolean;
+  isFinal?: boolean;
+  // Configuration for automation (e.g., auto-advance conditions)
+  autoAdvanceConditions?: Record<string, any>;
+  color?: string; // For UI display
 }
 
 export interface Deal {
   id: string;
-  propertyId: string;
-  property?: ContractProperty;
-  clientId: string;
-  client?: ContractParty;
-  value: number;
-  stage: DealStage;
-  stageId: string;
-  probability: number;
-  expectedCloseDate?: Date;
-  actualCloseDate?: Date;
-  notes?: string;
-  contractId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-  activities: DealActivity[];
+  contractId: string;
+  currentStageId: string;
+  enteredAt: Date;
+  exitedAt?: Date;
+  // Metadata for tracking
+  metadata?: Record<string, any>;
 }
 
-export interface DealActivity {
-  id: string;
-  dealId: string;
-  type: 'note' | 'call' | 'meeting' | 'document' | 'signature' | 'payment';
-  title: string;
-  description?: string;
-  scheduledAt?: Date;
-  completedAt?: Date;
-  createdBy: string;
-}
-
-export interface DealPipeline {
-  stages: DealStage[];
-  deals: Deal[];
-}
-
-export interface DocumentUpload {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  url: string;
-  mimeType: string;
-  uploadedAt: Date;
-  uploadedBy: string;
-  contractId?: string;
-  dealId?: string;
-  tags: string[];
-  encrypted: boolean;
-  version: number;
-}
-
-export interface SigningProvider {
-  id: string;
-  name: string;
-  type: 'docusign' | 'clicksign' | 'assine_bem' | 'autentique';
-  enabled: boolean;
-  credentials: Record<string, string>;
-}
-
-export interface SigningResult {
-  success: boolean;
-  requestId: string;
-  signingUrl?: string;
-  error?: string;
+export interface PipelineAnalytics {
+  stage: string;
+  dealCount: number;
+  averageDaysInStage: number;
+  conversionRateToNextStage: number;
+  totalValue: number;
 }

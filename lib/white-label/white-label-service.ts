@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { Partner, BrandingConfig } from "@/types/partner";
+import { v4 as uuidv4 } from "uuid";
+import nodemailer from "nodemailer";
 
 const prisma = new PrismaClient();
 
@@ -42,7 +45,9 @@ export interface WhiteLabelConfig {
  * Resolve a configuração de White Label baseada no Host da requisição.
  * Em 2026, usamos um padrão de "Edge-First" com cache em camadas.
  */
-export async function resolveWhiteLabelConfig(hostname: string): Promise<WhiteLabelConfig | null> {
+export async function resolveWhiteLabelConfig(
+  hostname: string,
+): Promise<WhiteLabelConfig | null> {
   try {
     // 1. Tentar encontrar a organização por domínio customizado ou subdomínio
     // Nota: Em um ambiente real de 2026, o Hostname chegaria via middleware já validado.
@@ -50,9 +55,9 @@ export async function resolveWhiteLabelConfig(hostname: string): Promise<WhiteLa
       where: {
         OR: [
           { settings: { path: ["customDomain"], equals: hostname } },
-          { subDomain: hostname.split('.')[0] }
-        ]
-      }
+          { subDomain: hostname.split(".")[0] },
+        ],
+      },
     });
 
     if (!organization) return null;
@@ -76,7 +81,8 @@ export async function resolveWhiteLabelConfig(hostname: string): Promise<WhiteLa
         accent: whitelabel.accentColor || "#f59e0b",
       },
       emailConfig: {
-        fromName: whitelabel.emailFromName || whitelabel.brandName || organization.name,
+        fromName:
+          whitelabel.emailFromName || whitelabel.brandName || organization.name,
         fromEmail: whitelabel.emailFromAddress || `noreply@${hostname}`,
         useCustomSmtp: whitelabel.useCustomSmtp || false,
         smtpHost: whitelabel.smtpHost || "",
@@ -95,13 +101,17 @@ export async function resolveWhiteLabelConfig(hostname: string): Promise<WhiteLa
  * Motor de Mascaramento Dinâmico.
  * Garante que qualquer menção à plataforma original seja substituída pela marca do parceiro.
  */
-export function maskBranding(content: string, config: WhiteLabelConfig): string {
+export function maskBranding(
+  content: string,
+  config: WhiteLabelConfig,
+): string {
   if (!config.removeImobWebBranding) return content;
-  
+
   // Lista de termos a serem protegidos/substituídos
   const replacements: Record<string, string> = {
-    "imobWeb": config.brandName,
-    "imobweb.com.br": config.customDomain || `${config.brandName.toLowerCase()}.com.br`,
+    imobWeb: config.brandName,
+    "imobweb.com.br":
+      config.customDomain || `${config.brandName.toLowerCase()}.com.br`,
     "Equipe imobWeb": `Equipe ${config.brandName}`,
     "Suporte imobWeb": `Suporte ${config.brandName}`,
   };
@@ -119,15 +129,21 @@ export function maskBranding(content: string, config: WhiteLabelConfig): string 
  * Validação Avançada de Mapeamento de Domínio (CNAME / SSL).
  * Integração com APIs de infraestrutura edge (ex: Vercel/Cloudflare).
  */
-export async function validateDomainMapping(domain: string): Promise<{ valid: boolean; status: 'pending' | 'active' | 'error'; error?: string }> {
+export async function validateDomainMapping(
+  domain: string,
+): Promise<{
+  valid: boolean;
+  status: "pending" | "active" | "error";
+  error?: string;
+}> {
   console.log(`[DNS_VALIDATION] Verificando propagação para: ${domain}`);
-  
+
   // Mock de Verificação de Registro CNAME ou Registro A
   // Em 2026, isso consultaria o status do certificado SSL gerenciado automaticamente.
-  
-  return { 
-    valid: true, 
-    status: 'active' 
+
+  return {
+    valid: true,
+    status: "active",
   };
 }
 
@@ -141,7 +157,7 @@ export function getMailTransporterConfig(config: WhiteLabelConfig) {
       from: `"${config.emailConfig.fromName}" <${config.emailConfig.fromEmail}>`,
     };
   }
-  
+
   // Fallback para o serviço SMTP padrão da plataforma, mas com o "From" mascarado
   return {
     host: process.env.DEFAULT_SMTP_HOST,

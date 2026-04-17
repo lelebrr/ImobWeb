@@ -1,0 +1,171 @@
+import { Video } from "@/components/help/Video";
+import { InteractiveStep } from "@/components/help/InteractiveStep";
+
+# Financeiro e Comissões
+
+Gerencie todo o aspecto financeiro da sua imobiliária, desde o controle de recebimentos até o cálculo automático de comissões.
+
+## Visão Geral do Módulo Financeiro
+
+O módulo financeiro do imobWeb ajuda você a controlar receitas, despesas, comissões e ganha tempo com processos automatizados.
+
+## Etapa 1: Configurando suas Contas Bancárias
+
+<InteractiveStep step={1} totalSteps={6}>
+  Vamos conectar suas contas bancárias para controle automático de recebimentos.
+</InteractiveStep>
+
+1. Acesse **Financeiro** → **Contas Bancárias** no menu lateral
+2. Clique em **Adicionar Conta Bancária**
+3. Preencha:
+   - Banco
+   - Agência
+   - Conta
+   - Tipo (Corrente, Poupança)
+   - Titular da conta
+4. Salve a conta
+5. Repetir para todas as contas da imobiliária
+6. Opcional: Defina uma conta padrão para recebimentos
+
+<Video
+  src="/videos/help/contas-bancarias.mp4"
+  legend="Como configurar suas contas bancárias no imobWeb"
+/>
+
+## Etapa 2: Configurando Tabelas de Comissão
+
+<InteractiveStep step={2} totalSteps={6}>
+  Defina como as comissões serão calculadas para sua equipe.
+</InteractiveStep>
+
+1. Vá para **Financeiro** → **Tabelas de Comissão**
+2. Clique em **Nova Tabela de Comissão**
+3. Defina:
+   - Nome da tabela (ex: "Venda Residencial", "Locação Comercial")
+   - Tipo de negócio (Venda, Locação, etc.)
+   - Regra de cálculo (Percentual sobre o valor, Valor fixo, etc.)
+   - Percentual ou valor da comissão
+   - Regras adicionais (mínimo, máximo, escala)
+4. Salve a tabela
+5. Você pode criar múltiplas tabelas para diferentes tipos de negócio ou equipes
+
+## Etapa 3: Lançando Receitas e Recebimentos
+
+<InteractiveStep step={3} totalSteps={6}>
+  Registre todas as entradas financeiras da sua imobiliária.
+</InteractiveStep>
+
+1. Acesse **Financeiro** → **Receitas**
+2. Clique em **Nova Receita**
+3. Preencha:
+   - Descrição (ex: "Comissão venda apartamento XYZ")
+   - Valor
+   - Data de recebimento
+   - Data de vencimento (se for a receber)
+   - Cliente relacionado
+   - Imóvel relacionado (opcional)
+   - Categoria (Comissão de Venda, Comissão de Locação, Aluguel de temporada, etc.)
+   - Conta bancária de destino
+4. Marque como "Recebido" quando o dinheiro entrar em conta
+5. Você pode associar a receita diretamente a um negócio fechado
+
+## Etapa 4: Controlando Despesas
+
+<InteractiveStep step={4} totalSteps={6}>
+  Mantenha todas as despesas da imobiliária organizadas.
+</InteractiveStep>
+
+1. Vá para **Financeiro** → **Despesas**
+2. Clique em **Nova Despesa**
+3. Preencha:
+   - Descrição (ex: "Anúncio no Zap Imóveis")
+   - Valor
+   - Data de pagamento
+   - Data de vencimento
+   - Fornecedor
+   - Categoria (Marketing, Aluguel, Salários, Internet, etc.)
+   - Conta bancária de origem
+   - Centro de custo (opcional, para detalhamento)
+4. Marque como "Pago" quando sair da conta
+5. Anexar notas fiscais ou comprovantes (opcional)
+
+## Etapa 5: Automatizando Comissões
+
+<InteractiveStep step={5} totalSteps={6}>
+  Deixe o imobWeb calcular comissões automaticamente quando os negócios forem
+  fechados.
+</InteractiveStep>
+
+1. Acesse **Financeiro** → **Automação de Comissões**
+2. Crie regras para:
+   - Quando calcular (na assinatura do contrato, no recebimento, etc.)
+   - Qual tabela de comissão usar baseado no tipo de negócio ou imóvel
+   - Como dividir entre múltiplos corretores (se houver)
+   - Se deve gerar automaticamente uma receita de comissão
+3. Exemplo de regra:
+   - Sempre que um negócio de venda for marcado como "Fechado"
+   - Calcular comissão usando a tabela "Venda Residencial"
+   - 100% da comissão vai para o corretor responsável
+   - Gerar automaticamente uma receita a receber
+4. Salve e ative suas regras de automação
+
+## Etapa 6: Relatórios Financeiros
+
+<InteractiveStep step={6} totalSteps={6}>
+  Acompanhe a saúde financeira da sua imobiliária com relatórios
+  personalizáveis.
+</InteractiveStep>
+
+1. Acesse **Financeiro** → **Relatórios**
+2. Tipos de relatórios disponíveis:
+   - **DRE (Demonstrativo de Resultados do Exercício)**
+   - **Fluxo de Caixa**
+   - **Comissões a Pagar/Receber**
+   - **Adimplência de Aluguéis**
+   - **Performance por Corretor/Equipe**
+   - **Receitas por Fonte**
+3. Personalize:
+   - Período (dia, semana, mês, ano, customizado)
+   - Filtros (corretor, imóvel, tipo de negócio, etc.)
+   - Agrupamento (por dia, semana, mês, por categoria, etc.)
+4. Exporte para PDF, Excel ou CSV
+5. Agende envio automático por e-mail para sócios ou contadores
+
+## Recursos Avançados
+
+### Integração com Contabilidade
+
+- Exportação automática para sistemas contábeis
+- Suporte a formatos como OFX, QIF, CSV
+- Integração rápida com ContaAzul, QuickBooks, etc.
+
+### Gestão de Aluguéis e Repasses
+
+- Controle de contratos de locação
+- Cálculo automático de repasses para proprietários
+- Gestão de vistoria, fiança e seguro garantia
+- Reajustes automáticos conforme contrato
+
+### Multimirárias e Franquias
+
+- Controle financeiro separado por unidade
+- Consolidamento de resultados da rede
+- Rateio de despesas comuns
+- Comissão de franqueadora sobre faturamento
+
+## Boas Práticas Financeiras
+
+1. **Conciliar diariamente**: Mantenha suas contas sempre conciliadas
+2. **Separar contas pessoais e empresariais**: Nunca misture finanças
+3. **Controlar o capital de giro**: Sempre tenha reserva para imprevistos
+4. **Analisar mensalmente**: Revise seus relatórios financeiros todo mês
+5. **Planeje os impostos**: Reserve mensalmente para pagamento de tributos
+6. **Use categorias consistentes**: Facilita a análise e geração de relatórios
+
+## Próximos Passos
+
+- [Configure o Score de Saúde para melhorar seus anúncios](/help/score-saude-imovel)
+- [Aprenda a usar o WhatsApp Proativo para aumentar vendas](/help/whatsapp-proativo)
+- [Veja como configurar seu plano de contas personalizado](/help/plano-de-contas)
+
+Precisa de ajuda? Fale com nosso suporte através do chat no canto inferior direito.
