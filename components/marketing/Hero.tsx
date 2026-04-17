@@ -116,10 +116,14 @@ const Hero = () => {
                                         <div className="text-[10px] font-bold mt-1">+18% vs ontem</div>
                                     </motion.div>
 
-                                    <img 
+                                    <Image 
                                         src="/imobweb_dashboard_mockup.png" 
                                         alt="imobWeb Premium Dashboard" 
-                                        className="rounded-[2.8rem] w-full shadow-2xl relative z-10 brightness-110"
+                                        width={1024}
+                                        height={1024}
+                                        priority
+                                        className="rounded-[2.8rem] w-full h-auto shadow-2xl relative z-10 brightness-110"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
                                     />
                                     
                                     {/* IA Assistant Overlay */}
