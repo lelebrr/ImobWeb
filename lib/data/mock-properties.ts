@@ -67,7 +67,13 @@ export const MOCK_PROPERTIES: Property[] = [
       keywords: ['itaim bibi', 'cobertura', 'luxo', 'sao paulo']
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    performance: {
+      soldInDays: 28,
+      totalLeads: 145,
+      avgDailyViews: 850,
+      conversionRate: 0.12
+    }
   },
   {
     id: '2',

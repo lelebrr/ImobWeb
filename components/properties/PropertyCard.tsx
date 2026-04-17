@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Property } from '../../types/property';
 import { getPropertyType } from '../../lib/properties/property-types';
+import { SaleProbabilityScore } from './SaleProbabilityScore';
+import { SaleProbabilityScore as SaleProbabilityType } from '../../types/ai';
 import { cn } from '../../lib/utils';
 
 interface PropertyCardProps {
@@ -79,6 +81,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, viewMode =
         <button className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-rose-500 hover:text-white transition-all">
           <Heart size={20} className="group-hover:fill-current" />
         </button>
+
+        {/* Sale Probability Score (Functional AI Integration) */}
+        <div className="absolute bottom-4 right-4 z-10">
+          <SaleProbabilityScore 
+            propertyId={property.id}
+            variant="compact"
+          />
+        </div>
 
         {/* AI Insight Badge */}
         {mainImage?.aiMetadata?.qualityScore && mainImage.aiMetadata.qualityScore > 0.9 && (

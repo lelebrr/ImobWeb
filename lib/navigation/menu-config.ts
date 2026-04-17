@@ -70,6 +70,7 @@ export const MENU_CONFIG: Record<UserRole, NavSection[]> = {
         { title: 'Imóveis', href: '/dashboard/properties', icon: Home, roles: ['MANAGER', 'AGENCY_MASTER', 'ADMIN'] },
         { title: 'Leads & CRM', href: '/dashboard/leads', icon: Users, roles: ['MANAGER', 'AGENCY_MASTER', 'ADMIN'] },
         { title: 'Equipe de Vendas', href: '/dashboard/team', icon: Contact, roles: ['MANAGER', 'AGENCY_MASTER', 'ADMIN'] },
+        { title: 'Modo Campo', href: '/field', icon: Navigation, roles: ['MANAGER', 'AGENCY_MASTER', 'ADMIN', 'BROKER', 'CORRETOR'], badge: 'PRO' },
       ]
     },
     {
@@ -95,6 +96,7 @@ export const MENU_CONFIG: Record<UserRole, NavSection[]> = {
         { title: 'Meu Painel', href: '/dashboard', icon: LayoutDashboard, roles: ['BROKER', 'AGENCY_SALES', 'CORRETOR'] },
         { title: 'Meus Leads', href: '/dashboard/leads', icon: Users, roles: ['BROKER', 'AGENCY_SALES', 'CORRETOR'] },
         { title: 'Catálogo de Imóveis', href: '/dashboard/properties', icon: Home, roles: ['BROKER', 'AGENCY_SALES', 'CORRETOR'] },
+        { title: 'Modo Campo (Beta)', href: '/field', icon: Navigation, roles: ['BROKER', 'AGENCY_SALES', 'CORRETOR'], badge: 'Novo' },
       ]
     },
     {

@@ -100,6 +100,14 @@ export interface Property {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  
+  // Performance metrics for cloning strategy
+  performance?: {
+    soldInDays?: number;
+    totalLeads?: number;
+    avgDailyViews?: number;
+    conversionRate?: number;
+  };
 }
 
 export interface PropertyTypeConfig {

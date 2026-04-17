@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from 'next/link';
 import { motion } from "framer-motion";
 import {
   BarChart3,
@@ -42,7 +43,12 @@ import {
   Activity as ActivityIcon,
   Zap,
   Smartphone,
+  Flame,
+  Navigation
 } from "lucide-react";
+import { SaleProbabilityScore } from "@/components/properties/SaleProbabilityScore";
+import { SaleProbabilityScore as SaleProbabilityType } from "@/types/ai";
+import { MOCK_PROPERTIES } from "@/lib/data/mock-properties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -126,6 +132,29 @@ export default function DashboardPage() {
 
   const renderOverview = () => (
     <div className="space-y-6">
+      {/* Field Mode Quick Access - Mobile Optimized */}
+      <div className="lg:hidden">
+        <Link href="/field">
+          <div className="glass bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-blue-500/30 rounded-3xl p-6 relative overflow-hidden group active:scale-95 transition-all">
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/40">
+                  <Navigation className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tighter text-white">Modo Corretor em Campo</h3>
+                  <p className="text-blue-200 text-sm">GPS, Voz e Câmera IA ativados</p>
+                </div>
+              </div>
+              <ChevronRight className="w-6 h-6 text-blue-400" />
+            </div>
+            
+            {/* Decoration */}
+            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full" />
+          </div>
+        </Link>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass border-none rounded-3xl p-4 sm:p-5">
@@ -224,6 +253,52 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Hot Properties (Probabilidade de Venda) */}
+      <div className="glass border-none rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
+              <Flame className="w-5 h-5 text-orange-500" />
+            </div>
+            <h2 className="text-xl font-black tracking-tighter">
+              Imóveis Quentes <span className="text-muted-foreground font-medium text-sm ml-2">Chance {'>'} 70%</span>
+            </h2>
+          </div>
+          <Button variant="ghost" size="sm" className="text-primary font-bold">
+            Ver Todos <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {MOCK_PROPERTIES.slice(0, 3).map((property, idx) => (
+            <div key={property.id} className="glass border-none rounded-[2.5rem] p-5 relative overflow-hidden group">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                  <img 
+                    src={property.media[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750'} 
+                    className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                    alt={property.title} 
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-sm tracking-tight truncate">{property.title}</h3>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black">{property.address.neighborhood}</p>
+                  <p className="text-sm font-black text-primary mt-1">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.price.amount)}
+                  </p>
+                </div>
+              </div>
+
+              <SaleProbabilityScore 
+                propertyId={property.id}
+                variant="compact"
+                className="w-full bg-white/5"
+              />
             </div>
           ))}
         </div>

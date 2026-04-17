@@ -16,8 +16,10 @@ import {
   TrendingUp,
   MessageSquare,
   Phone,
-  ArrowRight,
-  Sparkles
+  Sparkles,
+  Copy,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/design-system/button'
@@ -26,13 +28,17 @@ import { Card, CardContent } from '@/components/design-system/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/design-system/tabs'
 import { MOCK_PROPERTIES } from '@/lib/data/mock-properties'
 import { analytics } from '@/lib/analytics/posthog'
+import { SaleProbabilityScore } from '@/components/properties/SaleProbabilityScore'
+import { SaleProbabilityScore as SaleProbabilityType } from '@/types/ai'
 import { cn } from '@/lib/utils'
+import { CloneStrategyModal } from '@/components/cloner/CloneStrategyModal'
 
 export default function PropertyDetailPage() {
   const { slug } = useParams()
   const router = useRouter()
   const [isLiked, setIsLiked] = useState(false)
   const [activeTab, setActiveTab] = useState('detalhes')
+  const [isClonerOpen, setIsClonerOpen] = useState(false)
 
   const property = MOCK_PROPERTIES.find(p => p.slug === slug)
 
@@ -69,23 +75,41 @@ export default function PropertyDetailPage() {
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" className="glass rounded-full border-none">
-            <Share2 className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className={cn(
-              "glass rounded-full border-none transition-colors",
-              isLiked && "text-red-500 fill-red-500"
-            )}
-            onClick={() => setIsLiked(!isLiked)}
-          >
-            <Heart className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="glass rounded-2xl border-none gap-2 text-primary font-black animate-pulse"
+              onClick={() => setIsClonerOpen(true)}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Clonar Estratégia
+            </Button>
+            <Button variant="outline" size="icon" className="glass rounded-full border-none">
+              <Share2 className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className={cn(
+                "glass rounded-full border-none transition-colors",
+                isLiked && "text-red-500 fill-red-500"
+              )}
+              onClick={() => setIsLiked(!isLiked)}
+            >
+              <Heart className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+
+        <CloneStrategyModal 
+          isOpen={isClonerOpen}
+          onClose={() => setIsClonerOpen(false)}
+          sourcePropertyId={property.id}
+          onConfirm={(data) => {
+            console.log("Clone Confirmed:", data);
+            alert("Estratégia Clonada com Sucesso! Um novo anúncio otimizado foi criado na sua base.");
+          }}
+        />
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -238,6 +262,18 @@ export default function PropertyDetailPage() {
                  Gerar Relatório Completo
                </Button>
             </div>
+          </motion.div>
+
+          {/* Sale Probability AI Score */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <SaleProbabilityScore 
+              propertyId={property.id}
+              variant="full"
+            />
           </motion.div>
 
           {/* Agent Contact Card */}
