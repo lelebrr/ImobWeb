@@ -4,25 +4,47 @@
  */
 
 import { initTRPC, TRPCError } from '@trpc/server'
-import { PrismaClient } from "@prisma/client"
 import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+import { hash } from '@/lib/security/encryption'
 
-const prisma = new PrismaClient()
 const t = initTRPC.create()
 
 /**
  * Middleware de Autenticação por API Key
+ * Valida a chave de API contra o banco de dados usando hash SHA-256
  */
 const isPublicAuthorized = t.middleware(async ({ ctx, next }) => {
-  // Mock de autenticação via API Key
-  // Em produção, buscaria na tabela de integracoes da Organizacao
-  const apiKey = "DUMMY_KEY"; // Extrair do header via context no futuro
-  
-  if (!apiKey) {
+  const apiKeyHeader = (ctx as any)?.headers?.get?.("x-api-key") || (ctx as any)?.req?.headers?.get?.("x-api-key")
+
+  if (!apiKeyHeader) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'API Key Ausente' });
   }
 
-  return next();
+  const keyHash = hash(apiKeyHeader)
+
+  const apiKeyRecord = await prisma.apiKey.findUnique({
+    where: { keyHash },
+    include: { organization: true }
+  })
+
+  if (!apiKeyRecord || !apiKeyRecord.enabled) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'API Key inválida ou desativada' });
+  }
+
+  // Update lastUsedAt
+  await prisma.apiKey.update({
+    where: { id: apiKeyRecord.id },
+    data: { lastUsedAt: new Date() }
+  })
+
+  return next({
+    ctx: {
+      ...ctx,
+      organizationId: apiKeyRecord.organizationId,
+      apiKeyScopes: apiKeyRecord.scopes,
+    }
+  });
 });
 
 const publicProcedure = t.procedure.use(isPublicAuthorized);

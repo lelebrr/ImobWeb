@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
     try {
         const body: ManageSubscriptionRequestBody = await request.json()
 
-        // Valida os campos necessários
         const { action, customerId, returnUrl } = body
 
         if (!action || !customerId) {
@@ -25,22 +24,20 @@ export async function POST(request: NextRequest) {
         }
 
         switch (action) {
-            case 'portal':
-                // Abre o portal do cliente
+            case 'portal': {
                 const portalSession = await createCustomerPortal(
                     customerId,
                     returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
                 )
 
-                // Track the portal access
-                trackBillingEvent('Customer Portal Accessed', portalSession.id, {
+                await trackBillingEvent('Customer Portal Accessed', portalSession.id, {
                     customer_id: customerId,
                 })
 
-                // Retorna a URL do portal
                 return NextResponse.json({ url: portalSession.url })
+            }
 
-            case 'cancel':
+            case 'cancel': {
                 if (!body.subscriptionId) {
                     return NextResponse.json(
                         { error: 'subscriptionId is required for cancel action' },
@@ -48,28 +45,26 @@ export async function POST(request: NextRequest) {
                     )
                 }
 
-                // Cancela a assinatura
                 const canceledSubscription = await cancelSubscription(
                     body.subscriptionId,
-                    true // Cancel no final do período
+                    true
                 )
 
-                // Track the cancellation
-                trackBillingEvent('Subscription Canceled', canceledSubscription.id, {
+                await trackBillingEvent('Subscription Canceled', canceledSubscription.id, {
                     customer_id: customerId,
                     subscriptionId: canceledSubscription.id,
                     status: canceledSubscription.status,
                     cancelAtPeriodEnd: canceledSubscription.cancel_at_period_end,
                 })
 
-                // Retorna a confirmação
                 return NextResponse.json({
                     success: true,
                     subscription: canceledSubscription,
                 })
+            }
 
             case 'upgrade':
-            case 'downgrade':
+            case 'downgrade': {
                 if (!body.subscriptionId || !body.newPriceId) {
                     return NextResponse.json(
                         { error: 'subscriptionId and newPriceId are required for upgrade/downgrade action' },
@@ -77,25 +72,23 @@ export async function POST(request: NextRequest) {
                     )
                 }
 
-                // Atualiza a assinatura
                 const updatedSubscription = await updateSubscription(
                     body.subscriptionId,
                     body.newPriceId
                 )
 
-                // Track the update
-                trackBillingEvent('Subscription Updated', updatedSubscription.id, {
+                await trackBillingEvent('Subscription Updated', updatedSubscription.id, {
                     customer_id: customerId,
                     subscriptionId: updatedSubscription.id,
-                    priceId: updatedSubscription.items.data[0].price.id,
+                    priceId: (updatedSubscription.items as any).data[0].price.id,
                     status: updatedSubscription.status,
                 })
 
-                // Retorna a confirmação
                 return NextResponse.json({
                     success: true,
                     subscription: updatedSubscription,
                 })
+            }
 
             default:
                 return NextResponse.json(
@@ -106,8 +99,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Error managing subscription:', error)
 
-        // Track the error
-        trackBillingEvent('Subscription Management Error', '', {
+        await trackBillingEvent('Subscription Management Error', '', {
             error_message: error instanceof Error ? error.message : 'Unknown error',
             action: 'unknown',
         })

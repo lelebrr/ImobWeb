@@ -1,73 +1,138 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { PropertyGenerator } from '@/lib/ai/property-generator';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 /**
  * PROPERTY API - IMOBWEB 2026
- * Handles CRUD for properties with Zod validation and AI auto-generation.
+ * Handles CRUD for properties with Prisma.
  */
 
-const propertySchema = z.object({
-  title: z.string().min(10),
-  category: z.enum(['RESIDENTIAL', 'COMMERCIAL', 'RURAL', 'INDUSTRIAL', 'LAND', 'VACATION']),
-  typeId: z.string(),
-  usage: z.enum(['FOR_SALE', 'FOR_RENT', 'BOTH']),
-  price: z.object({
-    amount: z.number().positive(),
-    currency: z.enum(['BRL', 'USD', 'EUR']),
-  }),
-  address: z.object({
-    street: z.string(),
-    neighborhood: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zipCode: z.string(),
-  }),
-  media: z.array(z.any()), // Simplified for validation
-  metrics: z.record(z.string(), z.any()),
-});
-
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const organizationId = searchParams.get('organizationId');
-
-  // In a real scenario, this would query Prisma
-  // const properties = await prisma.property.findMany({ where: { organizationId } });
-
-  return NextResponse.json({
-    success: true,
-    data: [], // Mocked
-  });
-}
-
-export async function POST(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const body = await req.json();
-    const validatedData = propertySchema.parse(body);
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams.get('organizationId');
+    const status = searchParams.get('status');
+    const type = searchParams.get('type');
+    const city = searchParams.get('city');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
 
-    // 1. AI Auto-Generation for description if not provided
-    const aiDescription = await PropertyGenerator.generateDescription(validatedData as any, body.media || []);
+    if (!organizationId) {
+      return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
+    }
 
-    // 2. Smart Photo Sorting
-    const sortedMedia = PropertyGenerator.sortPhotos(body.media || []);
+    const where: any = { organizationId };
+    if (status) where.status = status;
+    if (type) where.type = type;
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    // 3. In a real scenario: Save to DB
-    // const newProperty = await prisma.property.create({ data: { ...validatedData, aiDescription, media: sortedMedia } });
+    const [properties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        include: {
+          photos: { where: { isPrimary: true }, take: 1 },
+          owner: { select: { id: true, name: true, phone: true, whatsapp: true } },
+          _count: { select: { leads: true, announcements: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.property.count({ where }),
+    ]);
 
     return NextResponse.json({
       success: true,
+      data: properties,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching properties:', error);
+    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    const {
+      title, description, type, businessType, status,
+      price, priceRent, priceCondominium, priceIptu,
+      areaPrivate, areaTotal, areaLand,
+      bedrooms, bathrooms, garages,
+      address, neighborhood, city, state, cep,
+      latitude, longitude,
+      organizationId, ownerId, userId,
+      ...rest
+    } = body;
+
+    if (!title || !type || !businessType || !organizationId) {
+      return NextResponse.json(
+        { error: 'title, type, businessType, and organizationId are required' },
+        { status: 400 }
+      );
+    }
+
+    // Generate property code
+    const propertyCount = await prisma.property.count({ where: { organizationId } });
+    const code = `IW${String(propertyCount + 1).padStart(6, '0')}`;
+
+    const newProperty = await prisma.property.create({
       data: {
-        ...validatedData,
-        aiDescription,
-        media: sortedMedia,
-        id: 'new-property-uuid',
+        title,
+        description,
+        code,
+        type,
+        businessType,
+        status: status || 'RASCUNHO',
+        price: price || null,
+        priceRent: priceRent || null,
+        priceCondominium: priceCondominium || null,
+        priceIptu: priceIptu || null,
+        areaPrivate: areaPrivate || null,
+        areaTotal: areaTotal || null,
+        areaLand: areaLand || null,
+        bedrooms: bedrooms || null,
+        bathrooms: bathrooms || null,
+        garages: garages || null,
+        address,
+        neighborhood,
+        city,
+        state,
+        cep,
+        latitude: latitude || null,
+        longitude: longitude || null,
+        organizationId,
+        ownerId: ownerId || null,
+        userId: userId || null,
+      },
+      include: {
+        photos: true,
+        owner: true,
       },
     });
 
+    return NextResponse.json({
+      success: true,
+      data: newProperty,
+    }, { status: 201 });
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+    console.error('Error creating property:', error);
+    return NextResponse.json({ error: 'Failed to create property', details: error.message }, { status: 500 });
   }
 }

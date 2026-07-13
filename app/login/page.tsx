@@ -36,8 +36,8 @@ function LoginForm() {
   } = useForm<LoginFormInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@imobweb.com.br",
-      password: "admin123",
+      email: "",
+      password: "",
     },
   });
 

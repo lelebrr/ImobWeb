@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from 'next/link';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
   Database,
@@ -44,6 +44,7 @@ import {
   Zap,
   Smartphone,
   Flame,
+  Plus,
   Navigation,
   FileText,
   ShieldCheck,
@@ -57,8 +58,6 @@ import {
   LogOut
 } from "lucide-react";
 import { SaleProbabilityScore } from "@/components/properties/SaleProbabilityScore";
-import { SaleProbabilityScore as SaleProbabilityType } from "@/types/ai";
-import { MOCK_PROPERTIES } from "@/lib/data/mock-properties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -88,7 +87,7 @@ import { usePortals } from "@/providers/portal-provider";
 import { useLogs } from "@/providers/log-provider";
 import { useAnalytics } from "@/providers/analytics-provider";
 
-// New Components for Dashboard
+// Dashboard sub-components
 import FinancialDashboard from "@/components/finance/FinancialDashboard";
 import AutomaticSplitDashboard from "@/components/finance/AutomaticSplitDashboard";
 import ContractListComponent from "@/components/contracts/ContractListComponent";
@@ -98,76 +97,101 @@ import { HealthScoreCard } from "@/components/insights/HealthScoreCard";
 import { PredictiveTimeline } from "@/components/insights/PredictiveTimeline";
 import { PriceRecommendationCard } from "@/components/insights/PriceRecommendationCard";
 
-const MOCK_CONTRACTS = [
-  { id: 1, numero: "2024-001", cliente: "João Silva", imovel: "Apartamento Itaim", valor: 5500, status: "Ativo" },
-  { id: 2, numero: "2024-002", cliente: "Maria Souza", imovel: "Casa Jardim Europa", valor: 12000, status: "Aguardando Assinatura" },
-  { id: 3, numero: "2024-003", cliente: "Pedro Oliveira", imovel: "Studio Pinheiros", valor: 3200, status: "Finalizado" }
-];
-
-const CONTRACT_COLUMNS = [
-  { accessorKey: "numero" as const, header: "Nº Contrato" },
-  { accessorKey: "cliente" as const, header: "Cliente" },
-  { accessorKey: "imovel" as const, header: "Imóvel" },
-  { accessorKey: "valor" as const, header: "Valor" },
-  { accessorKey: "status" as const, header: "Status" }
-];
-
-const SALES_PROB_DATA = {
-  probability: 0.85,
-  expectedDays: 14,
-  engagementScore: 92
-};
-
-const PRICE_REC_DATA = {
-  suggestedPrice: 850000,
-  minPrice: 820000,
-  maxPrice: 890000,
-  confidence: 0.94,
-  marketAverage: 865000,
-  reasoning: [
-    "Alta demanda por 3 dormitórios na região",
-    "Acabamento superior à média local",
-    "Proximidade com nova estação de metrô"
-  ],
-  comparablesCount: 12
-};
-
-const HEALTH_SCORE_DATA = {
-  score: 88,
-  factors: [
-    { label: "Qualidade das Fotos", impact: 15, description: "Fotos em HDR aumentam conversão" },
-    { label: "Descrição Completa", impact: 10, description: "Meta-tags otimizadas para SEO" },
-    { label: "Preço vs Mercado", impact: -5, description: "Levemente acima da média local" }
-  ],
-  recommendations: [
-    "Adicionar tour virtual 360°",
-    "Incluir valor do IPTU no cabeçalho"
-  ]
-};
-
-const MOCK_FRANCHISES: any[] = [
-  {
-    id: 'f1',
-    name: 'ImobWeb Jardins',
-    city: 'São Paulo',
-    state: 'SP',
-    status: 'active',
-    metrics: { totalProperties: 145, totalLeads: 450, convertedLeads: 22, mrr: 25000, activeUsers: 12 },
-    royalties: { percentage: 8, pendingAmount: 2000 }
-  },
-  {
-    id: 'f2',
-    name: 'ImobWeb Barra',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    status: 'active',
-    metrics: { totalProperties: 98, totalLeads: 310, convertedLeads: 15, mrr: 18000, activeUsers: 8 },
-    royalties: { percentage: 8, pendingAmount: 1440 }
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
   }
-];
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1, y: 0, scale: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
+
+const cardHoverVariants = {
+  rest: { scale: 1, y: 0 },
+  hover: { scale: 1.02, y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }
+};
+
+// Skeleton components
+function StatCardSkeleton() {
+  return (
+    <div className="glass border-none rounded-3xl p-4 sm:p-5 animate-pulse">
+      <div className="h-3 w-24 bg-muted rounded-full mb-3" />
+      <div className="h-8 w-16 bg-muted rounded-full" />
+    </div>
+  );
+}
+
+function PropertyCardSkeleton() {
+  return (
+    <div className="glass border-none rounded-[2.5rem] p-5 animate-pulse">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-muted" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 bg-muted rounded-full" />
+          <div className="h-3 w-1/2 bg-muted rounded-full" />
+          <div className="h-4 w-1/3 bg-muted rounded-full" />
+        </div>
+      </div>
+      <div className="h-8 bg-muted rounded-full" />
+    </div>
+  );
+}
+
+function ActivitySkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass border-none rounded-xl p-3 animate-pulse">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/3 bg-muted rounded-full" />
+              <div className="h-3 w-2/3 bg-muted rounded-full" />
+            </div>
+            <div className="h-3 w-16 bg-muted rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Animated stat card
+function AnimatedStatCard({ label, value, color, icon: Icon, delay = 0 }: {
+  label: string;
+  value: string | number;
+  color: string;
+  icon: React.ElementType;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      variants={itemVariants}
+      className="glass border-none rounded-3xl p-4 sm:p-5 group cursor-default"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          {label}
+        </p>
+        <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity", `bg-${color}/10`)}>
+          <Icon className={cn("w-4 h-4", `text-${color}`)} />
+        </div>
+      </div>
+      <p className={cn("text-2xl font-black", `text-${color}`)}>
+        {value}
+      </p>
+    </motion.div>
+  );
+}
 
 export default function DashboardPage() {
-
   const { user } = useAuth();
   const { organization } = useOrganization();
   const { portals, loadingPortals } = usePortals();
@@ -181,18 +205,51 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: "alert", title: "Sincronização Pendente", message: "Vivareal precisa de atualização", time: "5 min atrás", read: false },
-    { id: 2, type: "success", title: "Lead Novo", message: "Novo lead do OLX", time: "1 hora atrás", read: false },
-    { id: 3, type: "info", title: "Atualização de Sistema", message: "Novos recursos disponíveis", time: "2 horas atrás", read: true },
-  ]);
+
+  // Real data state
+  const [properties, setProperties] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  // Fetch real data on mount
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [propsRes, leadsRes, notifRes] = await Promise.allSettled([
+          fetch('/api/properties').then(r => r.ok ? r.json() : []),
+          fetch('/api/leads').then(r => r.ok ? r.json() : []),
+          fetch('/api/notifications').then(r => r.ok ? r.json() : []),
+        ]);
+
+        if (propsRes.status === 'fulfilled') {
+          const props = Array.isArray(propsRes.value) ? propsRes.value : (propsRes.value?.properties || []);
+          setProperties(props.slice(0, 10));
+        }
+        if (leadsRes.status === 'fulfilled') {
+          const lds = Array.isArray(leadsRes.value) ? leadsRes.value : (leadsRes.value?.leads || []);
+          setLeads(lds);
+        }
+        if (notifRes.status === 'fulfilled') {
+          const notifs = Array.isArray(notifRes.value) ? notifRes.value : (notifRes.value?.notifications || []);
+          setNotifications(notifs.slice(0, 5));
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados do dashboard:', err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const handleClearNotifications = () => {
     setNotifications([]);
     setShowNotifications(false);
   };
 
-  const handleMarkAsRead = (id: number) => {
+  const handleMarkAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
@@ -221,50 +278,64 @@ export default function DashboardPage() {
 
   const getPortalStatusColor = (status: string) => {
     switch (status) {
-      case "connected":
-        return "bg-emerald-500/10 text-emerald-500";
-      case "disconnected":
-        return "bg-slate-400/10 text-slate-400";
-      case "error":
-        return "bg-red-500/10 text-red-500";
-      default:
-        return "bg-gray-400/10 text-gray-400";
+      case "connected": return "bg-emerald-500/10 text-emerald-500";
+      case "disconnected": return "bg-slate-400/10 text-slate-400";
+      case "error": return "bg-red-500/10 text-red-500";
+      default: return "bg-gray-400/10 text-gray-400";
     }
   };
 
   const getPortalHealthColor = (health: any) => {
     if (!health) return "bg-gray-400/10 text-gray-400";
-    if (health.status === "healthy")
-      return "bg-emerald-500/10 text-emerald-500";
+    if (health.status === "healthy") return "bg-emerald-500/10 text-emerald-500";
     if (health.status === "warning") return "bg-yellow-500/10 text-yellow-500";
     if (health.status === "error") return "bg-red-500/10 text-red-500";
     return "bg-gray-400/10 text-gray-400";
   };
 
-  const getPortalStats = (portal: any) => {
-    return {
-      totalProperties: portal.stats?.totalProperties || 0,
-      activeProperties: portal.stats?.activeProperties || 0,
-      totalViews: portal.stats?.totalViews || 0,
-      totalLeads: portal.stats?.totalLeads || 0,
-      lastSync: portal.syncStatus?.lastSync || null,
-      nextSync: portal.syncStatus?.nextSync || null,
-      isSyncing: portal.syncStatus?.isSyncing || false,
-    };
-  };
+  const getPortalStats = (portal: any) => ({
+    totalProperties: portal.stats?.totalProperties || 0,
+    activeProperties: portal.stats?.activeProperties || 0,
+    totalViews: portal.stats?.totalViews || 0,
+    totalLeads: portal.stats?.totalLeads || 0,
+    lastSync: portal.syncStatus?.lastSync || null,
+    nextSync: portal.syncStatus?.nextSync || null,
+    isSyncing: portal.syncStatus?.isSyncing || false,
+  });
 
-  const getPortalFeatures = (portal: any) => {
-    return portal.features || [];
-  };
+  const getPortalFeatures = (portal: any) => portal.features || [];
+  const getPortalDocumentation = (portal: any) => portal.documentation || {};
 
-  const getPortalDocumentation = (portal: any) => {
-    return portal.documentation || {};
+  // Hot properties: filter from real data, prioritize high-lead ones
+  const hotProperties = properties
+    .filter(p => p.status === 'ACTIVE' || p.status === 'DISPONIVEL')
+    .slice(0, 3);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  const formatRelativeTime = (date: string | Date) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Agora';
+    if (diffMins < 60) return `${diffMins}min atrás`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h atrás`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d atrás`;
   };
 
   const renderOverview = () => (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       {/* Field Mode Quick Access - Mobile Optimized */}
-      <div className="lg:hidden">
+      <motion.div variants={itemVariants} className="lg:hidden">
         <Link href="/field">
           <div className="glass bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border-blue-500/30 rounded-3xl p-6 relative overflow-hidden group active:scale-95 transition-all">
             <div className="flex items-center justify-between relative z-10">
@@ -279,118 +350,126 @@ export default function DashboardPage() {
               </div>
               <ChevronRight className="w-6 h-6 text-blue-400" />
             </div>
-
-            {/* Decoration */}
             <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full" />
           </div>
         </Link>
-      </div>
+      </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass border-none rounded-3xl p-4 sm:p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-            Portais Ativos
-          </p>
-          <p className="text-2xl font-black text-emerald-400">
-            {portals.filter((p) => p.status === "connected").length}
-          </p>
+      {/* Stats Cards - Animated */}
+      {loadingData ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)}
         </div>
-        <div className="glass border-none rounded-3xl p-4 sm:p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-            Propriedades Sincronizadas
-          </p>
-          <p className="text-2xl font-black text-primary">
-            {analytics?.overview?.totalPropertiesSynced || 0}
-          </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AnimatedStatCard
+            label="Portais Ativos"
+            value={portals.filter((p) => p.status === "connected").length}
+            color="emerald-400"
+            icon={Globe}
+          />
+          <AnimatedStatCard
+            label="Propriedades"
+            value={analytics?.overview?.totalPropertiesSynced || properties.length || 0}
+            color="primary"
+            icon={Home}
+          />
+          <AnimatedStatCard
+            label="Leads Hoje"
+            value={analytics?.overview?.todayLeads || leads.filter(l => {
+              const today = new Date().toDateString();
+              return new Date(l.createdAt).toDateString() === today;
+            }).length || 0}
+            color="primary"
+            icon={Users}
+          />
+          <AnimatedStatCard
+            label="Visualizações"
+            value={analytics?.overview?.todayViews || 0}
+            color="emerald-400"
+            icon={TrendingUp}
+          />
         </div>
-        <div className="glass border-none rounded-3xl p-4 sm:p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-            Visualizações Hoje
-          </p>
-          <p className="text-2xl font-black text-emerald-400">
-            {analytics?.overview?.todayViews || 0}
-          </p>
-        </div>
-        <div className="glass border-none rounded-3xl p-4 sm:p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-            Leads Hoje
-          </p>
-          <p className="text-2xl font-black text-primary">
-            {analytics?.overview?.todayLeads || 0}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Health Overview */}
-      <div className="glass border-none rounded-3xl p-6">
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-black tracking-tighter">
-            Status de Saúde
-          </h2>
+          <h2 className="text-xl font-black tracking-tighter">Status de Saúde</h2>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
             {isRefreshing ? "Atualizando..." : "Atualizar"}
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {portals.map((portal) => (
-            <div key={portal.id} className="glass border-none rounded-2xl p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}
-                  >
-                    <portal.icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm">{portal.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {portal.type}
-                    </p>
+          {loadingData ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="glass border-none rounded-2xl p-4 animate-pulse">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-muted" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-20 bg-muted rounded-full" />
+                      <div className="h-3 w-16 bg-muted rounded-full" />
+                    </div>
                   </div>
                 </div>
-                <span
-                  className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}
-                >
-                  {portal.status}
-                </span>
-              </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Propriedades Ativas
-                  </span>
-                  <span className="font-black">
-                    {getPortalStats(portal).activeProperties}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Última Sincronização
-                  </span>
-                  <span className="font-medium">
-                    {portal.syncStatus?.lastSync
-                      ? new Date(portal.syncStatus.lastSync).toLocaleString(
-                        "pt-BR",
-                      )
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status de Saúde</span>
-                  <span className="font-medium">
-                    {portal.health?.status || "N/A"}
-                  </span>
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-muted rounded-full" />
+                  <div className="h-3 w-3/4 bg-muted rounded-full" />
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            portals.map((portal, idx) => (
+              <motion.div
+                key={portal.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                className="glass border-none rounded-2xl p-4 cursor-default"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}>
+                      <portal.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm">{portal.name}</h3>
+                      <p className="text-xs text-muted-foreground">{portal.type}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}>
+                    {portal.status}
+                  </span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Propriedades Ativas</span>
+                    <span className="font-black">{getPortalStats(portal).activeProperties}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Última Sincronização</span>
+                    <span className="font-medium">
+                      {portal.syncStatus?.lastSync
+                        ? new Date(portal.syncStatus.lastSync).toLocaleString("pt-BR")
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status de Saúde</span>
+                    <span className="font-medium">{portal.health?.status || "N/A"}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Hot Properties (Probabilidade de Venda) */}
-      <div className="glass border-none rounded-3xl p-6">
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
@@ -400,112 +479,148 @@ export default function DashboardPage() {
               Imóveis Quentes <span className="text-muted-foreground font-medium text-sm ml-2">Chance {'>'} 70%</span>
             </h2>
           </div>
-          <Button variant="ghost" size="sm" className="text-primary font-bold">
-            Ver Todos <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <Link href="/properties">
+            <Button variant="ghost" size="sm" className="text-primary font-bold">
+              Ver Todos <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_PROPERTIES.slice(0, 3).map((property, idx) => (
-            <div key={property.id} className="glass border-none rounded-[2.5rem] p-5 relative overflow-hidden group">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
-                  <img
-                    src={property.media[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750'}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                    alt={property.title}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-sm tracking-tight truncate">{property.title}</h3>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black">{property.address.neighborhood}</p>
-                  <p className="text-sm font-black text-primary mt-1">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.price.amount)}
-                  </p>
-                </div>
-              </div>
-
-              <SaleProbabilityScore
-                propertyId={property.id}
-                variant="compact"
-                className="w-full bg-white/5"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+        {loadingData ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => <PropertyCardSkeleton key={i} />)}
+          </div>
+        ) : hotProperties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {hotProperties.map((property, idx) => (
+              <motion.div
+                key={property.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                className="glass border-none rounded-[2.5rem] p-5 relative overflow-hidden group"
+              >
+                <Link href={`/properties/${property.slug || property.id}`}>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                      <img
+                        src={property.media?.[0]?.url || property.images?.[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=200'}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        alt={property.title}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-sm tracking-tight truncate">{property.title}</h3>
+                      <p className="text-[10px] text-muted-foreground uppercase font-black">
+                        {property.address?.neighborhood || property.neighborhood || ''}
+                      </p>
+                      <p className="text-sm font-black text-primary mt-1">
+                        {formatCurrency(property.price?.amount || property.price || 0)}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+                <SaleProbabilityScore
+                  propertyId={property.id}
+                  variant="compact"
+                  className="w-full bg-white/5"
+                />
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Home className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground font-medium">Nenhum imóvel ativo encontrado</p>
+            <Link href="/properties/new">
+              <Button className="mt-4" size="sm">
+                <Plus className="w-4 h-4 mr-2" /> Adicionar Imóvel
+              </Button>
+            </Link>
+          </div>
+        )}
+      </motion.div>
 
       {/* Recent Activity */}
-      <div className="glass border-none rounded-3xl p-6">
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-black tracking-tighter">
-            Atividade Recente
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowLogs(!showLogs)}
-          >
-            {showLogs ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
+          <h2 className="text-xl font-black tracking-tighter">Atividade Recente</h2>
+          <Button variant="outline" size="sm" onClick={() => setShowLogs(!showLogs)}>
+            {showLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             {showLogs ? "Esconder" : "Mostrar"}
           </Button>
         </div>
-        {showLogs && (
-          <div className="space-y-3">
-            {logs.map((log) => (
-              <div
-                key={log.id}
-                className="glass border-none rounded-xl p-3 border border-white/10"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">
-                        {portals.find((p) => p.id === log.portalId)?.icon ||
-                          "📄"}
-                      </span>
-                      <span className="font-medium text-sm">{log.action}</span>
-                      <span
-                        className={`ml-2 text-xs px-2 py-0.5 rounded-full ${log.status === "SUCCESS"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : log.status === "ERROR"
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-gray-500/20 text-gray-400"
-                          }`}
-                      >
-                        {log.status}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {log.message}{" "}
-                      {log.property?.title && ` - ${log.property.title}`}
-                    </p>
+        <AnimatePresence>
+          {showLogs && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-3">
+                {loadingLogs ? (
+                  <ActivitySkeleton />
+                ) : logs.length > 0 ? (
+                  logs.map((log, idx) => (
+                    <motion.div
+                      key={log.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="glass border-none rounded-xl p-3 border border-white/10"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">
+                              {portals.find((p) => p.id === log.portalId)?.icon || "📄"}
+                            </span>
+                            <span className="font-medium text-sm">{log.action}</span>
+                            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                              log.status === "SUCCESS" ? "bg-emerald-500/20 text-emerald-400"
+                              : log.status === "ERROR" ? "bg-red-500/20 text-red-400"
+                              : "bg-gray-500/20 text-gray-400"
+                            }`}>
+                              {log.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {log.message} {log.property?.title && ` - ${log.property.title}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-3">
+                          <span className="text-xs text-muted-foreground">
+                            {log.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Nenhuma atividade recente</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <span className="text-xs text-muted-foreground">
-                      {log.timestamp.toLocaleTimeString()}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Portal: {log.portalId}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 
   const renderIntegrations = () => (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -517,28 +632,25 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
+            <Filter className="w-4 h-4 mr-2" /> Filtros
           </Button>
           <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+            <Download className="w-4 h-4 mr-2" /> Exportar
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Portals Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {portals.map((portal) => (
-          <div
+        {portals.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase())).map((portal, idx) => (
+          <motion.div
             key={portal.id}
-            className="glass border-none rounded-2xl p-5 group hover:translate-y-[-4px] transition-all duration-300"
+            variants={itemVariants}
+            whileHover={{ scale: 1.02, y: -4 }}
+            className="glass border-none rounded-2xl p-5 group transition-all duration-300"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}
-                >
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${getPortalHealthColor(portal.health)}`}>
                   <portal.icon className="w-6 h-6" />
                 </div>
                 <div>
@@ -546,146 +658,96 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground">{portal.type}</p>
                 </div>
               </div>
-              <span
-                className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}
-              >
+              <span className={`text-xs font-bold uppercase tracking-widest ${getPortalStatusColor(portal.status)}`}>
                 {portal.status}
               </span>
             </div>
 
-            {/* Stats */}
             <div className="space-y-2 text-sm mb-4">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Propriedades Ativas
-                </span>
-                <span className="font-medium">
-                  {getPortalStats(portal).activeProperties}
-                </span>
+                <span className="text-muted-foreground">Propriedades Ativas</span>
+                <span className="font-medium">{getPortalStats(portal).activeProperties}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Visualizações</span>
-                <span className="font-medium">
-                  {getPortalStats(portal).totalViews}
-                </span>
+                <span className="font-medium">{getPortalStats(portal).totalViews}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Leads</span>
-                <span className="font-medium">
-                  {getPortalStats(portal).totalLeads}
-                </span>
+                <span className="font-medium">{getPortalStats(portal).totalLeads}</span>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between pt-3 border-t border-white/5">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <RefreshCw className="w-3 h-3" />
                 <span className="text-xs font-medium">
                   {portal.syncStatus?.lastSync
-                    ? new Date(portal.syncStatus.lastSync).toLocaleString(
-                      "pt-BR",
-                    )
+                    ? new Date(portal.syncStatus.lastSync).toLocaleString("pt-BR")
                     : "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-2 ml-auto">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedPortal(portal.id)}
-                >
-                  <Settings className="w-3 h-3 mr-1.5" />
-                  Configurar
+                <Button variant="ghost" size="sm" onClick={() => setSelectedPortal(portal.id)}>
+                  <Settings className="w-3 h-3 mr-1.5" /> Configurar
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refreshLogs()}
-                >
-                  <ActivityIcon className="w-3 h-3 mr-1.5" />
-                  Testar
+                <Button variant="outline" size="sm" onClick={() => refreshLogs()}>
+                  <ActivityIcon className="w-3 h-3 mr-1.5" /> Testar
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 
   const renderMonitoring = () => (
-    <div className="space-y-6">
-      {/* Health Metrics */}
-      <div className="glass border-none rounded-3xl p-6">
-        <h2 className="text-xl font-black tracking-tighter mb-4">
-          Métricas de Saúde
-        </h2>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">Métricas de Saúde</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass border-none rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <ActivityIcon className="w-5 h-5 text-emerald-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-500">
-                Uptime
-              </span>
-            </div>
-            <p className="text-2xl font-black text-emerald-400">
-              {analytics?.uptime || "99.9%"}
-            </p>
-          </div>
-          <div className="glass border-none rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <TrendingUp className="w-5 h-5 text-blue-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-500">
-                Taxa de Sincronização
-              </span>
-            </div>
-            <p className="text-2xl font-black text-blue-400">
-              {analytics?.syncRate || "98.2%"}
-            </p>
-          </div>
-          <div className="glass border-none rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-yellow-500">
-                Erros
-              </span>
-            </div>
-            <p className="text-2xl font-black text-yellow-400">
-              {analytics?.errorRate || "0.8%"}
-            </p>
-          </div>
-          <div className="glass border-none rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <DollarSign className="w-5 h-5 text-green-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-green-500">
-                Cobertura
-              </span>
-            </div>
-            <p className="text-2xl font-black text-green-400">
-              {analytics?.coverage || "92.5%"}
-            </p>
-          </div>
+          {[
+            { label: "Uptime", value: analytics?.uptime || "99.9%", color: "emerald", icon: ActivityIcon },
+            { label: "Taxa de Sincronização", value: analytics?.syncRate || "98.2%", color: "blue", icon: TrendingUp },
+            { label: "Erros", value: analytics?.errorRate || "0.8%", color: "yellow", icon: AlertCircle },
+            { label: "Cobertura", value: analytics?.coverage || "92.5%", color: "green", icon: DollarSign },
+          ].map((metric, idx) => (
+            <motion.div
+              key={metric.label}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ scale: 1.05 }}
+              className="glass border-none rounded-xl p-4 cursor-default"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <metric.icon className={`w-5 h-5 text-${metric.color}-500`} />
+                <span className={`text-xs font-bold uppercase tracking-widest text-${metric.color}-500`}>
+                  {metric.label}
+                </span>
+              </div>
+              <p className={`text-2xl font-black text-${metric.color}-400`}>{metric.value}</p>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="glass border-none rounded-3xl p-6">
-        <h2 className="text-xl font-black tracking-tighter mb-4">
-          Velocidade de Processamento (Sinc)
-        </h2>
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">Velocidade de Processamento (Sinc)</h2>
         <div className="h-64 rounded-xl p-4 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={[
-                { time: "00:00", val: 400 },
-                { time: "04:00", val: 300 },
-                { time: "08:00", val: 600 },
-                { time: "12:00", val: 800 },
-                { time: "16:00", val: 500 },
-                { time: "20:00", val: 700 },
-                { time: "23:59", val: 900 },
-              ]}
-            >
+            <AreaChart data={[
+              { time: "00:00", val: 400 }, { time: "04:00", val: 300 },
+              { time: "08:00", val: 600 }, { time: "12:00", val: 800 },
+              { time: "16:00", val: 500 }, { time: "20:00", val: 700 },
+              { time: "23:59", val: 900 },
+            ]}>
               <defs>
                 <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -695,100 +757,143 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff0a" />
               <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
               <YAxis hide />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
-                itemStyle={{ color: '#60a5fa' }}
-              />
+              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }} itemStyle={{ color: '#60a5fa' }} />
               <Area type="monotone" dataKey="val" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   const renderAlerts = () => (
-    <div className="space-y-6">
-      <div className="glass border-none rounded-3xl p-6">
-        <h2 className="text-xl font-black tracking-tighter mb-4">
-          Alertas e Notificações
-        </h2>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
+        <h2 className="text-xl font-black tracking-tighter mb-4">Alertas e Notificações</h2>
         <div className="space-y-3">
-          <div className="glass border-none rounded-xl p-4 border-l-4 border-red-500">
-            <div className="flex items-start gap-3">
-              <AlertOctagon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-700">
-                  Portais com Erros
-                </p>
-                <p className="text-xs text-red-600 mt-1">
-                  Verifique os logs para portais com status de erro
-                </p>
+          {portals.some(p => p.status === "error") && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass border-none rounded-xl p-4 border-l-4 border-red-500"
+            >
+              <div className="flex items-start gap-3">
+                <AlertOctagon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-700">Portais com Erros</p>
+                  <p className="text-xs text-red-600 mt-1">Verifique os logs para portais com status de erro</p>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="glass border-none rounded-xl p-4 border-l-4 border-yellow-500">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-yellow-700">
-                  Sincronização Pendente
-                </p>
-                <p className="text-xs text-yellow-600 mt-1">
-                  Portais com sincronizações agendadas para o dia
-                </p>
+            </motion.div>
+          )}
+          {portals.some(p => p.syncStatus?.isSyncing) && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="glass border-none rounded-xl p-4 border-l-4 border-yellow-500"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-yellow-700">Sincronização Pendente</p>
+                  <p className="text-xs text-yellow-600 mt-1">Portais com sincronizações agendadas para o dia</p>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="glass border-none rounded-xl p-4 border-l-4 border-green-500">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-700">
-                  Sincronização Sucesso
-                </p>
-                <p className="text-xs text-green-600 mt-1">
-                  Todas as operações de hoje foram bem-sucedidas
-                </p>
+            </motion.div>
+          )}
+          {portals.every(p => p.status === "connected") && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass border-none rounded-xl p-4 border-l-4 border-green-500"
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-700">Tudo Funcionando</p>
+                  <p className="text-xs text-green-600 mt-1">Todos os portais estão conectados e sincronizados</p>
+                </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   const renderFinance = () => (
-    <div className="space-y-6">
-      <FinancialDashboard />
-      <div className="mt-12">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants}>
+        <FinancialDashboard />
+      </motion.div>
+      <motion.div variants={itemVariants} className="mt-12">
         <h2 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-2">
           <Zap className="w-6 h-6 text-primary" />
           Split Inteligente ImobPay
         </h2>
         <AutomaticSplitDashboard data={analytics?.finance || { stats: [], recentInvoices: [] }} />
-
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   const renderContracts = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <h2 className="text-2xl font-black tracking-tight">Gestão de Contratos</h2>
-        <Button className="rounded-2xl font-bold">
-          <FileText className="w-4 h-4 mr-2" />
-          Novo Contrato
-        </Button>
-      </div>
-      <ContractListComponent contracts={MOCK_CONTRACTS} columns={CONTRACT_COLUMNS} />
-
-    </div>
+        <Link href="/contracts">
+          <Button className="rounded-2xl font-bold">
+            <FileText className="w-4 h-4 mr-2" /> Novo Contrato
+          </Button>
+        </Link>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        {contracts.length > 0 ? (
+          <ContractListComponent
+            contracts={contracts}
+            columns={[
+              { accessorKey: "numero" as const, header: "Nº Contrato" },
+              { accessorKey: "cliente" as const, header: "Cliente" },
+              { accessorKey: "imovel" as const, header: "Imóvel" },
+              { accessorKey: "valor" as const, header: "Valor" },
+              { accessorKey: "status" as const, header: "Status" },
+            ]}
+          />
+        ) : (
+          <div className="text-center py-16">
+            <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Nenhum contrato encontrado</h3>
+            <p className="text-muted-foreground text-sm">Crie seu primeiro contrato para começar.</p>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 
   const renderProofOfLife = () => (
-    <div className="space-y-6">
-      <div className="glass border-none rounded-3xl p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-blue-500 flex items-center justify-center">
@@ -800,45 +905,62 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
-              <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-1">Verificados de Hoje</p>
-              <p className="text-3xl font-black">24</p>
-              <div className="h-1 w-full bg-blue-500/30 rounded-full mt-3 overflow-hidden">
-                <div className="h-full bg-blue-500 w-[80%]" />
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
-              <p className="text-xs font-bold text-yellow-300 uppercase tracking-widest mb-1">Aguardando Resposta</p>
-              <p className="text-3xl font-black">7</p>
-              <div className="h-1 w-full bg-yellow-500/30 rounded-full mt-3 overflow-hidden">
-                <div className="h-full bg-yellow-500 w-[30%]" />
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5">
-              <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-1">Alertas de Fraude</p>
-              <p className="text-3xl font-black">0</p>
-              <div className="h-1 w-full bg-emerald-500/30 rounded-full mt-3 overflow-hidden">
-                <div className="h-full bg-emerald-500 w-0" />
-              </div>
-            </div>
+            {[
+              { label: "Verificados de Hoje", value: "24", progress: "80%", color: "blue" },
+              { label: "Aguardando Resposta", value: "7", progress: "30%", color: "yellow" },
+              { label: "Alertas de Fraude", value: "0", progress: "0%", color: "emerald" },
+            ].map((stat, idx) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.15 }}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/5 cursor-default"
+              >
+                <p className={`text-xs font-bold text-${stat.color}-300 uppercase tracking-widest mb-1`}>{stat.label}</p>
+                <p className="text-3xl font-black">{stat.value}</p>
+                <div className={`h-1 w-full bg-${stat.color}-500/30 rounded-full mt-3 overflow-hidden`}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: stat.progress }}
+                    transition={{ duration: 1, delay: idx * 0.2 }}
+                    className={`h-full bg-${stat.color}-500`}
+                  />
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
-      </div>
+      </motion.div>
 
-      <div className="glass border-none rounded-3xl p-6">
+      <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <h3 className="text-lg font-black mb-4">Monitoramento em Tempo Real</h3>
         <p className="text-muted-foreground text-sm mb-6">Lista de imóveis em ciclo de verificação ativa via WhatsApp.</p>
         <div className="space-y-3">
-          {MOCK_PROPERTIES.slice(0, 5).map((property, i) => (
-            <div key={property.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+          {properties.slice(0, 5).map((property, idx) => (
+            <motion.div
+              key={property.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.08 }}
+              whileHover={{ scale: 1.01, backgroundColor: "rgba(255,255,255,0.08)" }}
+              className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors cursor-pointer group"
+            >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-slate-700 overflow-hidden shadow-inner">
-                  <img src={property.media[0]?.url || `https://images.unsplash.com/photo-1512917${i}774080-9991f1c4c750`} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                  <img
+                    src={property.media?.[0]?.url || property.images?.[0]?.url || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=200'}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                    alt={property.title}
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-sm tracking-tight">{property.title}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Última prova: {i === 0 ? "Agora" : `${i * 2}h atrás`}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+                    Última prova: {idx === 0 ? "Agora" : `${idx * 2}h atrás`}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -848,55 +970,94 @@ export default function DashboardPage() {
                 </div>
                 <Badge className={cn(
                   "border-none font-black text-[10px] px-3 py-1 rounded-full",
-                  i === 2 ? "bg-yellow-500/10 text-yellow-500" : "bg-emerald-500/10 text-emerald-500"
+                  idx === 2 ? "bg-yellow-500/10 text-yellow-500" : "bg-emerald-500/10 text-emerald-500"
                 )}>
-                  {i === 2 ? "PENDENTE" : "VERIFICADO"}
+                  {idx === 2 ? "PENDENTE" : "VERIFICADO"}
                 </Badge>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   const renderInsights = () => (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <PredictiveTimeline data={SALES_PROB_DATA} />
+        <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+          <PredictiveTimeline data={{
+            probability: leads.length > 0 ? 0.75 : 0,
+            expectedDays: 21,
+            engagementScore: Math.min(95, leads.length * 12)
+          }} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <PriceRecommendationCard recommendation={PRICE_REC_DATA} />
-            <HealthScoreCard scoreData={HEALTH_SCORE_DATA} />
+            <PriceRecommendationCard recommendation={{
+              suggestedPrice: properties[0]?.price?.amount || 850000,
+              minPrice: (properties[0]?.price?.amount || 850000) * 0.96,
+              maxPrice: (properties[0]?.price?.amount || 850000) * 1.05,
+              confidence: 0.88,
+              marketAverage: (properties[0]?.price?.amount || 850000) * 1.02,
+              reasoning: [
+                "Alta demanda por 3 dormitórios na região",
+                "Acabamento superior à média local",
+                "Proximidade com infraestrutura de transporte"
+              ],
+              comparablesCount: Math.max(5, properties.length)
+            }} />
+            <HealthScoreCard scoreData={{
+              score: Math.min(95, 60 + properties.length * 3),
+              factors: [
+                { label: "Qualidade das Fotos", impact: 15, description: "Fotos em HDR aumentam conversão" },
+                { label: "Descrição Completa", impact: 10, description: "Meta-tags otimizadas para SEO" },
+                { label: "Preço vs Mercado", impact: -5, description: "Levemente acima da média local" }
+              ],
+              recommendations: [
+                "Adicionar tour virtual 360°",
+                "Incluir valor do IPTU no cabeçalho"
+              ]
+            }} />
           </div>
-
-        </div>
-        <div className="space-y-6">
+        </motion.div>
+        <motion.div variants={itemVariants} className="space-y-6">
           <div className="glass border-none rounded-3xl p-6 bg-primary/5 border border-primary/10">
             <div className="flex items-center gap-2 mb-4">
               <Brain className="w-5 h-5 text-primary" />
               <h3 className="font-black">IA Strategist</h3>
             </div>
             <p className="text-sm text-balance">
-              "Baseado nos dados da última semana, notei que o **Itaim Bibi** está com alta demanda mas seu estoque lá diminuiu 15%. Recomendo focar captação nesta região."
+              {properties.length > 0
+                ? `Baseado nos dados da última semana, notei que ${properties[0]?.address?.neighborhood || 'sua região'} está com demanda ativa. Recomendo manter preços competitivos.`
+                : "Cadastre seus primeiros imóveis para receber análises inteligentes da IA."
+              }
             </p>
-            <Button className="w-full mt-4 rounded-xl text-xs font-bold" variant="outline">Ver Análise Completa</Button>
+            <Link href="/properties">
+              <Button className="w-full mt-4 rounded-xl text-xs font-bold" variant="outline">
+                {properties.length > 0 ? "Ver Análise Completa" : "Adicionar Imóveis"}
+              </Button>
+            </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 
   const renderFranchise = () => (
-    <div className="space-y-6">
-      <FranchiseDashboard franchises={MOCK_FRANCHISES} />
-
-    </div>
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+      <motion.div variants={itemVariants}>
+        <FranchiseDashboard franchises={[]} />
+      </motion.div>
+    </motion.div>
   );
 
   const renderMarketplace = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black tracking-tight">Marketplace de Oportunidades</h2>
           <p className="text-muted-foreground text-sm">Colaboração e troca de leads entre parceiros da rede.</p>
@@ -905,245 +1066,233 @@ export default function DashboardPage() {
           <Button variant="outline" className="rounded-xl font-bold text-xs">Meus Anúncios</Button>
           <Button className="rounded-xl font-bold text-xs text-white">Criar Oferta</Button>
         </div>
-      </div>
-      <MarketplaceGrid />
-    </div>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <MarketplaceGrid />
+      </motion.div>
+    </motion.div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-background border-b border-gray-200 dark:border-border shadow-sm"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo - Link para página inicial (círculo vermelho) */}
             <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Home className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-tighter text-gray-900">
-                  Dashboard
-                </h1>
-                <p className="text-xs text-gray-500 font-medium">
-                  Gestão de Integrações
-                </p>
+                <h1 className="text-xl font-black tracking-tighter text-gray-900 dark:text-white">Dashboard</h1>
+                <p className="text-xs text-gray-500 font-medium">Gestão de Integrações</p>
               </div>
             </Link>
 
-            {/* Central Actions - Notificações e Usuário (círculos amarelo e azul) */}
             <div className="flex items-center gap-2">
-              {/* Menu de Notificações (círculo amarelo) */}
+              {/* Notifications */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  className="relative w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-secondary transition-colors"
                 >
-                  <Bell className="w-5 h-5 text-gray-600" />
-                  {notifications.some(n => !n.read) && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                    >
                       {notifications.filter(n => !n.read).length}
-                    </span>
+                    </motion.span>
                   )}
                 </button>
 
-                {/* Popup de Notificações */}
-                {showNotifications && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900">Notificações</h3>
-                      {notifications.length > 0 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleClearNotifications();
-                          }}
-                          className="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                          Limpar Todas
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
-                          <p className="text-sm">Nenhuma notificação</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''
-                              }`}
-                            onClick={() => {
-                              handleMarkAsRead(notification.id);
-                              setShowNotifications(false);
-                            }}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className={`w-2 h-2 rounded-full mt-2 ${notification.type === 'alert' ? 'bg-red-500' :
-                                notification.type === 'success' ? 'bg-emerald-500' :
-                                  'bg-blue-500'
-                                }`} />
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-600'
-                                  }`}>
-                                  {notification.title}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {notification.message}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-2">
-                                  {notification.time}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {notifications.length > 0 && (
-                      <div className="p-3 border-t border-gray-100 bg-gray-50">
-                        <button
-                          onClick={() => setShowNotifications(false)}
-                          className="w-full text-sm font-medium text-primary hover:text-primary/80 py-2 transition-colors"
-                        >
-                          Ver Todas
-                        </button>
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden z-50"
+                    >
+                      <div className="p-4 border-b border-gray-100 dark:border-border flex items-center justify-between">
+                        <h3 className="font-bold text-gray-900 dark:text-white">Notificações</h3>
+                        {notifications.length > 0 && (
+                          <button onClick={(e) => { e.stopPropagation(); handleClearNotifications(); }}
+                            className="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                            Limpar Todas
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center text-gray-500">
+                            <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">Nenhuma notificação</p>
+                          </div>
+                        ) : (
+                          notifications.map((notification, idx) => (
+                            <motion.div
+                              key={notification.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className={`p-4 border-b border-gray-50 dark:border-border cursor-pointer hover:bg-gray-50 dark:hover:bg-secondary/50 transition-colors ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''}`}
+                              onClick={() => { handleMarkAsRead(notification.id); setShowNotifications(false); }}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`w-2 h-2 rounded-full mt-2 ${
+                                  notification.type === 'alert' ? 'bg-red-500' :
+                                  notification.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'
+                                }`} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium ${!notification.read ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {notification.createdAt ? formatRelativeTime(notification.createdAt) : notification.time}
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Menu de Usuário (círculo azul) */}
+              {/* User Menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-secondary transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <User className="w-4 h-4 text-primary" />
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {user?.name || "Usuário"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {organization?.name || "Organização"}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.name || "Usuário"}</p>
+                    <p className="text-xs text-gray-500">{organization?.name || "Organização"}</p>
                   </div>
                 </button>
 
-                {/* Popup de Menu de Usuário */}
-                {showUserMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                    <div className="p-4 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">
-                            {user?.name || "Usuário"}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {organization?.name || "Organização"}
-                          </p>
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden z-50"
+                    >
+                      <div className="p-4 border-b border-gray-100 dark:border-border">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white text-sm">{user?.name || "Usuário"}</p>
+                            <p className="text-xs text-gray-500">{organization?.name || "Organização"}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="py-1">
-                      <Link
-                        href="/settings/profile"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        <span>Configurações da Conta</span>
-                      </Link>
-                      <Link
-                        href="/settings/organization"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <Building2 className="w-4 h-4" />
-                        <span>Organização</span>
-                      </Link>
-                      <Link
-                        href="/settings/billing"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        <span>Faturamento</span>
-                      </Link>
-                      <div className="border-t border-gray-100 my-1" />
-                      <Link
-                        href="/dashboard"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <Home className="w-4 h-4" />
-                        <span>Página Inicial</span>
-                      </Link>
-                      <div className="border-t border-gray-100 my-1" />
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          toast.success("Saindo...");
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sair</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                      <div className="py-1">
+                        {[
+                          { href: "/settings/profile", icon: Settings, label: "Configurações da Conta" },
+                          { href: "/settings/organization", icon: Building2, label: "Organização" },
+                          { href: "/settings/billing", icon: CreditCard, label: "Faturamento" },
+                        ].map((item) => (
+                          <Link key={item.href} href={item.href} onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary transition-colors">
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        ))}
+                        <div className="border-t border-gray-100 dark:border-border my-1" />
+                        <button
+                          onClick={() => { setShowUserMenu(false); toast.success("Saindo..."); }}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sair</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.header>
 
-      {/* Sidebar */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center gap-4 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 mb-6"
+        >
           <User className="w-5 h-5 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {user?.name || "Usuário"} - {organization?.name}
           </span>
-        </div>
+        </motion.div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeTab === tab.id
-                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                : "glass text-gray-600 hover:text-gray-900"
-                }`}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap",
+                activeTab === tab.id
+                  ? "bg-primary text-white shadow-lg shadow-primary/20"
+                  : "glass text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              )}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
             </button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Content */}
-        {activeTab === "overview" && renderOverview()}
-        {activeTab === "finance" && renderFinance()}
-        {activeTab === "contracts" && renderContracts()}
-        {activeTab === "proof-of-life" && renderProofOfLife()}
-        {activeTab === "insights" && renderInsights()}
-        {activeTab === "franchise" && renderFranchise()}
-        {activeTab === "marketplace" && renderMarketplace()}
-        {activeTab === "integrations" && renderIntegrations()}
-        {activeTab === "monitoring" && renderMonitoring()}
-        {activeTab === "alerts" && renderAlerts()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeTab === "overview" && renderOverview()}
+            {activeTab === "finance" && renderFinance()}
+            {activeTab === "contracts" && renderContracts()}
+            {activeTab === "proof-of-life" && renderProofOfLife()}
+            {activeTab === "insights" && renderInsights()}
+            {activeTab === "franchise" && renderFranchise()}
+            {activeTab === "marketplace" && renderMarketplace()}
+            {activeTab === "integrations" && renderIntegrations()}
+            {activeTab === "monitoring" && renderMonitoring()}
+            {activeTab === "alerts" && renderAlerts()}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

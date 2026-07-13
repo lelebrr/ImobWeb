@@ -5,10 +5,17 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto"
 
-// Nota: Em produção, estas chaves devem vir de variáveis de ambiente seguras
+// Nota: EM PRODUÇÃO, estas chaves DEVEM vir de variáveis de ambiente seguras
 const ALGORITHM = "aes-256-cbc"
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "imobweb-super-secret-key-2026-04-09" // 32 chars
-const KEY = scryptSync(ENCRYPTION_KEY, 'salt', 32)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
+if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length < 32) {
+  throw new Error(
+    "ENCRYPTION_KEY environment variable is required and must be at least 32 characters. " +
+    "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+  )
+}
+const ENCRYPTION_SALT = process.env.ENCRYPTION_SALT || "imobweb-default-salt-v1"
+const KEY = scryptSync(ENCRYPTION_KEY, ENCRYPTION_SALT, 32)
 
 export function encrypt(text: string): string {
   const iv = randomBytes(16)

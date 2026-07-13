@@ -1,55 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 
-const createLeadSchema = z.object({
-  name: z.string().min(1).max(200),
-  email: z.string().email().optional(),
-  phone: z.string().min(10).max(20),
-  source: z.enum(['zap', 'viva', 'olx', 'imovelweb', 'chaves', 'website', 'referral', 'other']),
-  propertyId: z.string().optional(),
-  notes: z.string().optional(),
-  status: z.enum(['new', 'contacted', 'qualified', 'visiting', 'proposal', 'closed', 'lost']).optional()
-});
-
-const updateLeadSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().min(10).max(20).optional(),
-  status: z.enum(['new', 'contacted', 'qualified', 'visiting', 'proposal', 'closed', 'lost']).optional(),
-  notes: z.string().optional(),
-  assignedTo: z.string().optional()
-});
-
-const MOCK_LEADS = [
-  { id: '1', name: 'Maria Santos', email: 'maria@email.com', phone: '11988887777', source: 'zap', status: 'new', propertyId: '1', createdAt: '2026-04-09T10:00:00Z', assignedTo: 'user-001' },
-  { id: '2', name: 'João Silva', email: 'joao@email.com', phone: '11977776666', source: 'viva', status: 'contacted', propertyId: '2', createdAt: '2026-04-08T14:30:00Z', assignedTo: 'user-002' },
-  { id: '3', name: 'Ana Costa', email: 'ana@email.com', phone: '11966665555', source: 'olx', status: 'qualified', propertyId: '1', createdAt: '2026-04-07T09:15:00Z', assignedTo: 'user-001' },
-  { id: '4', name: 'Pedro Lima', email: 'pedro@email.com', phone: '11955554444', source: 'referral', status: 'visiting', propertyId: '3', createdAt: '2026-04-06T16:45:00Z', assignedTo: 'user-003' },
-  { id: '5', name: 'Carlos Oliveira', email: 'carlos@email.com', phone: '11944443333', source: 'website', status: 'proposal', propertyId: '4', createdAt: '2026-04-05T11:20:00Z', assignedTo: 'user-001' }
-];
+/**
+ * LEADS API - IMOBWEB 2026
+ * Full CRUD with Prisma database operations.
+ */
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get('organizationId');
     const status = searchParams.get('status');
     const source = searchParams.get('source');
-    const assignedTo = searchParams.get('assignedTo');
+    const assignedToId = searchParams.get('assignedTo');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
 
-    let leads = MOCK_LEADS;
+    if (!organizationId) {
+      return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
+    }
 
-    if (status) leads = leads.filter(l => l.status === status);
-    if (source) leads = leads.filter(l => l.source === source);
-    if (assignedTo) leads = leads.filter(l => l.assignedTo === assignedTo);
+    const where: any = { organizationId };
+    if (status) where.status = status;
+    if (source) where.source = source;
+    if (assignedToId) where.assignedToId = assignedToId;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { whatsapp: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    const stats = {
-      total: MOCK_LEADS.length,
-      new: MOCK_LEADS.filter(l => l.status === 'new').length,
-      contacted: MOCK_LEADS.filter(l => l.status === 'contacted').length,
-      qualified: MOCK_LEADS.filter(l => l.status === 'qualified').length,
-      closed: MOCK_LEADS.filter(l => l.status === 'closed').length
+    const [leads, total, stats] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        include: {
+          property: { select: { id: true, title: true, address: true, city: true } },
+          assignedTo: { select: { id: true, name: true, email: true } },
+          _count: { select: { conversations: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.lead.count({ where }),
+      prisma.lead.groupBy({
+        by: ['status'],
+        where: { organizationId },
+        _count: true,
+      }),
+    ]);
+
+    const statsMap = {
+      total,
+      new: 0,
+      contatado: 0,
+      interessado: 0,
+      convertido: 0,
+      perdido: 0,
     };
+    stats.forEach((s: any) => {
+      if (s.status === 'NOVO') statsMap.new = s._count;
+      else if (s.status === 'CONTATADO') statsMap.contatado = s._count;
+      else if (s.status === 'INTERESSADO') statsMap.interessado = s._count;
+      else if (s.status === 'CONVERTIDO') statsMap.convertido = s._count;
+      else if (s.status === 'PERDIDO') statsMap.perdido = s._count;
+    });
 
-    return NextResponse.json({ leads, stats });
+    return NextResponse.json({
+      leads,
+      stats: statsMap,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error('Error fetching leads:', error);
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
@@ -61,44 +87,73 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body;
 
-    if (action === 'create') {
-      const validated = createLeadSchema.parse(body);
-      
-      const lead = {
-        id: `lead-${Date.now()}`,
-        ...validated,
-        status: validated.status || 'new',
-        createdAt: new Date().toISOString()
-      };
-
-      return NextResponse.json({ success: true, lead }, { status: 201 });
-    }
-
     if (action === 'updateStatus') {
-      const { leadId, status } = z.object({
-        leadId: z.string(),
-        status: z.enum(['new', 'contacted', 'qualified', 'visiting', 'proposal', 'closed', 'lost'])
-      }).parse(body);
+      const { leadId, status } = body;
+      if (!leadId || !status) {
+        return NextResponse.json({ error: 'leadId and status are required' }, { status: 400 });
+      }
 
-      return NextResponse.json({ success: true, message: `Lead ${leadId} updated to ${status}` });
+      const lead = await prisma.lead.update({
+        where: { id: leadId },
+        data: { status },
+      });
+
+      return NextResponse.json({ success: true, lead });
     }
 
     if (action === 'assign') {
-      const { leadId, userId } = z.object({
-        leadId: z.string(),
-        userId: z.string()
-      }).parse(body);
+      const { leadId, userId } = body;
+      if (!leadId || !userId) {
+        return NextResponse.json({ error: 'leadId and userId are required' }, { status: 400 });
+      }
 
-      return NextResponse.json({ success: true, message: `Lead ${leadId} assigned to ${userId}` });
+      const lead = await prisma.lead.update({
+        where: { id: leadId },
+        data: { assignedToId: userId },
+      });
+
+      return NextResponse.json({ success: true, lead });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
+    // Default: create lead
+    const {
+      name, email, phone, whatsapp, source, propertyId,
+      notes, organizationId, budget, maxPrice, bedrooms, bathrooms,
+      city, neighborhood, state,
+    } = body;
+
+    if (!name || !organizationId) {
+      return NextResponse.json({ error: 'name and organizationId are required' }, { status: 400 });
     }
+
+    const lead = await prisma.lead.create({
+      data: {
+        name,
+        email: email || null,
+        phone: phone || null,
+        whatsapp: whatsapp || null,
+        source: source || 'OTHER',
+        status: 'NOVO',
+        propertyId: propertyId || null,
+        organizationId,
+        notes: notes || null,
+        budget: budget || null,
+        maxPrice: maxPrice || null,
+        bedrooms: bedrooms || null,
+        bathrooms: bathrooms || null,
+        city: city || null,
+        neighborhood: neighborhood || null,
+        state: state || null,
+      },
+      include: {
+        property: { select: { id: true, title: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, lead }, { status: 201 });
+  } catch (error: any) {
     console.error('Error processing lead action:', error);
-    return NextResponse.json({ error: 'Failed to process action' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process action', details: error.message }, { status: 500 });
   }
 }
 
@@ -112,15 +167,30 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const updates = updateLeadSchema.parse(body);
 
-    return NextResponse.json({ success: true, leadId, updates });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation error', details: error.issues }, { status: 400 });
-    }
+    const lead = await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        name: body.name || undefined,
+        email: body.email || undefined,
+        phone: body.phone || undefined,
+        whatsapp: body.whatsapp || undefined,
+        status: body.status || undefined,
+        notes: body.notes || undefined,
+        assignedToId: body.assignedTo || undefined,
+        budget: body.budget || undefined,
+        maxPrice: body.maxPrice || undefined,
+      },
+      include: {
+        property: { select: { id: true, title: true } },
+        assignedTo: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, lead });
+  } catch (error: any) {
     console.error('Error updating lead:', error);
-    return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update lead', details: error.message }, { status: 500 });
   }
 }
 
@@ -133,7 +203,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: `Lead ${leadId} deleted` });
+    await prisma.lead.delete({ where: { id: leadId } });
+
+    return NextResponse.json({ success: true, message: 'Lead deleted successfully' });
   } catch (error) {
     console.error('Error deleting lead:', error);
     return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 });

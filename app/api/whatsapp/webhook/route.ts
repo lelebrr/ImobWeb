@@ -15,14 +15,31 @@ export const dynamic = "force-dynamic";
 /**
  * Verificar assinatura do webhook (segurança)
  */
+import { createHmac } from "crypto";
+
 function verifySignature(
   request: NextRequest,
   signature: string,
   payload: string,
 ): boolean {
-  // Em produção, validar com crypto HMAC + WHATSAPP_APP_SECRET
-  // Por enquanto, aceita qualquer assinatura em dev
-  return true;
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appSecret) {
+    console.warn("[WhatsApp Webhook] WHATSAPP_APP_SECRET not configured, skipping signature verification");
+    return process.env.NODE_ENV === "development";
+  }
+
+  if (!signature) return false;
+
+  const expectedSignature = "sha256=" + createHmac("sha256", appSecret).update(payload).digest("hex");
+
+  try {
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+    if (sigBuffer.length !== expectedBuffer.length) return false;
+    return require("crypto").timingSafeEqual(sigBuffer, expectedBuffer);
+  } catch {
+    return false;
+  }
 }
 
 /**
