@@ -254,6 +254,7 @@ function ForgotPasswordForm() {
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
+                      autoComplete="email"
                       {...registerEmail("email")}
                       className="h-14 pl-12 text-base rounded-2xl border-slate-200"
                     />
@@ -341,6 +342,7 @@ function ForgotPasswordForm() {
                       id="password"
                       type="password"
                       placeholder="••••••••"
+                      autoComplete="new-password"
                       {...registerReset("password")}
                       className="h-14 pl-12 text-base rounded-2xl border-slate-200"
                     />
@@ -365,6 +367,7 @@ function ForgotPasswordForm() {
                       id="confirmPassword"
                       type="password"
                       placeholder="••••••••"
+                      autoComplete="new-password"
                       {...registerReset("confirmPassword")}
                       className="h-14 pl-12 text-base rounded-2xl border-slate-200"
                     />

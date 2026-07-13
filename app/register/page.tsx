@@ -210,6 +210,7 @@ function RegisterForm() {
                 <Input
                   id="name"
                   placeholder="Seu nome"
+                  autoComplete="name"
                   {...register("name")}
                   className="h-12 text-base rounded-xl border-slate-200"
                 />
@@ -229,6 +230,7 @@ function RegisterForm() {
                 <Input
                   id="phone"
                   placeholder="(11) 99999-9999"
+                  autoComplete="tel"
                   {...register("phone")}
                   className="h-12 text-base rounded-xl border-slate-200"
                 />
@@ -251,6 +253,7 @@ function RegisterForm() {
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
+                autoComplete="email"
                 {...register("email")}
                 className="h-12 text-base rounded-xl border-slate-200"
               />
@@ -373,6 +376,7 @@ function RegisterForm() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   {...register("password")}
                   className="h-12 text-base rounded-xl border-slate-200"
                 />
@@ -393,6 +397,7 @@ function RegisterForm() {
                   id="confirmPassword"
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   {...register("confirmPassword")}
                   className="h-12 text-base rounded-xl border-slate-200"
                 />

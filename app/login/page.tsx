@@ -82,10 +82,25 @@ function LoginForm() {
       router.push(destination);
       router.refresh();
     } catch (err: any) {
-      setError("email", { message: err.message });
+      // Translate common Supabase errors to user-friendly messages
+      const rawMessage = err.message || "";
+      let friendlyMessage = "Verifique suas credenciais e tente novamente.";
+
+      if (rawMessage.includes("Invalid login credentials")) {
+        friendlyMessage = "E-mail ou senha incorretos. Verifique suas credenciais.";
+      } else if (rawMessage.includes("Email not confirmed")) {
+        friendlyMessage = "E-mail não confirmado. Verifique sua caixa de entrada.";
+      } else if (rawMessage.includes("Too many requests")) {
+        friendlyMessage = "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+      } else if (rawMessage.includes("User not found")) {
+        friendlyMessage = "Usuário não encontrado. Crie uma conta primeiro.";
+      } else if (rawMessage.includes("Configuração")) {
+        friendlyMessage = rawMessage;
+      }
+
+      setError("email", { message: friendlyMessage });
       toast.error("Falha no login", {
-        description:
-          err.message || "Verifique suas credenciais e tente novamente.",
+        description: friendlyMessage,
       });
     } finally {
       setIsLoading(false);
@@ -213,6 +228,7 @@ function LoginForm() {
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
+                autoComplete="email"
                 {...register("email")}
                 className="h-14 text-base rounded-2xl border-slate-300 bg-white text-slate-900 focus:ring-emerald-500"
               />
@@ -242,6 +258,7 @@ function LoginForm() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
+                autoComplete="current-password"
                 {...register("password")}
                 className="h-14 text-base rounded-2xl border-slate-300 bg-white text-slate-900 focus:ring-emerald-500"
               />
