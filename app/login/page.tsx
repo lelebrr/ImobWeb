@@ -58,7 +58,11 @@ function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "E-mail ou senha incorretos");
+        const errorMsg = result.error || "E-mail ou senha incorretos";
+        if (response.status === 503) {
+          throw new Error("Serviço de autenticação temporariamente indisponível. Verifique se o projeto Supabase está ativo.");
+        }
+        throw new Error(errorMsg);
       }
 
       const destination = result.redirectTo || redirectTo;
@@ -86,7 +90,9 @@ function LoginForm() {
       const rawMessage = err.message || "";
       let friendlyMessage = "Verifique suas credenciais e tente novamente.";
 
-      if (rawMessage.includes("Invalid login credentials")) {
+      if (rawMessage.includes("Indisponível") || rawMessage.includes(" indisponível") || rawMessage.includes("fetch failed") || rawMessage.includes("fetch failed")) {
+        friendlyMessage = "Serviço de autenticação temporariamente indisponível. Tente novamente em alguns minutos.";
+      } else if (rawMessage.includes("Invalid login credentials")) {
         friendlyMessage = "E-mail ou senha incorretos. Verifique suas credenciais.";
       } else if (rawMessage.includes("Email not confirmed")) {
         friendlyMessage = "E-mail não confirmado. Verifique sua caixa de entrada.";

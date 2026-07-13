@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   const cookieStore = await cookies();
 
@@ -51,10 +53,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  let data: any, error: any;
+  try {
+    const result = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    data = result.data;
+    error = result.error;
+  } catch (fetchErr: any) {
+    console.error("[Auth] Falha de conexão com Supabase:", {
+      message: fetchErr.message,
+      code: fetchErr.cause?.code,
+      email,
+    });
+    return NextResponse.json(
+      { error: "Serviço de autenticação temporariamente indisponível. Verifique se o projeto Supabase está ativo." },
+      { status: 503 }
+    );
+  }
 
   if (error) {
     console.error("[Auth] Login falhou:", {

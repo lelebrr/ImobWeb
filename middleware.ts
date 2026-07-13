@@ -58,11 +58,18 @@ const PUBLIC_ROUTES = [
   "/auth",
 ];
 
+// Rotas de API de auth - não devem passar pelo middleware de auth
+const AUTH_API_ROUTES = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/logout",
+  "/api/auth/forgot-password",
+];
+
 /**
  * ============================================
  * MAPA DE PERMISSÕES POR ROTA
  * ============================================
- * Define qual permissão é necessária para acessar cada rota
  */
 const ROUTE_PERMISSIONS: Record<string, { action: string; resource: string }> = {
   "/admin/users": { action: "read", resource: "user" },
@@ -91,26 +98,6 @@ interface UserContext {
   isPlatformAdmin: boolean;
 }
 
-async function getUserContext(supabase: ReturnType<typeof createClient>): Promise<UserContext | null> {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
-  if (error || !user) return null;
-
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("role, organization_id, is_platform_admin")
-    .eq("id", user.id)
-    .single();
-
-  return {
-    id: user.id,
-    email: user.email || "",
-    role: profile?.role || "AGENCY_CORRETOR",
-    organizationId: profile?.organization_id || "",
-    isPlatformAdmin: profile?.is_platform_admin || false,
-  };
-}
-
 function isPlatformRoute(pathname: string): boolean {
   return pathname.startsWith("/admin/platform") || 
          pathname.startsWith("/admin/settings") ||
@@ -132,6 +119,21 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   });
+
+  const { pathname } = request.nextUrl;
+
+  // ============================================
+  // SKIP MIDDLEWARE FOR AUTH API ROUTES
+  // These routes handle their own Supabase auth
+  // ============================================
+  if (AUTH_API_ROUTES.some((route) => pathname.startsWith(route))) {
+    return response;
+  }
+
+  // Skip middleware for other API routes (they handle their own auth)
+  if (pathname.startsWith("/api/")) {
+    return response;
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -166,16 +168,22 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const { pathname } = request.nextUrl;
-
   const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route),
   );
-  const isPublic = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route),
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user: any = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data?.user;
+  } catch (err) {
+    console.error("[Middleware] Erro ao verificar autenticação:", err);
+    // On error, let the request through for public routes
+    if (isProtected) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    return response;
+  }
 
   if (isProtected && !user) {
     const redirectUrl = new URL("/login", request.url);
@@ -188,22 +196,27 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user) {
-    const userContext = await getUserContext(supabase);
+    try {
+      // Get user role from metadata instead of DB query to avoid Edge Runtime issues
+      const role = (user.user_metadata?.role as string) || "BROKER";
+      const isPlatformAdmin = role === "PLATFORM_MASTER" || role === "SUPER_ADMIN";
+      const organizationId = user.user_metadata?.organizationId || "";
 
-    if (userContext) {
-      response.headers.set("x-user-id", userContext.id);
-      response.headers.set("x-user-role", userContext.role);
-      response.headers.set("x-organization-id", userContext.organizationId);
-      response.headers.set("x-is-platform-admin", String(userContext.isPlatformAdmin));
+      response.headers.set("x-user-id", user.id);
+      response.headers.set("x-user-role", role);
+      response.headers.set("x-organization-id", organizationId);
+      response.headers.set("x-is-platform-admin", String(isPlatformAdmin));
 
-      if (isPlatformRoute(pathname) && !userContext.isPlatformAdmin) {
+      if (isPlatformRoute(pathname) && !isPlatformAdmin) {
         console.log(`[Middleware] Usuário não é PLATFORM_MASTER, acesso negado a: ${pathname}`);
         return NextResponse.redirect(new URL("/dashboard?error=unauthorized", request.url));
       }
 
-      if (isAgencyRoute(pathname) && userContext.isPlatformAdmin) {
+      if (isAgencyRoute(pathname) && isPlatformAdmin) {
         response.headers.set("x-impersonating", "true");
       }
+    } catch (err) {
+      console.error("[Middleware] Erro ao processar contexto do usuário:", err);
     }
   }
 
