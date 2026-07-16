@@ -4,127 +4,110 @@ import { useMarketingLanguage } from '@/lib/i18n/MarketingLanguageContext'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Clock, Zap, AlertTriangle, TrendingUp } from 'lucide-react'
 
-/**
- * ProblemSolution - Psicologia de Design:
- * - Contraste Doloroso vs Alivio: O "Antigo" \u00e9 cinza/opaco (dor), o "Futuro imobWeb" \u00e9 verde vibrante (vida/crescimento).
- * - FOCO EM CONVERS\u00c3O: Mostra n\u00fameros de perda (60% leads) para gerar senso de urg\u00eancia (fear of missing out).
- */
 const ProblemSolution = () => {
     const { t } = useMarketingLanguage()
 
     return (
-        <section className="py-24 sm:py-32 bg-brand-clean relative overflow-hidden">
-            {/* Elementos Graficos de Fundo */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            
+        <section className="py-24 sm:py-32 bg-[#0a0a0f] relative overflow-hidden">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-24 max-w-4xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <h2 className="text-4xl lg:text-6xl font-black mb-8 tracking-tighter text-brand-deep">
+                <div className="text-center mb-20 max-w-4xl mx-auto">
+                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                        <h2 className="text-4xl lg:text-6xl font-black mb-6 tracking-tighter text-white">
                             {t.problemSolution.title}
                         </h2>
-                        <p className="text-xl text-slate-500 leading-relaxed font-medium">
+                        <p className="text-xl text-slate-400 leading-relaxed font-medium">
                             {t.problemSolution.subtitle}
                         </p>
                     </motion.div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-12 items-stretch">
-                    {/* The OLD Way - A DOR */}
-                    <motion.div 
+                <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+                    {/* The OLD Way */}
+                    <motion.div
                         initial={{ opacity: 0, x: -40 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="p-10 rounded-[3rem] border border-slate-200 bg-white shadow-sm relative group overflow-hidden"
+                        className="p-8 rounded-3xl border border-white/5 bg-white/[0.02] relative overflow-hidden"
                     >
-                        <div className="absolute top-6 right-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-4 py-1.5 rounded-full">O Modelo Antigo</div>
-                        
-                        <div className="space-y-16 mt-10">
-                            <div className="flex gap-6">
-                                <div className="bg-slate-100 p-4 rounded-2xl h-fit">
-                                    <AlertTriangle className="h-7 w-7 text-slate-400" />
+                        <div className="absolute top-5 right-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                            O Modelo Antigo
+                        </div>
+
+                        <div className="space-y-12 mt-8">
+                            <div className="flex gap-5">
+                                <div className="bg-white/5 p-3 rounded-xl h-fit border border-white/5">
+                                    <AlertTriangle className="h-6 w-6 text-slate-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-slate-800 mb-3">{t.problemSolution.prob1}</h3>
-                                    <p className="text-lg text-slate-500 leading-relaxed">{t.problemSolution.prob1Desc}</p>
+                                    <h3 className="text-xl font-bold text-white mb-2">{t.problemSolution.prob1}</h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed">{t.problemSolution.prob1Desc}</p>
                                 </div>
                             </div>
-                            
-                            <div className="flex gap-6">
-                                <div className="bg-slate-100 p-4 rounded-2xl h-fit">
-                                    <Clock className="h-7 w-7 text-slate-400" />
+                            <div className="flex gap-5">
+                                <div className="bg-white/5 p-3 rounded-xl h-fit border border-white/5">
+                                    <Clock className="h-6 w-6 text-slate-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-slate-800 mb-3">{t.problemSolution.prob2}</h3>
-                                    <p className="text-lg text-slate-500 leading-relaxed">{t.problemSolution.prob2Desc}</p>
+                                    <h3 className="text-xl font-bold text-white mb-2">{t.problemSolution.prob2}</h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed">{t.problemSolution.prob2Desc}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Indicador de Perda Subliminar */}
-                        <div className="mt-16 pt-8 border-t border-slate-100 flex items-center gap-4 text-slate-400">
-                            <div className="h-2 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full w-[70%] bg-slate-300" />
+                        <div className="mt-12 pt-6 border-t border-white/5 flex items-center gap-3">
+                            <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full w-[70%] bg-slate-600 rounded-full" />
                             </div>
-                            <span className="text-sm font-bold">Alta Fric\u00e7\u00e3o</span>
+                            <span className="text-xs font-bold text-slate-500">Alta Fricção</span>
                         </div>
                     </motion.div>
 
-                    {/* The imobWeb Way - O ALIVIO */}
-                    <motion.div 
+                    {/* The imobWeb Way */}
+                    <motion.div
                         initial={{ opacity: 0, x: 40 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="p-10 rounded-[3rem] bg-brand-deep text-white relative shadow-3xl shadow-brand-deep/20 overflow-hidden"
+                        className="p-8 rounded-3xl bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/20 relative overflow-hidden"
                     >
-                        {/* Glow Gradient de Crescimento */}
-                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand-growth/20 blur-[80px] rounded-full" />
-                        
-                        <div className="absolute top-6 right-6 text-[10px] font-black text-brand-growth uppercase tracking-[0.2em] bg-brand-growth/10 px-4 py-1.5 rounded-full">O Padr\u00e3o 2026</div>
-                        
-                        <div className="space-y-16 mt-10 relative z-10">
-                            <div className="flex gap-6">
-                                <div className="bg-brand-growth p-4 rounded-2xl h-fit shadow-glow-growth rotate-3">
-                                    <CheckCircle2 className="h-7 w-7 text-brand-deep" />
+                        <div className="absolute -top-20 -right-20 w-60 h-60 bg-indigo-500/10 blur-[80px] rounded-full" />
+
+                        <div className="absolute top-5 right-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                            O Padrão 2026
+                        </div>
+
+                        <div className="space-y-12 mt-8 relative z-10">
+                            <div className="flex gap-5">
+                                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl h-fit shadow-lg shadow-indigo-500/20">
+                                    <CheckCircle2 className="h-6 w-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-white mb-3">{t.problemSolution.sol1}</h3>
-                                    <p className="text-lg text-slate-400 leading-relaxed">{t.problemSolution.sol1Desc}</p>
+                                    <h3 className="text-xl font-bold text-white mb-2">{t.problemSolution.sol1}</h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed">{t.problemSolution.sol1Desc}</p>
                                 </div>
                             </div>
-                            
-                            <div className="flex gap-6">
-                                <div className="bg-brand-growth p-4 rounded-2xl h-fit shadow-glow-growth -rotate-2">
-                                    <Zap className="h-7 w-7 text-brand-deep" />
+                            <div className="flex gap-5">
+                                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl h-fit shadow-lg shadow-indigo-500/20">
+                                    <Zap className="h-6 w-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-white mb-3">{t.problemSolution.sol2}</h3>
-                                    <p className="text-lg text-slate-400 leading-relaxed">{t.problemSolution.sol2Desc}</p>
+                                    <h3 className="text-xl font-bold text-white mb-2">{t.problemSolution.sol2}</h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed">{t.problemSolution.sol2Desc}</p>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div className="mt-16 pt-8 border-t border-white/10 relative z-10">
-                            <div className="bg-brand-growth/10 border border-brand-growth/20 rounded-2xl p-6 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-brand-growth p-2 rounded-lg">
-                                        <TrendingUp className="h-5 w-5 text-brand-deep" />
+
+                        <div className="mt-12 pt-6 border-t border-white/10 relative z-10">
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
+                                        <TrendingUp className="h-4 w-4 text-white" />
                                     </div>
                                     <div>
-                                        <div className="text-sm font-black text-white uppercase tracking-tighter">Retorno Garantido</div>
-                                        <div className="text-xs text-brand-growth font-bold">Vendas +300% em 6 meses</div>
+                                        <div className="text-xs font-bold text-white uppercase tracking-wider">Retorno Garantido</div>
+                                        <div className="text-[11px] text-indigo-400 font-semibold">Vendas +300% em 6 meses</div>
                                     </div>
                                 </div>
-                                <div className="text-3xl font-black text-brand-growth inline-flex items-center">
-                                    3x
-                                </div>
+                                <div className="text-2xl font-black text-indigo-400">3x</div>
                             </div>
                         </div>
                     </motion.div>

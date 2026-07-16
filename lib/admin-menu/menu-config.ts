@@ -14,7 +14,8 @@ import {
   TrendingUp,
   MessageSquare,
   Package,
-  Key
+  Key,
+  ClipboardCheck
 } from 'lucide-react';
 
 /**
@@ -150,5 +151,11 @@ export const ADMIN_MENU_CONFIG: MenuItem[] = [
       { id: 'set-white-label', label: 'Padrões White Label', href: '/admin/settings/white-label' },
       { id: 'set-templates', label: 'Templates de Email', href: '/admin/settings/email-templates' },
     ]
+  },
+  {
+    id: 'vistoria',
+    label: 'Vistoria',
+    href: '/admin/vistoria',
+    icon: ClipboardCheck,
   },
 ];

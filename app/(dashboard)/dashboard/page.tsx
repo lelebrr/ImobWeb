@@ -1074,22 +1074,22 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
+    <div className="min-h-screen bg-[#0a0a0f]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-background border-b border-gray-200 dark:border-border shadow-sm"
+        className="bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5 sticky top-0 z-30"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Home className="w-6 h-6 text-primary" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Home className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-tighter text-gray-900 dark:text-white">Dashboard</h1>
-                <p className="text-xs text-gray-500 font-medium">Gestão de Integrações</p>
+                <h1 className="text-base font-bold tracking-tight text-white">Dashboard</h1>
+                <p className="text-[10px] text-slate-500 font-medium">Gestão de Integrações</p>
               </div>
             </Link>
 
@@ -1098,14 +1098,14 @@ export default function DashboardPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-secondary transition-colors"
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
                 >
-                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Bell className="w-4 h-4" />
                   {notifications.filter(n => !n.read).length > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                      className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30"
                     >
                       {notifications.filter(n => !n.read).length}
                     </motion.span>
@@ -1119,10 +1119,10 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-2 w-80 bg-[#12121a] rounded-2xl shadow-2xl border border-white/5 overflow-hidden z-50"
                     >
-                      <div className="p-4 border-b border-gray-100 dark:border-border flex items-center justify-between">
-                        <h3 className="font-bold text-gray-900 dark:text-white">Notificações</h3>
+                      <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                        <h3 className="font-bold text-white text-sm">Notificações</h3>
                         {notifications.length > 0 && (
                           <button onClick={(e) => { e.stopPropagation(); handleClearNotifications(); }}
                             className="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors">
@@ -1132,8 +1132,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="max-h-80 overflow-y-auto">
                         {notifications.length === 0 ? (
-                          <div className="p-8 text-center text-gray-500">
-                            <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <div className="p-8 text-center text-slate-500">
+                            <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">Nenhuma notificação</p>
                           </div>
                         ) : (
@@ -1143,7 +1143,7 @@ export default function DashboardPage() {
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: idx * 0.05 }}
-                              className={`p-4 border-b border-gray-50 dark:border-border cursor-pointer hover:bg-gray-50 dark:hover:bg-secondary/50 transition-colors ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''}`}
+                              className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${!notification.read ? 'bg-indigo-500/5' : ''}`}
                               onClick={() => { handleMarkAsRead(notification.id); setShowNotifications(false); }}
                             >
                               <div className="flex items-start gap-3">
@@ -1152,11 +1152,11 @@ export default function DashboardPage() {
                                   notification.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'
                                 }`} />
                                 <div className="flex-1 min-w-0">
-                                  <p className={`text-sm font-medium ${!notification.read ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                  <p className={`text-sm font-medium ${!notification.read ? 'text-white' : 'text-slate-400'}`}>
                                     {notification.title}
                                   </p>
-                                  <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
-                                  <p className="text-xs text-gray-400 mt-2">
+                                  <p className="text-xs text-slate-500 mt-1">{notification.message}</p>
+                                  <p className="text-xs text-slate-600 mt-2">
                                     {notification.createdAt ? formatRelativeTime(notification.createdAt) : notification.time}
                                   </p>
                                 </div>
@@ -1174,14 +1174,14 @@ export default function DashboardPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-secondary transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="w-4 h-4 text-primary" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-indigo-500/20">
+                    {(user?.name || "U").charAt(0).toUpperCase()}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.name || "Usuário"}</p>
-                    <p className="text-xs text-gray-500">{organization?.name || "Organização"}</p>
+                    <p className="text-sm font-semibold text-white">{user?.name || "Usuário"}</p>
+                    <p className="text-[10px] text-slate-500">{organization?.name || "Organização"}</p>
                   </div>
                 </button>
 
@@ -1192,16 +1192,16 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden z-50"
+                      className="absolute right-0 top-full mt-2 w-56 bg-[#12121a] rounded-2xl shadow-2xl border border-white/5 overflow-hidden z-50"
                     >
-                      <div className="p-4 border-b border-gray-100 dark:border-border">
+                      <div className="p-4 border-b border-white/5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="w-5 h-5 text-primary" />
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-indigo-500/20">
+                            {(user?.name || "U").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900 dark:text-white text-sm">{user?.name || "Usuário"}</p>
-                            <p className="text-xs text-gray-500">{organization?.name || "Organização"}</p>
+                            <p className="font-semibold text-white text-sm">{user?.name || "Usuário"}</p>
+                            <p className="text-[10px] text-slate-500">{organization?.name || "Organização"}</p>
                           </div>
                         </div>
                       </div>
@@ -1212,15 +1212,15 @@ export default function DashboardPage() {
                           { href: "/settings/billing", icon: CreditCard, label: "Faturamento" },
                         ].map((item) => (
                           <Link key={item.href} href={item.href} onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-secondary transition-colors">
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
                             <item.icon className="w-4 h-4" />
                             <span>{item.label}</span>
                           </Link>
                         ))}
-                        <div className="border-t border-gray-100 dark:border-border my-1" />
+                        <div className="border-t border-white/5 my-1" />
                         <button
                           onClick={() => { setShowUserMenu(false); toast.success("Saindo..."); }}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Sair</span>
@@ -1242,8 +1242,8 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 mb-6"
         >
-          <User className="w-5 h-5 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <User className="w-4 h-4 text-slate-500" />
+          <span className="text-sm font-medium text-slate-400">
             {user?.name || "Usuário"} - {organization?.name}
           </span>
         </motion.div>
@@ -1253,17 +1253,17 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-1.5 mb-6 overflow-x-auto scrollbar-hide pb-2"
         >
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap",
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
                 activeTab === tab.id
-                  ? "bg-primary text-white shadow-lg shadow-primary/20"
-                  : "glass text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               )}
             >
               <tab.icon className="w-4 h-4" />

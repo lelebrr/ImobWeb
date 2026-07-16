@@ -6,12 +6,6 @@ import Link from 'next/link'
 import { useMarketingLanguage } from '@/lib/i18n/MarketingLanguageContext'
 import { motion } from 'framer-motion'
 
-/**
- * PricingTable - Psicologia de Design:
- * - Efeito Ancoragem: Tr\u00eas planos para destacar o "Professional" como o melhor custo-benef\u00edcio.
- * - FOCO EM A\u00c7\u00c3O: Bot\u00e3o Amber/Gold apenas no plano Professional para maximizar cliques.
- * - Gatilho de Escassez/Status: Selo "Recomendado" com anima\u00e7\u00e3o suave.
- */
 const PricingTable = () => {
     const { t } = useMarketingLanguage()
 
@@ -22,14 +16,8 @@ const PricingTable = () => {
             price: 'R$ 0',
             period: t.pricing.perMonth,
             featured: false,
-            features: [
-                'At\u00e9 10 im\u00f3veis',
-                'At\u00e9 100 contatos',
-                'Suporte b\u00e1sico',
-                'Sincroniza\u00e7\u00e3o de portais manual',
-            ],
+            features: ['Até 10 imóveis', 'Até 100 contatos', 'Suporte básico', 'Sincronização de portais manual'],
             cta: t.pricing.startFree,
-            ctaVariant: 'outline' as const,
         },
         {
             name: t.pricing.professional,
@@ -37,55 +25,33 @@ const PricingTable = () => {
             price: 'R$ 99',
             period: t.pricing.perMonth,
             featured: true,
-            features: [
-                'Im\u00f3veis ilimitados',
-                'Contatos ilimitados',
-                'WhatsApp Proativo IA',
-                'Relat\u00f3rios de IA Predetiva',
-                'Sincroniza\u00e7\u00e3o Autom\u00e1tica',
-                'Suporte 24h Priorit\u00e1rio',
-            ],
+            features: ['Imóveis ilimitados', 'Contatos ilimitados', 'WhatsApp Proativo IA', 'Relatórios de IA Preditiva', 'Sincronização Automática', 'Suporte 24h Prioritário'],
             cta: t.pricing.startPro,
-            ctaVariant: 'default' as const,
         },
         {
             name: t.pricing.enterprise,
             description: t.pricing.enterpriseDesc,
             price: 'Custom',
-            period: 'Pre\u00e7o sob consulta',
+            period: 'Preço sob consulta',
             featured: false,
-            features: [
-                'Tudo do Professional',
-                'Unidades/Filiais ilimitadas',
-                'SSO e Seguran\u00e7a Enterprise',
-                'Gerente de Conta dedicado',
-                'SLA de 99.99%',
-                'Onboarding Presencial',
-            ],
+            features: ['Tudo do Professional', 'Unidades/Filiais ilimitadas', 'SSO e Segurança Enterprise', 'Gerente de Conta dedicado', 'SLA de 99.99%', 'Onboarding Presencial'],
             cta: t.pricing.contactSales,
-            ctaVariant: 'outline' as const,
         },
     ]
 
     return (
-        <section id="pricing" className="py-24 sm:py-32 bg-brand-clean relative overflow-hidden">
+        <section id="pricing" className="py-24 sm:py-32 bg-[#0a0a0f] relative overflow-hidden">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-3xl mx-auto mb-24">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                    >
-                        <h2 className="text-4xl lg:text-7xl font-black text-brand-deep tracking-tighter mb-8 leading-none">
+                <div className="text-center max-w-3xl mx-auto mb-20">
+                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                        <h2 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-6 leading-none">
                             {t.pricing.title}
                         </h2>
-                        <p className="text-xl text-slate-500 font-medium">
-                            {t.pricing.subtitle}
-                        </p>
+                        <p className="text-xl text-slate-400 font-medium">{t.pricing.subtitle}</p>
                     </motion.div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-12 lg:grid-cols-3 items-stretch">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 items-stretch">
                     {pricingPlans.map((plan, index) => (
                         <motion.div
                             key={index}
@@ -93,40 +59,39 @@ const PricingTable = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1, duration: 0.6 }}
-                            className={`relative flex flex-col rounded-[3rem] p-10 transition-all duration-500 group ${plan.featured
-                                    ? 'bg-brand-deep text-white shadow-3xl scale-105 z-10 border-brand-growth/30'
-                                    : 'bg-white border-slate-200 hover:border-brand-growth/50 shadow-sm'
-                                }`}
+                            className={`relative flex flex-col rounded-3xl p-8 transition-all duration-500 group ${
+                                plan.featured
+                                    ? 'bg-gradient-to-b from-indigo-600/20 to-purple-600/20 text-white scale-[1.02] z-10 border border-indigo-500/30 shadow-xl shadow-indigo-500/10'
+                                    : 'bg-white/[0.03] border border-white/5 hover:border-white/10'
+                            }`}
                         >
                             {plan.featured && (
-                                <div className="absolute -top-6 left-0 right-0 flex justify-center">
-                                    <div className="inline-flex items-center rounded-full bg-brand-growth px-6 py-2 text-xs font-black text-brand-deep shadow-glow-growth uppercase tracking-[0.2em]">
-                                        <Star className="mr-2 h-4 w-4 fill-brand-deep" /> Recomendado
+                                <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                                    <div className="inline-flex items-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-5 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-indigo-500/30 uppercase tracking-widest">
+                                        <Star className="mr-1.5 h-3 w-3 fill-white" /> Recomendado
                                     </div>
                                 </div>
                             )}
 
-                            <div className="mb-10 text-center">
-                                <h3 className={`text-2xl font-black mb-3 ${plan.featured ? 'text-white' : 'text-brand-deep'}`}>
+                            <div className="mb-8 text-center">
+                                <h3 className={`text-xl font-bold mb-2 ${plan.featured ? 'text-white' : 'text-white'}`}>
                                     {plan.name}
                                 </h3>
-                                <p className={`text-sm font-medium h-10 ${plan.featured ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <p className={`text-sm font-medium h-8 ${plan.featured ? 'text-slate-400' : 'text-slate-500'}`}>
                                     {plan.description}
                                 </p>
                             </div>
 
-                            <div className="mb-10 flex flex-col items-center gap-1">
-                                <div className="flex items-baseline gap-2">
-                                    <span className={`text-6xl font-black tracking-tighter ${plan.featured ? 'text-brand-growth' : 'text-brand-deep'}`}>
+                            <div className="mb-8 flex flex-col items-center gap-1">
+                                <div className="flex items-baseline gap-1">
+                                    <span className={`text-5xl font-black tracking-tighter ${plan.featured ? 'bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent' : 'text-white'}`}>
                                         {plan.price}
                                     </span>
                                     {plan.price !== 'Custom' && (
-                                        <span className={`text-lg font-bold ${plan.featured ? 'text-slate-400' : 'text-slate-400'}`}>
-                                            /{t.pricing.perMonth}
-                                        </span>
+                                        <span className="text-sm font-semibold text-slate-500">/{t.pricing.perMonth}</span>
                                     )}
                                 </div>
-                                <div className={`text-xs font-bold uppercase tracking-widest ${plan.featured ? 'text-brand-growth/60' : 'text-slate-400'}`}>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     {plan.price === 'Custom' ? 'VGV sob consulta' : 'Ilimitado p/ Sempre'}
                                 </div>
                             </div>
@@ -134,43 +99,45 @@ const PricingTable = () => {
                             <Button
                                 asChild
                                 size="lg"
-                                className={`h-16 rounded-2xl font-black text-lg mb-10 transition-all hover:scale-105 active:scale-95 shadow-xl ${plan.featured 
-                                    ? 'bg-brand-action text-slate-900 hover:bg-amber-600 shadow-glow-action border-none' 
-                                    : 'bg-brand-deep text-white hover:bg-slate-800'
-                                    }`}
+                                className={`h-12 rounded-xl font-bold text-sm mb-8 transition-all ${
+                                    plan.featured
+                                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20 border-0'
+                                        : 'bg-white/5 text-white border border-white/10 hover:bg-white/10'
+                                }`}
                             >
-                                <Link href="/onboarding" aria-label={`Comece grátis com o plano ${plan.name}`}>{plan.cta}</Link>
+                                <Link href="/onboarding">{plan.cta}</Link>
                             </Button>
 
-                            <ul className="space-y-6 flex-1">
-                                {plan.features.map((feature, featureIndex) => (
-                                    <li key={featureIndex} className="flex items-start gap-4">
-                                        <div className={`mt-1 h-6 w-6 rounded-full flex items-center justify-center shrink-0 border ${plan.featured ? 'bg-brand-growth/10 border-brand-growth/20 text-brand-growth' : 'bg-brand-growth/5 border-brand-growth/10 text-brand-growth'}`}>
-                                            <Check className="h-3.5 w-3.5 stroke-[4]" />
+                            <ul className="space-y-3 flex-1">
+                                {plan.features.map((feature, fi) => (
+                                    <li key={fi} className="flex items-start gap-3">
+                                        <div className={`mt-0.5 h-5 w-5 rounded-md flex items-center justify-center shrink-0 ${
+                                            plan.featured ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-400'
+                                        }`}>
+                                            <Check className="h-3 w-3 stroke-[3]" />
                                         </div>
-                                        <span className={`text-sm font-bold ${plan.featured ? 'text-slate-300' : 'text-slate-600'}`}>{feature}</span>
+                                        <span className={`text-sm font-medium ${plan.featured ? 'text-slate-300' : 'text-slate-400'}`}>{feature}</span>
                                     </li>
                                 ))}
                             </ul>
-                            
+
                             {plan.featured && (
-                                <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-growth/50">
+                                <div className="mt-6 pt-5 border-t border-white/5 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-400/60">
                                     <Zap className="h-3 w-3" /> IA NATIVA ATIVADA
                                 </div>
                             )}
                         </motion.div>
                     ))}
                 </div>
-                
-                {/* Visual Trust Indicators Under Pricing */}
-                <div className="mt-24 flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
+
+                <div className="mt-16 flex flex-wrap justify-center gap-8 opacity-40">
+                    <div className="flex items-center gap-2 font-bold text-white tracking-widest text-[10px] uppercase">
                         <ShieldCheck className="h-4 w-4" /> SSL SECURE
                     </div>
-                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
+                    <div className="flex items-center gap-2 font-bold text-white tracking-widest text-[10px] uppercase">
                         <Zap className="h-4 w-4" /> CLOUD DEPLOY
                     </div>
-                    <div className="flex items-center gap-2 font-black text-brand-deep tracking-widest text-xs uppercase">
+                    <div className="flex items-center gap-2 font-bold text-white tracking-widest text-[10px] uppercase">
                         <Heart className="h-4 w-4" /> 100% Brazilian
                     </div>
                 </div>
