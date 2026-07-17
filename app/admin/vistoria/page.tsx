@@ -7,7 +7,7 @@ import {
   CheckCircle2, Building2, ArrowRight, ArrowLeft, X, MapPin, Edit3,
   Settings, Eye, Download, BarChart3, Clock, Hash, Star, Copy,
   Share2, MessageCircle, Image, Layers, Zap, Target, Award,
-  TrendingUp, Calendar, HardDrive, AlertTriangle,
+  TrendingUp, Calendar, HardDrive, AlertTriangle, Search, User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +136,7 @@ interface VistoriaSettings {
   defaultVistoriadora: string; defaultSolicitante: string; defaultCidade: string;
   defaultEstado: string; defaultTipoImovel: string; defaultFinalidade: string;
   autoAnalyze: boolean; customProblems: string[];
+  watermarkImage: string; watermarkText: string; watermarkEnabled: boolean;
 }
 
 const defaultPropertyInfo: PropertyInfo = {
@@ -150,6 +151,7 @@ const defaultSettings: VistoriaSettings = {
   defaultVistoriadora: '', defaultSolicitante: '', defaultCidade: 'São Paulo',
   defaultEstado: 'SP', defaultTipoImovel: 'APARTAMENTO', defaultFinalidade: 'RESIDENCIAL',
   autoAnalyze: true, customProblems: [],
+  watermarkImage: '', watermarkText: 'imobWeb Vistoria', watermarkEnabled: false,
 };
 
 const WIZARD_STEPS = [
@@ -535,6 +537,7 @@ export default function AdminVistoriaPage() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+  const [selectedProblems, setSelectedProblems] = useState<Record<string, string[]>>({});
 
   // Load from localStorage
   useEffect(() => {
@@ -678,19 +681,19 @@ export default function AdminVistoriaPage() {
             {/* Main Actions */}
             <div>
               <h2 className="text-sm font-bold text-white mb-4">Ações Principais</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { title: 'Criar Laudo', desc: 'Novo laudo do zero com templates e IA', icon: Sparkles, gradient: 'from-indigo-600/20 to-purple-600/20', border: 'border-indigo-500/20 hover:border-indigo-500/40', iconColor: 'text-indigo-400', action: () => setView('wizard') },
-                  { title: 'Editar Laudo', desc: 'Continuar um laudo salvo anteriormente', icon: Edit3, gradient: 'from-amber-600/20 to-orange-600/20', border: 'border-amber-500/20 hover:border-amber-500/40', iconColor: 'text-amber-400', action: () => setView('edit') },
-                  { title: 'Configurações', desc: 'Padrões, templates e preferências', icon: Settings, gradient: 'from-emerald-600/20 to-teal-600/20', border: 'border-emerald-500/20 hover:border-emerald-500/40', iconColor: 'text-emerald-400', action: () => setView('config') },
+                  { title: 'Criar', desc: 'Novo laudo com templates e IA', icon: Sparkles, gradient: 'from-indigo-600/20 to-purple-600/20', border: 'border-indigo-500/20 hover:border-indigo-500/40', iconColor: 'text-indigo-400', action: () => setView('wizard') },
+                  { title: 'Visualizar', desc: `${totalLaudos} laudo(s) salvos`, icon: Eye, gradient: 'from-cyan-600/20 to-blue-600/20', border: 'border-cyan-500/20 hover:border-cyan-500/40', iconColor: 'text-cyan-400', action: () => setView('edit') },
+                  { title: 'Editar', desc: 'Modificar um laudo existente', icon: Edit3, gradient: 'from-amber-600/20 to-orange-600/20', border: 'border-amber-500/20 hover:border-amber-500/40', iconColor: 'text-amber-400', action: () => setView('edit') },
+                  { title: 'Configurar', desc: 'Padrões e preferências', icon: Settings, gradient: 'from-emerald-600/20 to-teal-600/20', border: 'border-emerald-500/20 hover:border-emerald-500/40', iconColor: 'text-emerald-400', action: () => setView('config') },
                 ].map((card, idx) => (
-                  <motion.button key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.08 }} whileHover={{ scale: 1.02, y: -4 }} onClick={card.action}
-                    className={cn("relative p-6 rounded-2xl bg-gradient-to-br border text-left transition-all group overflow-hidden", card.gradient, card.border)}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 blur-2xl rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
-                    <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><card.icon className={cn("w-5 h-5", card.iconColor)} /></div>
-                    <h3 className="text-base font-bold text-white mb-1">{card.title}</h3>
-                    <p className="text-xs text-slate-400">{card.desc}</p>
-                    <ArrowRight className="w-4 h-4 text-slate-600 mt-3 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                  <motion.button key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }} whileHover={{ scale: 1.02, y: -4 }} onClick={card.action}
+                    className={cn("relative p-5 rounded-2xl bg-gradient-to-br border text-left transition-all group overflow-hidden", card.gradient, card.border)}>
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 blur-2xl rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><card.icon className={cn("w-5 h-5", card.iconColor)} /></div>
+                    <h3 className="text-sm font-bold text-white mb-0.5">{card.title}</h3>
+                    <p className="text-[11px] text-slate-400">{card.desc}</p>
                   </motion.button>
                 ))}
               </div>
@@ -831,21 +834,45 @@ export default function AdminVistoriaPage() {
 
   // ==================== EDIT VIEW ====================
   if (view === 'edit') {
+    const [searchEdit, setSearchEdit] = useState('');
+    const filteredLaudos = [...savedLaudos]
+      .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+      .filter(l => {
+        if (!searchEdit) return true;
+        const s = searchEdit.toLowerCase();
+        return (l.name || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.condominio || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.endereco || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.cidade || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.bairro || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.locadora || '').toLowerCase().includes(s) ||
+          (l.propertyInfo?.locatario || '').toLowerCase().includes(s);
+      });
+
     return (
       <div className="min-h-screen bg-[#0a0a0f]">
         <div className="border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center border border-amber-500/10"><Edit3 className="w-5 h-5 text-amber-400" /></div>
-                <div><h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">Laudos Salvos</h1><p className="text-xs text-slate-500">{savedLaudos.length} laudo(s) encontrado(s)</p></div>
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 flex items-center justify-center border border-cyan-500/10"><Eye className="w-5 h-5 text-cyan-400" /></div>
+                <div><h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">Laudos de Vistoria</h1><p className="text-xs text-slate-500">{savedLaudos.length} laudo(s) · Clique para editar</p></div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setView('home')} className="rounded-xl text-xs text-slate-400 hover:text-white"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Voltar</Button>
             </div>
           </div>
         </div>
         <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto space-y-4">
+            {/* Search */}
+            {savedLaudos.length > 0 && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input type="text" placeholder="Buscar por nome, endereço, cidade, locatário..." value={searchEdit} onChange={e => setSearchEdit(e.target.value)}
+                  className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/5 border border-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20" />
+              </div>
+            )}
+
             {savedLaudos.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
                 <FileText className="w-12 h-12 text-slate-700 mx-auto mb-3" />
@@ -853,25 +880,86 @@ export default function AdminVistoriaPage() {
                 <p className="text-sm text-slate-500 mb-4">Crie um novo laudo e salve para encontrá-lo aqui.</p>
                 <Button onClick={() => setView('home')} className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold"><Plus className="w-3.5 h-3.5 mr-1" /> Criar Primeiro Laudo</Button>
               </div>
+            ) : filteredLaudos.length === 0 ? (
+              <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-8 text-center">
+                <Search className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                <p className="text-sm text-slate-500">Nenhum laudo encontrado para "{searchEdit}"</p>
+              </div>
             ) : (
-              <div className="space-y-2">
-                {[...savedLaudos].sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()).map((laudo, idx) => (
-                  <motion.div key={laudo.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                    className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-amber-500/20 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/10"><FileText className="w-5 h-5 text-amber-400" /></div>
-                      <div>
-                        <p className="text-sm font-bold text-white">{laudo.name || 'Sem nome'}</p>
-                        <p className="text-[11px] text-slate-500">{laudo.propertyInfo?.tipoImovel} · {laudo.propertyInfo?.cidade}/{laudo.propertyInfo?.estado} · {laudo.rooms?.length || 0} cômodo(s)</p>
-                        <p className="text-[10px] text-slate-600">{new Date(laudo.savedAt).toLocaleString('pt-BR')}</p>
+              <div className="space-y-3">
+                {filteredLaudos.map((laudo, idx) => {
+                  const totalPhotos = laudo.rooms?.reduce((s, r) => s + (r.photos?.length || 0), 0) || 0;
+                  const totalAnnotations = laudo.rooms?.reduce((s, r) => s + (r.photos?.reduce((s2, p) => s2 + (p.annotations?.length || 0), 0) || 0), 0) || 0;
+                  const roomNames = laudo.rooms?.map(r => r.name).filter(Boolean).join(', ') || 'Sem cômodos';
+                  const date = new Date(laudo.savedAt);
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  const timeStr = isToday ? `Hoje às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                  return (
+                    <motion.div key={laudo.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
+                      className="rounded-xl bg-white/[0.03] border border-white/5 hover:border-cyan-500/20 transition-all cursor-pointer group" onClick={() => loadLaudo(laudo)}>
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 flex items-center justify-center border border-cyan-500/10 shrink-0 mt-0.5">
+                              <FileText className="w-5 h-5 text-cyan-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm font-bold text-white truncate">{laudo.name || 'Sem nome'}</h3>
+                                <Badge className="bg-white/5 text-slate-400 border-0 text-[9px] shrink-0">{laudo.propertyInfo?.tipoImovel}</Badge>
+                              </div>
+                              <p className="text-[11px] text-slate-400 truncate">{laudo.propertyInfo?.endereco} {laudo.propertyInfo?.numero} {laudo.propertyInfo?.conjApto}</p>
+                              <p className="text-[11px] text-slate-500">{laudo.propertyInfo?.bairro}{laudo.propertyInfo?.bairro && laudo.propertyInfo?.cidade ? ', ' : ''}{laudo.propertyInfo?.cidade}/{laudo.propertyInfo?.estado}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[10px] text-slate-500">{timeStr}</p>
+                          </div>
+                        </div>
+
+                        {/* Details Row */}
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5">
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            <Building2 className="w-3 h-3" /> {laudo.rooms?.length || 0} cômodo(s)
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            <Camera className="w-3 h-3" /> {totalPhotos} foto(s)
+                          </div>
+                          {totalAnnotations > 0 && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-amber-400">
+                              <MapPin className="w-3 h-3" /> {totalAnnotations} anotação(ões)
+                            </div>
+                          )}
+                          {laudo.propertyInfo?.metragem && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                              {laudo.propertyInfo.metragem}
+                            </div>
+                          )}
+                          {laudo.propertyInfo?.locadora && (
+                            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-slate-500">
+                              <User className="w-3 h-3" /> {laudo.propertyInfo.locadora}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Room Names Preview */}
+                        {roomNames !== 'Sem cômodos' && (
+                          <p className="text-[10px] text-slate-600 mt-2 truncate">{roomNames}</p>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={() => loadLaudo(laudo)} className="rounded-xl text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20"><Edit3 className="w-3 h-3 mr-1" /> Editar</Button>
-                      <button onClick={() => deleteLaudo(laudo.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </motion.div>
-                ))}
+
+                      {/* Action Bar */}
+                      <div className="px-4 py-2.5 border-t border-white/5 flex items-center justify-between bg-white/[0.01]">
+                        <span className="text-[10px] text-slate-600 group-hover:text-cyan-400 transition-colors">Clique para editar</span>
+                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <Button size="sm" onClick={() => loadLaudo(laudo)} className="rounded-lg text-[10px] h-7 px-3 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"><Edit3 className="w-3 h-3 mr-1" /> Editar</Button>
+                          <button onClick={() => deleteLaudo(laudo.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors"><Trash2 className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -911,6 +999,52 @@ export default function AdminVistoriaPage() {
                     <Input className="rounded-xl bg-white/5 border-white/5 text-white text-sm" value={(settings as any)[field.key]} onChange={e => setSettings({ ...settings, [field.key]: e.target.value })} />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Watermark */}
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+              <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Marca d'Água</h3><p className="text-[11px] text-slate-500">Imagem ou texto que aparece nas fotos do laudo</p></div>
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div><p className="text-sm font-semibold text-white">Ativar Marca d'Água</p><p className="text-[11px] text-slate-500">Adicionar marca d'água nas fotos</p></div>
+                  <button onClick={() => setSettings({ ...settings, watermarkEnabled: !settings.watermarkEnabled })} className={cn("w-12 h-6 rounded-full transition-colors", settings.watermarkEnabled ? 'bg-indigo-500' : 'bg-white/10')}>
+                    <div className={cn("w-5 h-5 rounded-full bg-white shadow transition-transform", settings.watermarkEnabled ? 'translate-x-6' : 'translate-x-0.5')} />
+                  </button>
+                </div>
+                {settings.watermarkEnabled && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Texto da Marca d'Água</Label>
+                      <Input className="rounded-xl bg-white/5 border-white/5 text-white text-sm" value={settings.watermarkText} onChange={e => setSettings({ ...settings, watermarkText: e.target.value })} placeholder="imobWeb Vistoria" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Imagem da Marca d'Água</Label>
+                      <div className="flex items-center gap-4">
+                        <label className="flex-1">
+                          <input type="file" accept="image/*" className="hidden" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = ev => setSettings({ ...settings, watermarkImage: ev.target?.result as string });
+                              reader.readAsDataURL(file);
+                            }
+                          }} />
+                          <div className="flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors text-slate-400 hover:text-white">
+                            <Image className="w-4 h-4" />
+                            <span className="text-xs font-medium">{settings.watermarkImage ? 'Trocar Imagem' : 'Selecionar Imagem'}</span>
+                          </div>
+                        </label>
+                        {settings.watermarkImage && (
+                          <div className="relative">
+                            <img src={settings.watermarkImage} alt="Marca d'água" className="w-16 h-16 object-contain rounded-xl border border-white/10 bg-white/5" />
+                            <button onClick={() => setSettings({ ...settings, watermarkImage: '' })} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white"><X className="w-3 h-3" /></button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1090,54 +1224,99 @@ export default function AdminVistoriaPage() {
                     })}
                   </div>
 
-                  {currentRoom && (
-                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                      <div className="p-4 border-b border-white/5">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-bold text-white">{currentRoom.name || `Cômodo ${currentRoomIdx + 1}`}</h3>
-                          <Button variant="ghost" size="sm" onClick={() => analyzeRoom(currentRoomIdx)} disabled={currentRoom.analyzing || currentRoom.photos.length === 0} className="rounded-xl text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">
-                            {currentRoom.analyzing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                            {currentRoom.analyzing ? 'Analisando...' : 'Analisar'}
-                          </Button>
+                  {currentRoom && (() => {
+                    const roomKey = currentRoom.id;
+                    const roomProblems = selectedProblems[roomKey] || [];
+                    const allProblems = [...COMMON_PROBLEMS, ...settings.customProblems];
+                    const toggleProblem = (problem: string) => {
+                      setSelectedProblems(prev => {
+                        const current = prev[roomKey] || [];
+                        const next = current.includes(problem) ? current.filter(p => p !== problem) : [...current, problem];
+                        return { ...prev, [roomKey]: next };
+                      });
+                    };
+
+                    return (
+                      <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+                        <div className="p-4 border-b border-white/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold text-white">{currentRoom.name || `Cômodo ${currentRoomIdx + 1}`}</h3>
+                            <Button variant="ghost" size="sm" onClick={() => analyzeRoom(currentRoomIdx)} disabled={currentRoom.analyzing || currentRoom.photos.length === 0} className="rounded-xl text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">
+                              {currentRoom.analyzing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                              {currentRoom.analyzing ? 'Analisando...' : 'Analisar'}
+                            </Button>
+                          </div>
+                          <div className="p-2.5 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                            <p className="text-[9px] text-indigo-400 uppercase tracking-wider font-semibold mb-1.5">Dicas de fotos</p>
+                            <div className="flex flex-wrap gap-1">{getRoomPhotoTips(currentRoom.name).map((tip, i) => <span key={i} className="text-[9px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{tip}</span>)}</div>
+                          </div>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
-                          <p className="text-[9px] text-indigo-400 uppercase tracking-wider font-semibold mb-1.5">Dicas de fotos</p>
-                          <div className="flex flex-wrap gap-1">{getRoomPhotoTips(currentRoom.name).map((tip, i) => <span key={i} className="text-[9px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{tip}</span>)}</div>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        {currentRoom.photos.length > 0 ? (
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-4">
-                            {currentRoom.photos.map((photo, pIdx) => (
-                              <div key={pIdx} draggable onDragStart={() => handleDragStart(pIdx)} onDragOver={handleDragOver} onDrop={() => handleDrop(pIdx)}
-                                className={cn("relative group aspect-square rounded-xl overflow-hidden border transition-all cursor-grab", draggedPhotoIdx === pIdx ? 'border-indigo-500 scale-95 opacity-50' : 'border-white/5 hover:border-white/10')}>
-                                <img src={photo.dataUrl} alt={photo.name} className="w-full h-full object-cover" />
-                                <div className="absolute top-1 right-1 w-4 h-4 rounded bg-black/60 flex items-center justify-center text-[8px] font-bold text-white">{pIdx + 1}</div>
-                                {photo.annotations.length > 0 && <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-500/90 text-white px-1 py-0.5 rounded text-[8px] font-bold"><MapPin className="w-2 h-2" /> {photo.annotations.length}</div>}
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
-                                  <button onClick={e => { e.stopPropagation(); setPreviewPhoto(photo); }} className="p-1.5 bg-white/20 rounded-lg"><Eye className="w-3 h-3 text-white" /></button>
-                                  <button onClick={e => { e.stopPropagation(); setAnnotatingPhoto({ roomIdx: currentRoomIdx, photoIdx: pIdx }); }} className="p-1.5 bg-white/20 rounded-lg"><MapPin className="w-3 h-3 text-white" /></button>
-                                  <button onClick={e => { e.stopPropagation(); setRooms(prev => prev.map((r, i) => i === currentRoomIdx ? { ...r, photos: r.photos.filter((_, pi) => pi !== pIdx) } : r)); }} className="p-1.5 bg-red-500/30 rounded-lg"><Trash2 className="w-3 h-3 text-white" /></button>
-                                </div>
+                        <div className="p-4 space-y-4">
+                          {/* Problem Checklist */}
+                          <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold">Problemas para Documentar</p>
+                              {roomProblems.length > 0 && <span className="text-[9px] text-amber-400 font-bold">{roomProblems.length} selecionado(s)</span>}
+                            </div>
+                            <p className="text-[9px] text-slate-500 mb-2">Clique para marcar problemas encontrados neste cômodo</p>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                              {allProblems.map((problem) => {
+                                const isSelected = roomProblems.includes(problem);
+                                return (
+                                  <button key={problem} onClick={() => toggleProblem(problem)}
+                                    className={cn("text-[10px] px-2 py-1 rounded-lg border transition-all",
+                                      isSelected ? 'border-amber-500/40 bg-amber-500/20 text-amber-300 font-bold' : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300')}>
+                                    {isSelected && '✓ '}{problem}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {roomProblems.length > 0 && (
+                              <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                <p className="text-[9px] text-amber-400 font-bold mb-1">Tirar fotos de:</p>
+                                <div className="flex flex-wrap gap-1">{roomProblems.map((p, i) => (
+                                  <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 flex items-center gap-1">
+                                    <Camera className="w-2 h-2" /> {p}
+                                  </span>
+                                ))}</div>
                               </div>
-                            ))}
+                            )}
                           </div>
-                        ) : <div className="text-center py-8"><Camera className="w-8 h-8 text-slate-700 mx-auto mb-2" /><p className="text-xs text-slate-500">Nenhuma foto ainda</p></div>}
 
-                        <label><input type="file" accept="image/*" multiple className="hidden" onChange={e => handlePhotoUpload(currentRoomIdx, e.target.files)} />
-                          <div className="flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors text-slate-400 hover:text-white">
-                            <Camera className="w-4 h-4" /><span className="text-xs font-medium">Adicionar Fotos</span><span className="text-[10px] text-slate-600">· múltiplas</span>
-                          </div></label>
+                          {/* Photo Grid */}
+                          {currentRoom.photos.length > 0 ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                              {currentRoom.photos.map((photo, pIdx) => (
+                                <div key={pIdx} draggable onDragStart={() => handleDragStart(pIdx)} onDragOver={handleDragOver} onDrop={() => handleDrop(pIdx)}
+                                  className={cn("relative group aspect-square rounded-xl overflow-hidden border transition-all cursor-grab", draggedPhotoIdx === pIdx ? 'border-indigo-500 scale-95 opacity-50' : 'border-white/5 hover:border-white/10')}>
+                                  <img src={photo.dataUrl} alt={photo.name} className="w-full h-full object-cover" />
+                                  <div className="absolute top-1 right-1 w-4 h-4 rounded bg-black/60 flex items-center justify-center text-[8px] font-bold text-white">{pIdx + 1}</div>
+                                  {photo.annotations.length > 0 && <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-500/90 text-white px-1 py-0.5 rounded text-[8px] font-bold"><MapPin className="w-2 h-2" /> {photo.annotations.length}</div>}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
+                                    <button onClick={e => { e.stopPropagation(); setPreviewPhoto(photo); }} className="p-1.5 bg-white/20 rounded-lg"><Eye className="w-3 h-3 text-white" /></button>
+                                    <button onClick={e => { e.stopPropagation(); setAnnotatingPhoto({ roomIdx: currentRoomIdx, photoIdx: pIdx }); }} className="p-1.5 bg-white/20 rounded-lg"><MapPin className="w-3 h-3 text-white" /></button>
+                                    <button onClick={e => { e.stopPropagation(); setRooms(prev => prev.map((r, i) => i === currentRoomIdx ? { ...r, photos: r.photos.filter((_, pi) => pi !== pIdx) } : r)); }} className="p-1.5 bg-red-500/30 rounded-lg"><Trash2 className="w-3 h-3 text-white" /></button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : <div className="text-center py-6"><Camera className="w-8 h-8 text-slate-700 mx-auto mb-2" /><p className="text-xs text-slate-500">Nenhuma foto ainda</p>{roomProblems.length > 0 && <p className="text-[10px] text-amber-400 mt-1">Tire fotos dos problemas selecionados acima</p>}</div>}
 
-                        {currentRoom.items.length > 0 && (
-                          <div className="mt-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                            <p className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold mb-1.5">Itens detectados ({currentRoom.items.length})</p>
-                            <div className="text-[11px] text-slate-400 space-y-0.5 max-h-20 overflow-y-auto">{currentRoom.items.slice(0, 5).map((item, i) => <p key={i} className="truncate">{item}</p>)}{currentRoom.items.length > 5 && <p className="text-slate-500">+{currentRoom.items.length - 5} mais</p>}</div>
-                          </div>
-                        )}
+                          <label><input type="file" accept="image/*" multiple className="hidden" onChange={e => handlePhotoUpload(currentRoomIdx, e.target.files)} />
+                            <div className="flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors text-slate-400 hover:text-white">
+                              <Camera className="w-4 h-4" /><span className="text-xs font-medium">Adicionar Fotos</span><span className="text-[10px] text-slate-600">· múltiplas</span>
+                            </div></label>
+
+                          {currentRoom.items.length > 0 && (
+                            <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                              <p className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold mb-1.5">Itens detectados ({currentRoom.items.length})</p>
+                              <div className="text-[11px] text-slate-400 space-y-0.5 max-h-20 overflow-y-auto">{currentRoom.items.slice(0, 5).map((item, i) => <p key={i} className="truncate">{item}</p>)}{currentRoom.items.length > 5 && <p className="text-slate-500">+{currentRoom.items.length - 5} mais</p>}</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
 
