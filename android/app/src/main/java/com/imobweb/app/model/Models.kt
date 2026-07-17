@@ -41,6 +41,9 @@ data class Vistoria(
 data class RoomData(
     val id: String = java.util.UUID.randomUUID().toString(),
     val name: String = "",
+    val furniture: List<String> = emptyList(),
+    val damages: List<String> = emptyList(),
+    val problems: List<String> = emptyList(),
     val items: List<String> = emptyList(),
     val photos: List<PhotoData> = emptyList(),
     val analyzing: Boolean = false,
@@ -83,9 +86,73 @@ data class PdfGenerateRequest(
     val dataLaudo: String, val solicitante: String, val consideracoes: String,
     val rooms: List<PdfRoomData>
 )
-data class PdfRoomData(val name: String, val items: List<String>, val photos: List<PdfPhotoData>)
+data class PdfRoomData(
+    val name: String,
+    val items: List<String>,
+    val furniture: List<String> = emptyList(),
+    val damages: List<String> = emptyList(),
+    val problems: List<String> = emptyList(),
+    val photos: List<PdfPhotoData>
+)
 data class PdfPhotoData(val dataUrl: String, val name: String, val annotations: List<PhotoAnnotation>)
 data class PdfGenerateResponse(val success: Boolean, val html: String?, val error: String?)
+
+// Sync models
+data class SyncRequest(
+    val vistoria: SyncVistoriaData,
+    val userId: String = ""
+)
+data class SyncVistoriaData(
+    val id: Long = 0,
+    val remoteId: String? = null,
+    val condominio: String = "",
+    val endereco: String = "",
+    val numero: String = "",
+    val conjApto: String = "",
+    val cep: String = "",
+    val bairro: String = "",
+    val cidade: String = "",
+    val estado: String = "",
+    val tipoImovel: String = "",
+    val finalidade: String = "",
+    val metragem: String = "",
+    val mobiliado: String = "",
+    val locadora: String = "",
+    val locadoraCpf: String = "",
+    val locatario: String = "",
+    val locatarioCpf: String = "",
+    val vistoriadora: String = "",
+    val dataFotografia: String = "",
+    val dataLaudo: String = "",
+    val solicitante: String = "",
+    val consideracoes: String = "",
+    val rooms: List<SyncRoomData>,
+    val status: String = "synced",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+data class SyncRoomData(
+    val id: String = "",
+    val name: String = "",
+    val furniture: List<String> = emptyList(),
+    val damages: List<String> = emptyList(),
+    val problems: List<String> = emptyList(),
+    val items: List<String> = emptyList(),
+    val photos: List<SyncPhotoData> = emptyList()
+)
+data class SyncPhotoData(
+    val dataUrl: String = "",
+    val name: String = "",
+    val annotations: List<SyncAnnotationData> = emptyList(),
+    val filePath: String? = null
+)
+data class SyncAnnotationData(
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val label: String = ""
+)
+data class SyncListResponse(val success: Boolean, val vistorias: List<SyncVistoriaData>?, val error: String?)
+data class SyncSaveResponse(val success: Boolean, val remoteId: String?, val error: String?)
 
 // Photo tips per room
 object RoomPhotoTips {
@@ -118,17 +185,109 @@ object RoomPhotoTips {
 }
 
 object CommonProblems {
-    val problems = listOf(
-        "Rachadura na parede", "Mancha de umidade", "Desgaste no piso",
-        "Vazamento", "Infiltração", "Pintura descascando", "Furo na parede",
-        "Serragem/trincas", "Metais oxidados", "Louça quebrada",
-        "Tomada com defeito", "Interruptor com defeito", "Porta com desajuste",
-        "Janela emperrando", "Mofo", "Barulho"
-    )
+    val problems: List<String> get() = ProblemsCatalog.allProblems
 }
 
 object Constants {
-    val TIPO_IMOVEL_OPTIONS = listOf("APARTAMENTO", "SALA", "CASA", "COMERCIAL", "COBERTURA")
+    val TIPO_IMOVEL_OPTIONS = listOf("APARTAMENTO", "SALA", "CASA", "COMERCIAL", "COBERTURA", "LOFT", "STUDIO")
     val FINALIDADE_OPTIONS = listOf("RESIDENCIAL", "COMERCIAL")
     val MOBILIADO_OPTIONS = listOf("NÃO", "SIM", "PARCIALMENTE")
+    val CONDOMINIO_TYPES = listOf("APARTAMENTO", "COBERTURA", "LOFT")
+}
+
+object RoomTemplates {
+    data class Template(val name: String, val rooms: List<String>)
+
+    val templates = listOf(
+        Template("Apartamento", listOf(
+            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
+            "BANHEIRO SOCIAL", "QUARTO 1", "QUARTO 2", "VARANDA", "GARAGEM"
+        )),
+        Template("Casa", listOf(
+            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
+            "BANHEIRO SOCIAL", "QUARTO 1", "QUARTO 2", "SUÍTE",
+            "VARANDA", "QUINTAL", "GARAGEM", "ESCRITÓRIO"
+        )),
+        Template("Sala Comercial", listOf(
+            "ENTRADA", "SALA PRINCIPAL", "SALA DE REUNIÃO",
+            "BANHEIRO", "COPA", "DEPÓSITO"
+        )),
+        Template("Cobertura", listOf(
+            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
+            "BANHEIRO SOCIAL", "QUARTO 1", "SUÍTE 1", "SUÍTE 2",
+            "VARANDA", "TERRAÇO", "PISCINA", "ESCRITÓRIO", "GARAGEM"
+        )),
+        Template("Studio/Flat", listOf(
+            "SALA/QUARTO INTEGRADO", "COZINHA AMERICANA",
+            "BANHEIRO"
+        )),
+        Template("Personalizado", emptyList())
+    )
+}
+
+object FurnitureItems {
+    val items = listOf(
+        "Sofá", "Mesa de centro", "Mesa de jantar", "Cadeiras",
+        "Armário", "Guarda-roupa", "Cama", "Criado-mudo",
+        "Estante", "Escrivaninha", "Cadeira de escritório",
+        "TV", "Painel para TV", "Cortinas", "Persianas",
+        "Tapete", "Lustre/Luminária", "Ventilador de teto",
+        "Ar condicionado", "Fogão", "Geladeira", "Micro-ondas",
+        "Lava-louças", "Máquina de lavar", "Aquecedor"
+    )
+}
+
+object ProblemsCatalog {
+    data class ProblemCategory(val name: String, val problems: List<String>)
+
+    val categories = listOf(
+        ProblemCategory("Paredes e Tetos", listOf(
+            "Rachadura na parede", "Trinca no teto", "Pintura descascando",
+            "Mancha de umidade", "Infiltração", "Mofo", "Bolor",
+            "Reboco solto", "Furo na parede", "Desnível na parede"
+        )),
+        ProblemCategory("Pisos e Rodapés", listOf(
+            "Desgaste no piso", "Piso solto", "Piso riscado",
+            "Cerâmica quebrada", "Porcelanato trincado", "Rodapé solto",
+            "Rodapé danificado", "Desnível no piso", "Mancha no piso"
+        )),
+        ProblemCategory("Portas e Janelas", listOf(
+            "Porta com desajuste", "Porta arranhada", "Porta amassada",
+            "Maçaneta solta", "Fechadura com defeito", "Janela emperrando",
+            "Janela com vidro trincado", "Vedação comprometida",
+            "Persiana quebrada", "Cortina danificada"
+        )),
+        ProblemCategory("Instalações Elétricas", listOf(
+            "Tomada com defeito", "Interruptor com defeito",
+            "Fio exposto", "Quadro de luz danificado",
+            "Lâmpada queimada", "Disjuntor desarmando"
+        )),
+        ProblemCategory("Hidráulica e Metais", listOf(
+            "Vazamento", "Torneira pingando", "Registro com defeito",
+            "Caixa acoplada com defeito", "Vaso trincado",
+            "Pia trincada", "Sifão vazando", "Ralo entupido",
+            "Chuveiro com defeito", "Pressão baixa", "Metais oxidados",
+            "Louça quebrada", "Espelho danificado"
+        )),
+        ProblemCategory("Geral / Diversos", listOf(
+            "Mofo", "Barulho", "Mau cheiro", "Problema no interfone",
+            "Campainha quebrada", "Vaga de garagem inadequada",
+            "Armário danificado", "Banco danificado", "Serragem/trincas"
+        ))
+    )
+
+    val allProblems: List<String> by lazy { categories.flatMap { it.problems } }
+}
+
+object ObservationTemplates {
+    val templates = listOf(
+        "Imóvel em bom estado de conservação",
+        "Pintura recente em todas as paredes",
+        "Parte hidráulica em perfeito funcionamento",
+        "Instalações elétricas em perfeito funcionamento",
+        "Imóvel possui armários planejados na cozinha",
+        "Imóvel possui armários embutidos nos quartos",
+        "Janelas com vidros temperados e persianas",
+        "Piso em porcelanato em todos os ambientes"
+    )
 }

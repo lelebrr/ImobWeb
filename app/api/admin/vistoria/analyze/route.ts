@@ -8,7 +8,7 @@ const GEMINI_MODEL = 'gemini-2.0-flash';
 
 interface RoomInput {
   name: string;
-  photos: string[]; // base64 data URLs
+  photos: string[];
 }
 
 interface AnalyzeRequest {
@@ -17,40 +17,54 @@ interface AnalyzeRequest {
   finality: string;
 }
 
+interface AnalyzeResult {
+  items: string[];
+  furniture: { name: string; color: string; condition: string }[];
+  appliances: { name: string; brand?: string; condition: string }[];
+  damages: { description: string; severity: string }[];
+  suggestedFurniture: string[];
+  suggestedDamages: string[];
+}
+
 async function analyzeRoomWithGemini(
   roomName: string,
   photos: string[],
   propertyType: string,
   finality: string
-): Promise<string[]> {
+): Promise<AnalyzeResult> {
   const photoParts = photos.map((dataUrl) => {
     const base64 = dataUrl.split(',')[1];
     const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-    return {
-      inlineData: {
-        mimeType,
-        data: base64,
-      },
-    };
+    return { inlineData: { mimeType, data: base64 } };
   });
 
-  const prompt = `Você é uma vistoriadora profissional de imóveis no Brasil. Analise estas fotos do cômodo "${roomName}" de um(a) ${propertyType} com finalidade ${finality}.
-
-Para CADA foto, descreva UM item/elemento visível no cômodo seguindo EXATAMENTE este formato:
-
-✓ [descrição do item] em [estado de conservação];
-
-Estados permitidos: "novo estado", "ótimo estado", "bom estado", "estado regular", "estado ruim"
-
-Regras:
-- Comece cada linha com ✓ (checkmark)
-- Descreva materiais (madeira, cerâmica, mármore, alvenaria, etc.)
-- Mencione cores quando visíveis
-- Indique se está funcionando (para equipamentos)
-- Seja específica: "porta de madeira e batente na cor branca" não "porta"
-- Inclua TODOS os itens visíveis: pisos, paredes, tetos, portas, janelas, torneiras, louças,interruptores, luminárias, etc.
-- Não invente itens que não estão nas fotos
-- Retorne APENAS as linhas com ✓, uma por linha, sem numeração adicional`;
+  const prompt = [
+    'Você é uma vistoriadora profissional de imóveis no Brasil.',
+    'Analise estas fotos do cômodo "' + roomName + '" de um(a) ' + propertyType + ' com finalidade ' + finality + '.',
+    '',
+    'Retorne um JSON com esta estrutura EXATA (sem markdown, sem ```):',
+    '',
+    '{',
+    '  "items": ["✓ descrição do item 1 em estado", "✓ descrição do item 2 em estado"],',
+    '  "furniture": [{"name": "móvel", "color": "cor", "condition": "estado"}],',
+    '  "appliances": [{"name": "eletrodoméstico", "brand": "marca", "condition": "estado"}],',
+    '  "damages": [{"description": "descrição da avaria", "severity": "leve/moderada/grave"}],',
+    '  "suggestedFurniture": ["Porta", "Janela", "Torneira"],',
+    '  "suggestedDamages": ["Desgaste na fechadura"]',
+    '}',
+    '',
+    'Regras:',
+    '- items: cada linha começa com ✓ e descreve um item visível com estado',
+    '- furniture: móveis visíveis com nome, COR observada e estado',
+    '- appliances: eletrodomésticos com marca se visível e estado',
+    '- damages: avarias/defeitos visíveis com severidade',
+    '- suggestedFurniture: móveis que o vistoriador deve adicionar ao inventário',
+    '- suggestedDamages: avarias que devem ser registradas',
+    '- Estados: novo, ótimo, bom, regular, ruim',
+    '- Severidades: leve, moderada, grave',
+    '- Não invente itens que não estão nas fotos',
+    '- Retorne APENAS o JSON, sem texto adicional',
+  ].join('\n');
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
@@ -58,18 +72,8 @@ Regras:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              ...photoParts,
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 2048,
-        },
+        contents: [{ parts: [{ text: prompt }, ...photoParts] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
       }),
     }
   );
@@ -80,15 +84,33 @@ Regras:
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-  // Extract lines starting with ✓
-  const items = text
-    .split('\n')
-    .map((line: string) => line.trim())
-    .filter((line: string) => line.startsWith('✓'));
+  // Clean up markdown code blocks if present
+  text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
-  return items.length > 0 ? items : [`✓ Cômodo "${roomName}" avaliado - ver fotos para detalhes`];
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      items: parsed.items || [],
+      furniture: parsed.furniture || [],
+      appliances: parsed.appliances || [],
+      damages: parsed.damages || [],
+      suggestedFurniture: parsed.suggestedFurniture || [],
+      suggestedDamages: parsed.suggestedDamages || [],
+    };
+  } catch {
+    // Fallback: try to extract items from text
+    const items = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.startsWith('✓'));
+    return {
+      items: items.length > 0 ? items : [`✓ Cômodo "${roomName}" avaliado`],
+      furniture: [],
+      appliances: [],
+      damages: [],
+      suggestedFurniture: [],
+      suggestedDamages: [],
+    };
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -104,44 +126,35 @@ export async function POST(request: NextRequest) {
     const { rooms, propertyType, finality } = body;
 
     if (!rooms || rooms.length === 0) {
-      return NextResponse.json(
-        { error: 'Nenhum cômodo fornecido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Nenhum cômodo fornecido' }, { status: 400 });
     }
 
-    const results: Record<string, string[]> = {};
+    const results: Record<string, AnalyzeResult> = {};
 
-    // Process rooms sequentially to avoid rate limits
     for (const room of rooms) {
       if (room.photos && room.photos.length > 0) {
         try {
-          const items = await analyzeRoomWithGemini(
-            room.name,
-            room.photos,
-            propertyType,
-            finality
-          );
-          results[room.name] = items;
+          results[room.name] = await analyzeRoomWithGemini(room.name, room.photos, propertyType, finality);
         } catch (err) {
           console.error(`Error analyzing room ${room.name}:`, err);
-          results[room.name] = [
-            `✓ Erro ao analisar fotos do(a) ${room.name} - verificar manualmente`,
-          ];
+          results[room.name] = {
+            items: [`✓ Erro ao analisar fotos do(a) ${room.name}`],
+            furniture: [], appliances: [], damages: [],
+            suggestedFurniture: [], suggestedDamages: [],
+          };
         }
       } else {
-        results[room.name] = [
-          `✓ Cômodo "${room.name}" - sem fotos para análise`,
-        ];
+        results[room.name] = {
+          items: [`✓ Cômodo "${room.name}" - sem fotos`],
+          furniture: [], appliances: [], damages: [],
+          suggestedFurniture: [], suggestedDamages: [],
+        };
       }
     }
 
     return NextResponse.json({ success: true, results });
   } catch (error) {
     console.error('Vistoria analyze error:', error);
-    return NextResponse.json(
-      { error: 'Erro ao analisar vistoria' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erro ao analisar vistoria' }, { status: 500 });
   }
 }

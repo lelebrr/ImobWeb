@@ -78,6 +78,13 @@ fun VistoriaWizardScreen(
     var consideracoes by remember { mutableStateOf("") }
     var rooms by remember { mutableStateOf<List<RoomData>>(emptyList()) }
     var currentRoomIdx by remember { mutableIntStateOf(0) }
+
+    // Guard room index when rooms change
+    LaunchedEffect(rooms.size) {
+        if (currentRoomIdx >= rooms.size && rooms.isNotEmpty()) {
+            currentRoomIdx = rooms.size - 1
+        }
+    }
     var generatingPdf by remember { mutableStateOf(false) }
     var pdfHtml by remember { mutableStateOf<String?>(null) }
     var showPdfPreview by remember { mutableStateOf(false) }
@@ -154,12 +161,23 @@ fun VistoriaWizardScreen(
         }
     }
 
-    val totalSteps = 5
+    val totalSteps = 6
     val canProceed = when (currentStep) {
         0 -> condominio.isNotBlank()
         1 -> locadora.isNotBlank() && locatario.isNotBlank()
         2 -> rooms.isNotEmpty()
+        3 -> true
         else -> true
+    }
+
+    // Auto-save every 30 seconds
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            if (savedId > 0 || condominio.isNotBlank() || locadora.isNotBlank()) {
+                saveCurrent()
+            }
+        }
     }
 
     // Save current state to DB
@@ -176,12 +194,16 @@ fun VistoriaWizardScreen(
             vistoriadora = vistoriadora, dataFotografia = today,
             dataLaudo = today, solicitante = solicitante,
             consideracoes = consideracoes, rooms = rooms,
-            status = if (com.imobweb.app.util.NetworkUtil.isOnline(context)) "synced" else "pending_sync"
+            status = "pending_sync"
         )
         if (savedId > 0) {
             repository.updateVistoria(vistoria.copy(id = savedId))
         } else {
             savedId = repository.saveVistoria(vistoria)
+        }
+        // Trigger immediate sync if online
+        if (com.imobweb.app.util.NetworkUtil.isOnline(context)) {
+            repository.syncPendingVistorias()
         }
     }
 
@@ -339,10 +361,18 @@ fun VistoriaWizardScreen(
                     onRoomsChange = { rooms = it },
                     currentRoomIdx = currentRoomIdx,
                     onCurrentRoomIdxChange = { currentRoomIdx = it },
+                    tipoImovel = tipoImovel,
                     context = context
                 )
 
-                3 -> StepPhotos(
+                3 -> StepInventory(
+                    rooms = rooms,
+                    onRoomsChange = { rooms = it },
+                    currentRoomIdx = currentRoomIdx,
+                    onCurrentRoomIdxChange = { currentRoomIdx = it }
+                )
+
+                4 -> StepPhotos(
                     rooms = rooms,
                     onRoomsChange = { rooms = it },
                     currentRoomIdx = currentRoomIdx,
@@ -359,7 +389,7 @@ fun VistoriaWizardScreen(
                     isUploading = isUploading
                 )
 
-                4 -> StepReview(
+                5 -> StepReview(
                     condominio = condominio, endereco = endereco, numero = numero,
                     conjApto = conjApto, cep = cep, bairro = bairro,
                     cidade = cidade, estado = estado, tipoImovel = tipoImovel,
@@ -448,6 +478,9 @@ private fun StepPropertyInfo(
     mobiliado: String, onMobiliadoChange: (String) -> Unit,
     context: Context
 ) {
+    val scope = rememberCoroutineScope()
+    var isLookingUpCep by remember { mutableStateOf(false) }
+
     Column {
         Text("Dados do Imóvel", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text("Preencha as informações básicas do imóvel", style = MaterialTheme.typography.bodySmall,
@@ -499,10 +532,12 @@ private fun StepPropertyInfo(
 
         Spacer(Modifier.height(12.dp))
 
-        OutlinedTextField(value = condominio, onValueChange = onCondominioChange,
-            label = { Text("Nome do Condomínio *") }, placeholder = { Text("EX: EDIFÍCIO COLUMBUS TOWER") },
-            modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Spacer(Modifier.height(8.dp))
+        if (tipoImovel in Constants.CONDOMINIO_TYPES) {
+            OutlinedTextField(value = condominio, onValueChange = onCondominioChange,
+                label = { Text("Nome do Condomínio *") }, placeholder = { Text("EX: EDIFÍCIO COLUMBUS TOWER") },
+                modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Spacer(Modifier.height(8.dp))
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(value = endereco, onValueChange = onEnderecoChange,
@@ -521,10 +556,42 @@ private fun StepPropertyInfo(
         Spacer(Modifier.height(8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(value = cep, onValueChange = onCepChange,
+            OutlinedTextField(value = cep, onValueChange = { v ->
+                val formatted = com.imobweb.app.util.Formatters.formatCep(v)
+                onCepChange(formatted)
+                // Auto-fill when CEP has 8 digits
+                if (formatted.filter { it.isDigit() }.length == 8) {
+                    scope.launch {
+                        isLookingUpCep = true
+                        com.imobweb.app.util.CepService.lookup(v).fold(
+                            onSuccess = { result ->
+                                onEnderecoChange(result.logradouro)
+                                onBairroChange(result.bairro)
+                                onCidadeChange(result.localidade)
+                                onEstadoChange(result.uf)
+                            },
+                            onFailure = {
+                                Toast.makeText(context, "CEP não encontrado", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                        isLookingUpCep = false
+                    }
+                }
+            },
                 label = { Text("CEP") }, placeholder = { Text("05640-003") },
                 modifier = Modifier.weight(1f), singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    if (isLookingUpCep) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else if (cep.filter { it.isDigit() }.length == 8) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar CEP",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    }
+                })
             OutlinedTextField(value = bairro, onValueChange = onBairroChange,
                 label = { Text("Bairro") }, placeholder = { Text("Bairro") },
                 modifier = Modifier.weight(1f), singleLine = true)
@@ -668,6 +735,7 @@ private fun StepParties(
 private fun StepRooms(
     rooms: List<RoomData>, onRoomsChange: (List<RoomData>) -> Unit,
     currentRoomIdx: Int, onCurrentRoomIdxChange: (Int) -> Unit,
+    tipoImovel: String,
     context: Context
 ) {
     Column {
@@ -678,36 +746,93 @@ private fun StepRooms(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            FilledTonalButton(
+        }
+        Spacer(Modifier.height(12.dp))
+
+        if (rooms.isEmpty()) {
+            // Show room template selection
+            Text("Escolha um modelo de cômodos:",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+
+            val templateScope = rememberScrollState()
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(templateScope),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                RoomTemplates.templates.forEach { template ->
+                    Card(
+                        modifier = Modifier
+                            .width(140.dp)
+                            .clickable {
+                                val newRooms = template.rooms.map { name ->
+                                    RoomData(
+                                        id = java.util.UUID.randomUUID().toString(),
+                                        name = name
+                                    )
+                                }
+                                onRoomsChange(newRooms)
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                when (template.name) {
+                                    "Apartamento" -> Icons.Default.Apartment
+                                    "Casa" -> Icons.Default.House
+                                    "Sala Comercial" -> Icons.Default.Store
+                                    "Cobertura" -> Icons.Default.Villa
+                                    "Studio/Flat" -> Icons.Default.OtherHouses
+                                    else -> Icons.Default.Add
+                                },
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(template.name,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1)
+                            Text("${template.rooms.size} cômodos",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (template.rooms.isNotEmpty()) {
+                                Text(template.rooms.take(3).joinToString(", "),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+
+            Text("Ou adicione manualmente:",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+
+            Button(
                 onClick = {
-                    onRoomsChange(rooms + RoomData(
-                        id = UUID.randomUUID().toString(),
-                        name = ""
-                    ))
+                    onRoomsChange(listOf(RoomData(id = java.util.UUID.randomUUID().toString(), name = "")))
                 },
-                modifier = Modifier.height(40.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Adicionar", fontSize = 13.sp)
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-
-        if (rooms.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Meal, contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                    Spacer(Modifier.height(8.dp))
-                    Text("Nenhum cômodo adicionado",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Toque em \"Adicionar\" para começar",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                }
+                Text("Adicionar Cômodo")
             }
         } else {
             rooms.forEachIndexed { idx, room ->
@@ -780,7 +905,270 @@ private fun StepRooms(
     }
 }
 
-// ===================== STEP 4: Photos =====================
+// ===================== STEP 4: Inventory (per room) =====================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StepInventory(
+    rooms: List<RoomData>, onRoomsChange: (List<RoomData>) -> Unit,
+    currentRoomIdx: Int, onCurrentRoomIdxChange: (Int) -> Unit
+) {
+    Column {
+        Text("Inventário dos Cômodos", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text("Registre móveis, avarias e problemas de cada cômodo",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+
+        if (rooms.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                Text("Adicione cômodos primeiro", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            return
+        }
+
+        // Room tabs
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            rooms.forEachIndexed { idx, room ->
+                FilterChip(
+                    selected = idx == currentRoomIdx,
+                    onClick = { onCurrentRoomIdxChange(idx) },
+                    label = { Text(room.name.ifBlank { "Cômodo ${idx + 1}" }, fontSize = 11.sp, maxLines = 1) },
+                    trailingIcon = {
+                        val count = room.furniture.size + room.damages.size + room.problems.size
+                        if (count > 0) Text("$count", fontSize = 9.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        val currentRoom = rooms.getOrNull(currentRoomIdx)
+        if (currentRoom != null) {
+            var tab by remember { mutableIntStateOf(0) }
+            val tabs = listOf("Móveis", "Avarias", "Problemas")
+
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                tabs.forEachIndexed { i, label ->
+                    FilterChip(
+                        selected = tab == i,
+                        onClick = { tab = i },
+                        label = { Text(label, fontSize = 11.sp) }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
+            var newItem by remember { mutableStateOf("") }
+
+            when (tab) {
+                0 -> {
+                    Text("Móveis presentes neste cômodo",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        FurnitureItems.items.forEach { furniture ->
+                            val isSelected = furniture in currentRoom.furniture
+                            AssistChip(
+                                onClick = {
+                                    val list = currentRoom.furniture.toMutableList()
+                                    if (isSelected) list.remove(furniture) else list.add(furniture)
+                                    updateRoomInventory(rooms, currentRoomIdx,
+                                        furniture = list) { onRoomsChange(it) }
+                                },
+                                label = { Text(furniture, fontSize = 9.sp, maxLines = 1) },
+                                leadingIcon = {
+                                    if (isSelected) Icon(Icons.Default.Check, null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.secondary)
+                                },
+                                modifier = Modifier.height(28.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = newItem,
+                            onValueChange = { newItem = it },
+                            placeholder = { Text("Adicionar móvel...", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(onClick = {
+                            if (newItem.isNotBlank()) {
+                                val list = currentRoom.furniture + newItem.trim()
+                                updateRoomInventory(rooms, currentRoomIdx,
+                                    furniture = list) { onRoomsChange(it) }
+                                newItem = ""
+                            }
+                        }) { Icon(Icons.Default.Add, contentDescription = "Adicionar") }
+                    }
+                }
+
+                1 -> {
+                    Text("Avarias visíveis neste cômodo",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+
+                    val quickDamages = listOf(
+                        "Desgaste no piso", "Arranhão na parede", "Porta arranhada",
+                        "Pintura descascando", "Trinca superficial"
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        quickDamages.forEach { dmg ->
+                            AssistChip(
+                                onClick = {
+                                    val list = currentRoom.damages.toMutableList()
+                                    if (dmg in list) list.remove(dmg) else list.add(dmg)
+                                    updateRoomInventory(rooms, currentRoomIdx,
+                                        damages = list) { onRoomsChange(it) }
+                                },
+                                label = { Text(dmg, fontSize = 9.sp) },
+                                modifier = Modifier.height(28.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    currentRoom.damages.forEach { dmg ->
+                        Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                            Icon(Icons.Default.Warning, null, modifier = Modifier.size(16.dp),
+                                tint = Color(0xFFF59E0B))
+                            Spacer(Modifier.width(6.dp))
+                            Text(dmg, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = newItem,
+                            onValueChange = { newItem = it },
+                            placeholder = { Text("Descrever avaria...", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f), singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(onClick = {
+                            if (newItem.isNotBlank()) {
+                                val list = currentRoom.damages + newItem.trim()
+                                updateRoomInventory(rooms, currentRoomIdx,
+                                    damages = list) { onRoomsChange(it) }
+                                newItem = ""
+                            }
+                        }) { Icon(Icons.Default.Add, null) }
+                    }
+                }
+
+                2 -> {
+                    Text("Problemas identificados",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+
+                    ProblemsCatalog.categories.forEach { category ->
+                        Text(category.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            category.problems.forEach { problem ->
+                                val isSelected = problem in currentRoom.problems
+                                AssistChip(
+                                    onClick = {
+                                        val list = currentRoom.problems.toMutableList()
+                                        if (isSelected) list.remove(problem) else list.add(problem)
+                                        updateRoomInventory(rooms, currentRoomIdx,
+                                            problems = list) { onRoomsChange(it) }
+                                    },
+                                    label = { Text(problem, fontSize = 9.sp) },
+                                    leadingIcon = {
+                                        if (isSelected) Icon(Icons.Default.Check, null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.error)
+                                    },
+                                    modifier = Modifier.height(28.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
+            }
+
+            // Summary of items in current room
+            val totalItems = currentRoom.furniture.size + currentRoom.damages.size + currentRoom.problems.size
+            Spacer(Modifier.height(8.dp))
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Text("${currentRoom.furniture.size}", fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary)
+                        Text("Móveis", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Text("${currentRoom.damages.size}", fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF59E0B))
+                        Text("Avarias", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Text("${currentRoom.problems.size}", fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error)
+                        Text("Problemas", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun updateRoomInventory(
+    rooms: List<RoomData>, idx: Int,
+    furniture: List<String>? = null,
+    damages: List<String>? = null,
+    problems: List<String>? = null,
+    onResult: (List<RoomData>) -> Unit
+) {
+    val mutable = rooms.toMutableList()
+    mutable[idx] = mutable[idx].copy(
+        furniture = furniture ?: mutable[idx].furniture,
+        damages = damages ?: mutable[idx].damages,
+        problems = problems ?: mutable[idx].problems
+    )
+    onResult(mutable)
+}
+
+// FlowRow is available from compose.foundation.layout (stable since Compose 1.4)
+
+// ===================== STEP 5: Photos =====================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StepPhotos(
@@ -977,13 +1365,14 @@ private fun StepPhotos(
                 } else {
                     val photoList = currentRoom.photos
                     Column {
+                        var globalIdx = 0
                         photoList.chunked(3).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 row.forEachIndexed { rowIdx, photo ->
-                                    val photoIdx = photoList.indexOf(photo)
+                                    val photoIdx = globalIdx++
                                     Card(
                                         modifier = Modifier
                                             .weight(1f)
@@ -1170,12 +1559,25 @@ private fun StepReview(
                             }
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text(room.name.ifBlank { "Sem nome" },
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f))
-                        Text("${room.photos.size} fotos",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(room.name.ifBlank { "Sem nome" },
+                                style = MaterialTheme.typography.bodyMedium)
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("${room.photos.size} fotos",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (room.furniture.isNotEmpty()) {
+                                    Text("· ${room.furniture.size} móveis",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (room.problems.isNotEmpty()) {
+                                    Text("· ${room.problems.size} problemas",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1239,6 +1641,28 @@ private fun StepReview(
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // WhatsApp Share
+        OutlinedButton(
+            onClick = {
+                try {
+                    val text = "Laudo de Vistoria - $condominio\n$endereco, $numero - $bairro\n$cidade/$estado\n${rooms.size} cômodos, ${rooms.sumOf { r -> r.photos.size }} fotos"
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                        data = android.net.Uri.parse("https://wa.me/?text=${java.net.URLEncoder.encode(text, "UTF-8")}")
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(context, "WhatsApp não instalado", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Compartilhar resumo via WhatsApp")
         }
     }
 }

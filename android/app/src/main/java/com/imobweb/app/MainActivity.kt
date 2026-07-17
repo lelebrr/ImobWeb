@@ -51,6 +51,8 @@ class MainActivity : ComponentActivity() {
 
                             // Trigger immediate sync if online
                             if (isLoggedIn) {
+                                // Pull server data first, then push pending
+                                app.repository.pullVistoriasFromServer()
                                 SyncWorker.syncNow(this@MainActivity)
                             }
                         }

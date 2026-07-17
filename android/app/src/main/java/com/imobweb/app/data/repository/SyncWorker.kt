@@ -16,14 +16,21 @@ class SyncWorker(
         val repository = VistoriaRepository(db, sessionManager)
 
         return try {
-            val synced = repository.syncPendingVistorias()
-            if (synced > 0) {
+            if (!sessionManager.isLoggedIn()) return Result.success()
+
+            // Push local pending vistorias to server
+            val pushed = repository.syncPendingVistorias()
+
+            // Pull vistorias from server (if any new ones)
+            val pulled = repository.pullVistoriasFromServer()
+
+            if (pushed > 0 || pulled > 0) {
                 Result.success()
             } else {
-                Result.retry()
+                Result.success()
             }
         } catch (e: Exception) {
-            Result.retry()
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }
 

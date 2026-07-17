@@ -6,8 +6,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.POST
+import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
 interface ApiService {
@@ -20,16 +19,27 @@ interface ApiService {
     @POST("/api/admin/vistoria/generate-pdf")
     suspend fun generatePdf(@Body request: PdfGenerateRequest): Response<PdfGenerateResponse>
 
+    @POST("/api/admin/vistoria/sync")
+    suspend fun syncVistoria(@Body request: SyncRequest): Response<SyncSaveResponse>
+
+    @GET("/api/admin/vistoria/list")
+    suspend fun listVistorias(): Response<SyncListResponse>
+
     companion object {
-        private var instance: ApiService? = null
+        private var instances = mutableMapOf<String, ApiService>()
 
         fun getInstance(baseUrl: String, token: String? = null): ApiService {
-            return instance ?: synchronized(this) {
-                instance ?: create(baseUrl, token).also { instance = it }
-            }
+            val key = "$baseUrl|${token ?: "no-auth"}"
+            return instances.getOrPut(key) { create(baseUrl, token) }
         }
 
-        fun resetInstance() { instance = null }
+        fun resetInstance(baseUrl: String? = null) {
+            if (baseUrl != null) {
+                instances.keys.removeAll { it.startsWith(baseUrl) }
+            } else {
+                instances.clear()
+            }
+        }
 
         private fun create(baseUrl: String, token: String?): ApiService {
             val logging = HttpLoggingInterceptor().apply {

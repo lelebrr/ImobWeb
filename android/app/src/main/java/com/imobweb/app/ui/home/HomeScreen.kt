@@ -32,7 +32,8 @@ import kotlin.math.roundToInt
 fun HomeScreen(
     repository: VistoriaRepository,
     onNewVistoria: () -> Unit,
-    onViewVistorias: () -> Unit
+    onViewVistorias: () -> Unit,
+    onSettings: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -50,6 +51,13 @@ fun HomeScreen(
     }
 
     val isOnline = connectivityStatus == ConnectivityStatus.Available
+
+    // Pull data from server on first load
+    LaunchedEffect(Unit) {
+        if (isOnline) {
+            repository.pullVistoriasFromServer()
+        }
+    }
 
     // Auto-sync when connectivity restored
     LaunchedEffect(isOnline) {
@@ -138,6 +146,12 @@ fun HomeScreen(
                             contentDescription = "Sincronizar",
                             tint = if (isSyncing) MaterialTheme.colorScheme.primary
                             else LocalContentColor.current
+                        )
+                    }
+                    IconButton(onClick = onSettings) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Configurações"
                         )
                     }
                 },

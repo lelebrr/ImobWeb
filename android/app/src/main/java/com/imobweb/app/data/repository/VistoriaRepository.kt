@@ -92,9 +92,24 @@ class VistoriaRepository(
                 dataLaudo = data.dataLaudo, solicitante = data.solicitante,
                 consideracoes = data.consideracoes,
                 rooms = data.rooms.map { room ->
+                    val inventoryItems = mutableListOf<String>()
+                    if (room.furniture.isNotEmpty()) {
+                        inventoryItems.add("Móveis: ${room.furniture.joinToString(", ")}")
+                    }
+                    if (room.damages.isNotEmpty()) {
+                        inventoryItems.addAll(room.damages.map { "Avarias: $it" })
+                    }
+                    if (room.problems.isNotEmpty()) {
+                        inventoryItems.addAll(room.problems)
+                    }
                     PdfRoomData(
                         name = room.name,
-                        items = room.items.ifEmpty { listOf("✓ Cômodo \"${room.name}\" - sem análise automática") },
+                        items = (room.items + inventoryItems).ifEmpty {
+                            listOf("✓ Cômodo \"${room.name}\" - sem análise automática")
+                        },
+                        furniture = room.furniture,
+                        damages = room.damages,
+                        problems = room.problems,
                         photos = room.photos.map { photo ->
                             PdfPhotoData(
                                 dataUrl = photo.dataUrl,
@@ -126,14 +141,127 @@ class VistoriaRepository(
         var synced = 0
         for (vistoria in pending) {
             try {
-                // Try to generate PDF on server to confirm data is valid
-                val result = generatePdf(vistoria)
-                if (result.isSuccess) {
-                    dao.markSynced(vistoria.id)
-                    synced++
+                val baseUrl = sessionManager.getBaseUrl()
+                val token = sessionManager.getToken() ?: continue
+                val api = ApiService.getInstance(baseUrl, token)
+                val userId = sessionManager.getToken() ?: ""
+                val request = SyncRequest(
+                    vistoria = vistoria.toSyncData(),
+                    userId = userId
+                )
+                val response = api.syncVistoria(request)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.success == true) {
+                        val remoteId = body.remoteId
+                        val updated = vistoria.copy(
+                            remoteId = remoteId ?: vistoria.remoteId,
+                            status = "synced",
+                            syncedAt = System.currentTimeMillis()
+                        )
+                        dao.updateVistoria(updated)
+                        synced++
+                    }
                 }
             } catch (_: Exception) { }
         }
         return synced
     }
+
+    suspend fun pullVistoriasFromServer(): Int {
+        return try {
+            val baseUrl = sessionManager.getBaseUrl()
+            val token = sessionManager.getToken() ?: return 0
+            val api = ApiService.getInstance(baseUrl, token)
+            val response = api.listVistorias()
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.success == true && body.vistorias != null) {
+                    var imported = 0
+                    val localIds = dao.getAllVistorias().first().map { it.remoteId }.toSet()
+                    for (sv in body.vistorias) {
+                        if (sv.remoteId in localIds) continue
+                        val vistoria = sv.toVistoria()
+                        dao.insertVistoria(vistoria)
+                        imported++
+                    }
+                    imported
+                } else 0
+            } else 0
+        } catch (_: Exception) { 0 }
+    }
+
+    private suspend fun SyncVistoriaData.toVistoria(): Vistoria {
+        return Vistoria(
+            remoteId = remoteId,
+            condominio = condominio, endereco = endereco, numero = numero,
+            conjApto = conjApto, cep = cep, bairro = bairro,
+            cidade = cidade, estado = estado, tipoImovel = tipoImovel,
+            finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+            locadora = locadora, locadoraCpf = locadoraCpf,
+            locatario = locatario, locatarioCpf = locatarioCpf,
+            vistoriadora = vistoriadora, dataFotografia = dataFotografia,
+            dataLaudo = dataLaudo, solicitante = solicitante,
+            consideracoes = consideracoes,
+            rooms = rooms.map { room ->
+                RoomData(
+                    id = room.id.ifBlank { java.util.UUID.randomUUID().toString() },
+                    name = room.name,
+                    furniture = room.furniture,
+                    damages = room.damages,
+                    problems = room.problems,
+                    items = room.items,
+                    photos = room.photos.map { photo ->
+                        PhotoData(
+                            dataUrl = photo.dataUrl,
+                            name = photo.name,
+                            annotations = photo.annotations.map { ann ->
+                                PhotoAnnotation(x = ann.x, y = ann.y, label = ann.label)
+                            },
+                            filePath = photo.filePath
+                        )
+                    }
+                )
+            },
+            status = "synced",
+            createdAt = createdAt,
+            updatedAt = updatedAt
+        )
+    }
+}
+
+private fun Vistoria.toSyncData(): SyncVistoriaData {
+    return SyncVistoriaData(
+        id = id, remoteId = remoteId,
+        condominio = condominio, endereco = endereco, numero = numero,
+        conjApto = conjApto, cep = cep, bairro = bairro,
+        cidade = cidade, estado = estado, tipoImovel = tipoImovel,
+        finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+        locadora = locadora, locadoraCpf = locadoraCpf,
+        locatario = locatario, locatarioCpf = locatarioCpf,
+        vistoriadora = vistoriadora, dataFotografia = dataFotografia,
+        dataLaudo = dataLaudo, solicitante = solicitante,
+        consideracoes = consideracoes,
+        rooms = rooms.map { room ->
+            SyncRoomData(
+                id = room.id, name = room.name,
+                furniture = room.furniture,
+                damages = room.damages,
+                problems = room.problems,
+                items = room.items,
+                photos = room.photos.map { photo ->
+                    SyncPhotoData(
+                        dataUrl = photo.dataUrl,
+                        name = photo.name,
+                        annotations = photo.annotations.map { ann ->
+                            SyncAnnotationData(x = ann.x, y = ann.y, label = ann.label)
+                        },
+                        filePath = photo.filePath
+                    )
+                }
+            )
+        },
+        status = status, createdAt = createdAt, updatedAt = updatedAt
+    )
+}
 }

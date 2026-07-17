@@ -329,111 +329,298 @@ function formatCep(value: string): string {
 function ProblemsStep({ rooms, setRooms, settings }: { rooms: RoomData[]; setRooms: React.Dispatch<React.SetStateAction<RoomData[]>>; settings: VistoriaSettings }) {
   const [currentRoomIdx, setCurrentRoomIdx] = useState(0);
   const [problemInput, setProblemInput] = useState('');
+  const [furnitureInput, setFurnitureInput] = useState('');
+  const [subStep, setSubStep] = useState<'furniture' | 'damages' | 'problems'>('furniture');
   const currentRoom = rooms[currentRoomIdx];
   const activeDefaultProblems = COMMON_PROBLEMS.filter(p => !(settings.deletedDefaultProblems || []).includes(p));
   const allProblems = [...activeDefaultProblems, ...settings.customProblems];
+
+  // Load saved furniture from localStorage
+  const [savedFurniture, setSavedFurniture] = useState<string[]>([]);
+  useEffect(() => {
+    try { const s = localStorage.getItem('vistoria_furniture'); if (s) setSavedFurniture(JSON.parse(s)); } catch {}
+  }, []);
+
+  const saveFurniture = (item: string) => {
+    if (!savedFurniture.includes(item)) {
+      const updated = [...savedFurniture, item];
+      setSavedFurniture(updated);
+      localStorage.setItem('vistoria_furniture', JSON.stringify(updated));
+    }
+  };
+
+  const roomFurniture = currentRoom?.furniture || [];
+  const roomDamages = currentRoom?.damages || [];
   const roomProblems = currentRoom?.items || [];
 
-  const filteredProblems = allProblems.filter(p =>
-    p.toLowerCase().includes(problemInput.toLowerCase()) && !roomProblems.includes(p)
-  ).slice(0, 15);
+  const filteredFurniture = [...savedFurniture, ...['Porta', 'Janela', 'Persiana', 'Torneira', 'Luminária', 'Interruptor', 'Tomada', 'Armário', 'Gaveta', 'Espelho', 'Prateleira', 'Gabinete', 'Ralo', 'Sifão', 'Box', 'Chuveiro', 'Aquecedor']].filter(f => !roomFurniture.includes(f) && f.toLowerCase().includes(furnitureInput.toLowerCase())).slice(0, 12);
 
-  const addProblem = (problem: string) => {
-    if (!roomProblems.includes(problem)) {
-      setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: [...r.items, problem] } : r));
+  const filteredProblems = allProblems.filter(p => !roomProblems.includes(p) && p.toLowerCase().includes(problemInput.toLowerCase())).slice(0, 12);
+
+  const addFurniture = (item: string) => {
+    if (!roomFurniture.includes(item)) {
+      setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, furniture: [...r.furniture, item] } : r));
+      saveFurniture(item);
+    }
+    setFurnitureInput('');
+  };
+
+  const removeFurniture = (idx: number) => {
+    setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, furniture: r.furniture.filter((_, j) => j !== idx) } : r));
+  };
+
+  const addDamage = (item: string) => {
+    if (!roomDamages.includes(item)) {
+      setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, damages: [...r.damages, item] } : r));
     }
     setProblemInput('');
   };
 
-  const removeProblem = (idx: number) => {
-    setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: r.items.filter((_, j) => j !== idx) } : r));
+  const removeDamage = (idx: number) => {
+    setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, damages: r.damages.filter((_, j) => j !== idx) } : r));
   };
 
-  const roomsWithProblems = rooms.filter(r => r.items.length > 0).length;
+  const hasData = roomFurniture.length > 0 || roomDamages.length > 0 || roomProblems.length > 0;
+  const completedRooms = rooms.filter(r => r.furniture.length > 0 || r.damages.length > 0 || r.items.length > 0).length;
+
+  // Photo prompts based on furniture and damages
+  const photoPrompts = [
+    ...roomFurniture.map(f => `Foto do ${f} no(a) ${currentRoom?.name || 'cômodo'}`),
+    ...roomDamages.map(d => `Foto da avaria: ${d} no(a) ${currentRoom?.name || 'cômodo'}`),
+  ];
+
+  const subSteps = [
+    { id: 'furniture', label: 'Móveis', icon: '🪑' },
+    { id: 'damages', label: 'Avarias', icon: '⚠️' },
+    { id: 'problems', label: 'Problemas', icon: '🔍' },
+  ];
 
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-5 h-5 text-amber-400" /><h2 className="text-xl font-bold text-white">Problemas por Cômodo</h2></div>
-        <p className="text-sm text-slate-500">Selecione os problemas encontrados em cada cômodo</p>
+        <div className="flex items-center gap-2 mb-1">
+          <ClipboardCheck className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-xl font-bold text-white">Inventário do Cômodo</h2>
+        </div>
+        <p className="text-sm text-slate-500">Registre móveis, avarias e problemas de cada cômodo</p>
       </div>
 
       {/* Progress */}
       <div className="flex items-center justify-between text-[10px] text-slate-500">
-        <span>{roomsWithProblems}/{rooms.length} cômodo(s) com problemas</span>
+        <span>{completedRooms}/{rooms.length} cômodo(s) inventariados</span>
         <span>{currentRoomIdx + 1}/{rooms.length}</span>
       </div>
 
       {/* Room Tabs */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-        {rooms.map((room, idx) => (
-          <button key={room.id} onClick={() => { setCurrentRoomIdx(idx); setProblemInput(''); }}
-            className={cn("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all shrink-0",
-              idx === currentRoomIdx ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : room.items.length > 0 ? 'text-emerald-400 border border-emerald-500/20' : 'text-slate-500 border border-white/5 hover:bg-white/5')}>
-            {room.items.length > 0 && <CheckCircle2 className="w-3 h-3" />}
-            {room.name || `C${idx + 1}`}
-            {room.items.length > 0 && <span className="text-[9px] bg-emerald-500/20 px-1 rounded">{room.items.length}</span>}
+        {rooms.map((room, idx) => {
+          const hasData = room.furniture.length > 0 || room.damages.length > 0 || room.items.length > 0;
+          return (
+            <button key={room.id} onClick={() => { setCurrentRoomIdx(idx); setSubStep('furniture'); setProblemInput(''); setFurnitureInput(''); }}
+              className={cn("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all shrink-0",
+                idx === currentRoomIdx ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : hasData ? 'text-emerald-400 border border-emerald-500/20' : 'text-slate-500 border border-white/5 hover:bg-white/5')}>
+              {hasData && <CheckCircle2 className="w-3 h-3" />}
+              {room.name || `C${idx + 1}`}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sub-steps: Furniture, Damages, Problems */}
+      <div className="flex gap-2">
+        {subSteps.map(s => (
+          <button key={s.id} onClick={() => setSubStep(s.id as any)}
+            className={cn("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all",
+              subStep === s.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-500 border border-white/5 hover:bg-white/5')}>
+            <span>{s.icon}</span> {s.label}
           </button>
         ))}
       </div>
 
-      {/* Current Room Problems */}
+      {/* Current Room Content */}
       {currentRoom && (
         <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
           <h3 className="text-sm font-bold text-white">{currentRoom.name || `Cômodo ${currentRoomIdx + 1}`}</h3>
 
-          {/* Input */}
-          <div className="relative">
-            <Input placeholder="Digite ou selecione um problema..."
-              value={problemInput}
-              onChange={e => setProblemInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && problemInput.trim()) { addProblem(problemInput.trim()); } }}
-              className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600 pr-10" />
-            {problemInput && (
-              <button onClick={() => { if (problemInput.trim()) addProblem(problemInput.trim()); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Suggestions */}
-          {problemInput && filteredProblems.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {filteredProblems.map((p, i) => (
-                <button key={i} onClick={() => addProblem(p)}
-                  className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
-                  + {p}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Selected Problems */}
-          {roomProblems.length > 0 && (
-            <div>
-              <p className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold mb-2">Problemas encontrados ({roomProblems.length})</p>
-              <div className="flex flex-wrap gap-1.5">
-                {roomProblems.map((p, i) => (
-                  <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 flex items-center gap-1.5">
-                    {p}
-                    <button onClick={() => removeProblem(i)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Add Common Problems */}
-          {roomProblems.length === 0 && !problemInput && (
-            <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Problemas Comuns</p>
-              <div className="flex flex-wrap gap-1.5">
-                {COMMON_PROBLEMS.slice(0, 12).map((p, i) => (
-                  <button key={i} onClick={() => addProblem(p)}
-                    className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-colors">
-                    + {p}
+          {/* FURNITURE SUB-STEP */}
+          {subStep === 'furniture' && (
+            <div className="space-y-4">
+              <div className="relative">
+                <Input placeholder="Adicionar móvel... (ex: Armário, Gaveta, Espelho)"
+                  value={furnitureInput}
+                  onChange={e => setFurnitureInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && furnitureInput.trim()) { addFurniture(furnitureInput.trim()); } }}
+                  className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600 pr-10" />
+                {furnitureInput && (
+                  <button onClick={() => { if (furnitureInput.trim()) addFurniture(furnitureInput.trim()); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">
+                    <Plus className="w-3.5 h-3.5" />
                   </button>
+                )}
+              </div>
+
+              {/* Quick suggestions */}
+              {furnitureInput && filteredFurniture.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {filteredFurniture.map((f, i) => (
+                    <button key={i} onClick={() => addFurniture(f)}
+                      className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+                      + {f}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected furniture */}
+              {roomFurniture.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-indigo-400 uppercase tracking-wider font-semibold mb-2">Móveis no cômodo ({roomFurniture.length})</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {roomFurniture.map((f, i) => (
+                      <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 flex items-center gap-1.5">
+                        🪑 {f}
+                        <button onClick={() => removeFurniture(i)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick add saved furniture */}
+              {!furnitureInput && roomFurniture.length === 0 && (
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Móveis comuns</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Porta', 'Fechadura', 'Janela', 'Vidro', 'Persiana', 'Torneira', 'Registro', 'Luminária', 'Interruptor', 'Tomada', 'Armário', 'Gaveta', 'Espelho', 'Prateleira', 'Gabinete', 'Ralo', 'Sifão', 'Box', 'Chuveiro', 'Aquecedor', 'Ar condicionado', 'Controle remoto', 'Interfone', 'Campainha', 'Caixa de luz'].map((f, i) => (
+                      <button key={i} onClick={() => addFurniture(f)}
+                        className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-colors">
+                        + {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DAMAGES SUB-STEP */}
+          {subStep === 'damages' && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                <p className="text-[10px] text-amber-400 font-semibold">Informe as avarias encontradas neste cômodo</p>
+                <p className="text-[9px] text-slate-500 mt-0.5">Ex: Lixeira oxidada, fechadura com desgaste, piso trincado</p>
+              </div>
+
+              <div className="relative">
+                <Input placeholder="Descreva a avaria encontrada..."
+                  value={problemInput}
+                  onChange={e => setProblemInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && problemInput.trim()) { addDamage(problemInput.trim()); } }}
+                  className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600 pr-10" />
+                {problemInput && (
+                  <button onClick={() => { if (problemInput.trim()) addDamage(problemInput.trim()); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Quick suggestions */}
+              {problemInput && (
+                <div className="flex flex-wrap gap-1.5">
+                  {['Lixeira oxidada', 'Fechadura com desgaste', 'Piso trincado', 'Pintura descascando', 'Vazamento', 'Rachadura', 'Mancha de umidade', 'Metais oxidados'].filter(d => !roomDamages.includes(d) && d.toLowerCase().includes(problemInput.toLowerCase())).map((d, i) => (
+                    <button key={i} onClick={() => addDamage(d)}
+                      className="text-[10px] px-2 py-1 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
+                      + {d}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected damages */}
+              {roomDamages.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold mb-2">Avarias encontradas ({roomDamages.length})</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {roomDamages.map((d, i) => (
+                      <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 flex items-center gap-1.5">
+                        ⚠️ {d}
+                        <button onClick={() => removeDamage(i)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PROBLEMS SUB-STEP */}
+          {subStep === 'problems' && (
+            <div className="space-y-4">
+              <div className="relative">
+                <Input placeholder="Digite ou selecione um problema..."
+                  value={problemInput}
+                  onChange={e => setProblemInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && problemInput.trim()) { if (!roomProblems.includes(problemInput.trim())) { setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: [...r.items, problemInput.trim()] } : r)); } setProblemInput(''); } }}
+                  className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600 pr-10" />
+                {problemInput && (
+                  <button onClick={() => { if (problemInput.trim() && !roomProblems.includes(problemInput.trim())) { setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: [...r.items, problemInput.trim()] } : r)); setProblemInput(''); } }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {problemInput && filteredProblems.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {filteredProblems.map((p, i) => (
+                    <button key={i} onClick={() => { if (!roomProblems.includes(p)) setRooms(rooms.map((r, j) => j === currentRoomIdx ? { ...r, items: [...r.items, p] } : r)); setProblemInput(''); }}
+                      className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+                      + {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {roomProblems.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold mb-2">Problemas ({roomProblems.length})</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {roomProblems.map((p, i) => (
+                      <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5">
+                        {p}
+                        <button onClick={() => setRooms(rooms.map((r, j) => j === currentRoomIdx ? { ...r, items: r.items.filter((_, k) => k !== i) } : r))} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!problemInput && roomProblems.length === 0 && (
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Problemas Comuns</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {COMMON_PROBLEMS.slice(0, 12).map((p, i) => (
+                      <button key={i} onClick={() => { if (!roomProblems.includes(p)) setRooms(rooms.map((r, j) => j === currentRoomIdx ? { ...r, items: [...r.items, p] } : r)); }}
+                        className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-colors">
+                        + {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Photo Prompts */}
+          {photoPrompts.length > 0 && (
+            <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/10">
+              <p className="text-[10px] text-cyan-400 uppercase tracking-wider font-semibold mb-2">📸 Fotos a solicitar neste cômodo</p>
+              <div className="space-y-1">
+                {photoPrompts.map((prompt, i) => (
+                  <p key={i} className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <Camera className="w-3 h-3 text-cyan-400 shrink-0" /> {prompt}
+                  </p>
                 ))}
               </div>
             </div>
@@ -600,7 +787,7 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
 // ==================== TYPES ====================
 interface PhotoAnnotation { x: number; y: number; label: string; }
 interface PhotoData { dataUrl: string; name: string; annotations: PhotoAnnotation[]; }
-interface RoomData { id: string; name: string; photos: PhotoData[]; items: string[]; analyzing: boolean; analyzed: boolean; }
+interface RoomData { id: string; name: string; photos: PhotoData[]; items: string[]; furniture: string[]; damages: string[]; analyzing: boolean; analyzed: boolean; }
 interface PropertyInfo {
   condominio: string; endereco: string; numero: string; conjApto: string; apto: string; cep: string;
   bairro: string; cidade: string; estado: string; tipoImovel: string; finalidade: string;
@@ -763,7 +950,7 @@ function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, removeRoom 
   const generateRooms = () => {
     const r: RoomData[] = [];
     let id = Date.now();
-    const mk = (name: string): RoomData => ({ id: (id++).toString(), name, photos: [], items: [], analyzing: false, analyzed: false });
+    const mk = (name: string): RoomData => ({ id: (id++).toString(), name, photos: [], items: [], furniture: [], damages: [], analyzing: false, analyzed: false });
 
     const tipo = propertyInfo.tipoImovel || 'APARTAMENTO';
 
@@ -841,7 +1028,7 @@ function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, removeRoom 
         <div className="flex gap-2">
           <Input placeholder="Adicionar cômodo extra..." className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600" onKeyDown={e => {
             if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-              setRooms([...rooms, { id: Date.now().toString(), name: (e.target as HTMLInputElement).value.trim().toUpperCase(), photos: [], items: [], analyzing: false, analyzed: false }]);
+              setRooms([...rooms, { id: Date.now().toString(), name: (e.target as HTMLInputElement).value.trim().toUpperCase(), photos: [], items: [], furniture: [], damages: [], analyzing: false, analyzed: false }]);
               (e.target as HTMLInputElement).value = '';
             }
           }} />
@@ -1094,18 +1281,27 @@ export default function AdminVistoriaPage() {
       tipoImovel: t.tipoImovel || freshSettings.defaultTipoImovel || '',
       finalidade: t.finalidade || freshSettings.defaultFinalidade || 'RESIDENCIAL',
     });
-    setRooms(t.rooms.filter(Boolean).map((name, i) => ({ id: Date.now().toString() + i, name, photos: [], items: [], analyzing: false, analyzed: false })));
+    setRooms(t.rooms.filter(Boolean).map((name, i) => ({ id: Date.now().toString() + i, name, photos: [], items: [], furniture: [], damages: [], analyzing: false, analyzed: false })));
     setCurrentRoomIdx(0); setWizardStep(0); setEditingLaudoId(null); setView('wizard');
   };
 
-  const addRoom = () => setRooms([...rooms, { id: Date.now().toString(), name: '', photos: [], items: [], analyzing: false, analyzed: false }]);
+  const addRoom = () => setRooms([...rooms, { id: Date.now().toString(), name: '', photos: [], items: [], furniture: [], damages: [], analyzing: false, analyzed: false }]);
   const removeRoom = (idx: number) => { setRooms(rooms.filter((_, i) => i !== idx)); if (currentRoomIdx >= rooms.length - 1) setCurrentRoomIdx(Math.max(0, rooms.length - 2)); };
 
   const handlePhotoUpload = (roomIdx: number, files: FileList | null) => {
     if (!files) return;
+    let uploadCount = 0;
+    const totalFiles = files.length;
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = e => setRooms(prev => prev.map((r, i) => i === roomIdx ? { ...r, photos: [...r.photos, { dataUrl: e.target?.result as string, name: file.name, annotations: [] }] } : r));
+      reader.onload = e => {
+        setRooms(prev => prev.map((r, i) => i === roomIdx ? { ...r, photos: [...r.photos, { dataUrl: e.target?.result as string, name: file.name, annotations: [] }] } : r));
+        uploadCount++;
+        // Auto-analyze after all photos uploaded (if setting enabled)
+        if (uploadCount === totalFiles && settings.aiAnalysisEnabled) {
+          setTimeout(() => analyzeRoom(roomIdx), 500);
+        }
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -1124,7 +1320,17 @@ export default function AdminVistoriaPage() {
     try {
       const res = await fetch('/api/admin/vistoria/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rooms: [{ name: room.name || `Cômodo ${roomIdx + 1}`, photos: room.photos.map(p => p.dataUrl) }], propertyType: propertyInfo.tipoImovel, finality: propertyInfo.finalidade }) });
       const data = await res.json();
-      if (data.success) { const rn = room.name || `Cômodo ${roomIdx + 1}`; setRooms(prev => prev.map((r, i) => i === roomIdx ? { ...r, items: data.results[rn] || [], analyzing: false, analyzed: true } : r)); toast.success(`${room.name || 'Cômodo'} analisado!`); }
+      if (data.success) {
+        const rn = room.name || `Cômodo ${roomIdx + 1}`;
+        const result = data.results[rn] || {};
+        // Merge suggested furniture and damages with existing
+        const newFurniture = [...(room.furniture || [])];
+        (result.suggestedFurniture || []).forEach((f: string) => { if (!newFurniture.includes(f)) newFurniture.push(f); });
+        const newDamages = [...(room.damages || [])];
+        (result.suggestedDamages || []).forEach((d: string) => { if (!newDamages.includes(d)) newDamages.push(d); });
+        setRooms(prev => prev.map((r, i) => i === roomIdx ? { ...r, items: result.items || [], furniture: newFurniture, damages: newDamages, analyzing: false, analyzed: true } : r));
+        toast.success(`${room.name || 'Cômodo'} analisado! ${(result.suggestedFurniture || []).length} móveis, ${(result.suggestedDamages || []).length} avarias sugeridas.`);
+      }
       else throw new Error(data.error);
     } catch { setRooms(prev => prev.map((r, i) => i === roomIdx ? { ...r, analyzing: false } : r)); toast.error('Erro ao analisar'); }
   };
@@ -1458,8 +1664,30 @@ export default function AdminVistoriaPage() {
                       {/* Action Bar */}
                       <div className="px-4 py-2.5 border-t border-white/5 flex items-center justify-between bg-white/[0.01]">
                         <span className="text-[10px] text-slate-600 group-hover:text-cyan-400 transition-colors">Clique para editar</span>
-                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                           <Button size="sm" onClick={() => loadLaudo(laudo)} className="rounded-lg text-[10px] h-7 px-3 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"><Edit3 className="w-3 h-3 mr-1" /> Editar</Button>
+                          <Button size="sm" onClick={async () => {
+                            try {
+                              const res = await fetch('/api/admin/vistoria/generate-pdf', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ...laudo.propertyInfo, rooms: laudo.rooms?.map((r: any) => ({ name: r.name, items: r.items || [], photos: r.photos?.map((p: any) => ({ dataUrl: p.dataUrl || '', name: p.name, annotations: p.annotations || [] })) || [] })) || [] }),
+                              });
+                              const data = await res.json();
+                              if (data.success && data.html) { const w = window.open('', '_blank'); if (w) { w.document.write(data.html); w.document.close(); } }
+                            } catch { toast.error('Erro ao gerar PDF'); }
+                          }} className="rounded-lg text-[10px] h-7 px-3 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"><Eye className="w-3 h-3 mr-1" /> Visualizar</Button>
+                          <Button size="sm" onClick={async () => {
+                            try {
+                              const res = await fetch('/api/admin/vistoria/generate-pdf', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ...laudo.propertyInfo, rooms: laudo.rooms?.map((r: any) => ({ name: r.name, items: r.items || [], photos: r.photos?.map((p: any) => ({ dataUrl: p.dataUrl || '', name: p.name, annotations: p.annotations || [] })) || [] })) || [] }),
+                              });
+                              const data = await res.json();
+                              if (data.success && data.html) { const blob = new Blob([data.html], { type: 'text/html' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `laudo-${laudo.name || 'vistoria'}.html`; a.click(); URL.revokeObjectURL(url); toast.success('HTML baixado!'); }
+                            } catch { toast.error('Erro ao baixar'); }
+                          }} className="rounded-lg text-[10px] h-7 px-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20"><Download className="w-3 h-3 mr-1" /> Download</Button>
                           <button onClick={() => deleteLaudo(laudo.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors"><Trash2 className="w-3 h-3" /></button>
                         </div>
                       </div>

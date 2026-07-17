@@ -1,54 +1,107 @@
-# Sistema de Vistoria com IA - imobWeb
+# Sistema de Vistoria - imobWeb
 
 ## Visão Geral
 
-O sistema de vistoria automatiza a criação de laudos de vistoria de imóveis para fins locatícios, utilizing Google Gemini AI para analisar fotos e gerar descrições automáticas dos cômodos.
+Sistema completo de criação de laudos de vistoria de imóveis para fins locatícios. Gera PDFs profissionais com fotos reais, anotações e descrições detalhadas.
 
-**URL:** `/admin/vistoria`
+**URL:** `/admin/vistoria`  
+**Exemplos:** `/admin/vistoria/exemplos`
 
 ---
 
 ## Arquitetura
 
 ```
-app/admin/vistoria/page.tsx              ← Página principal (wizard completo)
-app/api/admin/vistoria/analyze/route.ts  ← API de análise com Gemini
-app/api/admin/vistoria/generate-pdf/route.ts ← Geração do HTML/PDF
-components/ui/creatable-select.tsx       ← Componente de select criável
+app/admin/vistoria/page.tsx                    ← Página principal (wizard + home + edit + config)
+app/admin/vistoria/exemplos/page.tsx           ← Página de exemplos de PDF
+app/api/admin/vistoria/analyze/route.ts        ← API de análise com Gemini
+app/api/admin/vistoria/generate-pdf/route.ts   ← Geração do HTML/PDF
+app/api/admin/vistoria/cep/[cep]/route.ts      ← API de busca de CEP (ViaCEP)
+app/api/admin/vistoria/examples/route.ts       ← Dados dos exemplos de PDF
+components/ui/creatable-select.tsx             ← Componente de select criável
+public/vistoria-exemplos/columbus/             ← Imagens do exemplo 1
+public/vistoria-exemplos/saintpeter/           ← Imagens do exemplo 2
 ```
 
 ---
 
-## Fluxo do Wizard (5 Passos)
+## Tela Principal (Home)
+
+Botões de ação:
+| Botão | Função |
+|-------|--------|
+| ✨ **Criar** | Novo laudo com wizard passo-a-passo |
+| 👁 **Visualizar** | Lista de laudos salvos com busca |
+| ⚙️ **Configurar** | Padrões, IA, marca d'água, problemas |
+
+Cards de stats: Laudos Criados, Último Laudo, Status da Análise IA
+
+---
+
+## Wizard de Criação (6 Passos)
 
 ### Passo 1: Dados do Imóvel
-- Nome do condomínio, endereço, número, conjunto/apto
-- CEP, bairro, cidade, estado
-- Tipo do imóvel (dropdown criável)
-- Finalidade (dropdown criável)
-- Metragem, mobiliado (dropdown criável)
-- Data da vistoria
+- **Tipo do Imóvel** - Dropdown criável (APARTAMENTO, SALA, CASA, COBERTURA, etc.)
+- **CEP** - Auto-fill via ViaCEP (preenche endereço, bairro, cidade, estado)
+- **Endereço** - Autocomplete (Rua, Avenida, Alameda...)
+- **Número**
+- **Andar** - Aparece para APARTAMENTO, COBERTURA, LOFT, SALA
+- **Conjunto / Apartamento** - Separados (apenas para apt/cobertura/loft)
+- **Bairro** - Autocomplete com cidades brasileiras
+- **Cidade** - Autocomplete
+- **Estado** - 2 caracteres
+- **Finalidade** - Dropdown criável (RESIDENCIAL, COMERCIAL)
+- **Mobiliado** - Dropdown criável (NÃO, SIM, PARCIALMENTE)
+- **Metragem** - Auto "m²" ao digitar número
+- **Data da Vistoria**
 
 ### Passo 2: Partes Envolvidas
-- Locadora: nome e CPF
-- Locatário(a): nome e CPF
-- Vistoriadora
-- Solicitante (imobiliária)
+- **Locadora** - Nome + CPF/CNPJ com validação + Telefone
+- **Locatário(a)** - Nome + CPF/CNPJ com validação + Telefone
+- **Vistoriadora** - Pré-preenchida das configurações
+- **Solicitante** - Pré-preenchido das configurações
 
-### Passo 3: Cômodos
-- Adicionar/remover cômodos
-- Nome do cômodo (ex: SALA, COZINHA, BANHEIRO)
-- Dicas de fotos por tipo de cômodo
+### Passo 3: Cômodos (Questionário Guiado)
+Perguntas diferentes por tipo de imóvel:
 
-### Passo 4: Fotos e Anotações
-- Upload de fotos por cômodo
-- Arrastar e ordenar fotos
-- Análise com Gemini AI
-- Anotações clicando na foto
+| Tipo | Perguntas |
+|------|-----------|
+| Apartamento/Cobertura | Andar, Entradas, Quartos, Suítes, Salas, Varanda, Lavabo, Cozinha, Área de Serviço, Home Office, Terraço, Despensa |
+| Casa | Andares, Entradas, Quartos, Suítes, Salas, Lavabo, Cozinha, Área de Serviço, Varanda, Garagem, Quintal, Churrasqueira, Piscina, Home Office, Despensa |
+| Sala/Comercial | Entradas, Salas, Sala de Reunião, Banheiro, Copa/Cozinhete, Depósito, Vitrine, Estacionamento |
+
+### Passo 4: Inventário por Cômodo (3 Sub-passos)
+
+#### 🪑 Móveis
+- Porta, Fechadura, Janela, Vidro, Persiana, Torneira, Registro, Luminária
+- Interruptor, Tomada, Armário, Gaveta, Espelho, Prateleira, Gabinete
+- Ralo, Sifão, Box, Chuveiro, Aquecedor, Ar condicionado, Controle remoto
+- Interfone, Campainha, Caixa de luz
+- **Salvos no localStorage** para reutilização rápida
+
+#### ⚠️ Avarias
+- Lixeira oxidada, Fechadura com desgaste, Piso trincado
+- Pintura descascando, Vazamento, Rachadura, Mancha de umidade, Metais oxidados
+- Campo livre para descrição personalizada
+
+#### 🔍 Problemas
+- 53 problemas padrão organizados por categoria
+- Problemas personalizados (configuração)
+- Busca por texto
+- Adição rápida com 1 clique
+
+### Passo 5: Fotos e Anotações
+- Upload múltiplo de fotos por cômodo
+- Arrastar e ordenar fotos (drag & drop)
+- **Prompts de fotos** baseados nos móveis e avarias registrados
+- Análise automática com Gemini AI
+- Anotações clicando na foto (marcadores + linhas de chamada)
 - Preview grande das fotos
+- Botão "Analisar Todos" para processar em lote
 
-### Passo 5: Observações e PDF
-- Resumo dos dados
+### Passo 6: Observações e PDF
+- Resumo dos dados do imóvel
+- Resumo das anotações por cômodo
 - Templates rápidos de observações
 - Textarea para observações livres
 - Geração do laudo PDF
@@ -56,43 +109,41 @@ components/ui/creatable-select.tsx       ← Componente de select criável
 
 ---
 
-## Componentes
+## Visualizar Laudos
 
-### CreatableSelect (`components/ui/creatable-select.tsx`)
+Lista de todos os laudos salvos com:
+- **Busca** em tempo real (nome, endereço, cidade, bairro, locadora, locatário)
+- **Cards detalhados** com: nome, tipo, endereço, cômodos, fotos, anotações, data
+- **Botões de ação**: Editar, Visualizar PDF, Download HTML, Excluir
 
-Select que permite criar novas opções que são salvas no localStorage.
+---
 
-```tsx
-<CreatableSelect
-  options={['APARTAMENTO', 'SALA', 'CASA']}
-  value={selectedValue}
-  onChange={(v) => setSelectedValue(v)}
-  storageKey="vistoria_tipo_imovel"
-/>
-```
+## Configurações
 
-**Props:**
-| Prop | Tipo | Descrição |
-|------|------|-----------|
-| `options` | `string[]` | Opções fixas padrão |
-| `value` | `string` | Valor selecionado |
-| `onChange` | `(value: string) => void` | Callback ao mudar |
-| `storageKey` | `string` | Key do localStorage para persistir |
-| `placeholder` | `string?` | Texto placeholder |
+### Valores Padrão
+- Vistoriadora (pré-preenchido no wizard)
+- Solicitante (pré-preenchido no wizard)
+- Cidade padrão
+- Estado padrão
 
-### PhotoAnnotator (inline no page.tsx)
+### Google Gemini AI
+- Campo para API Key
+- Toggle: Análise de Fotos com IA
+- Toggle: Considerações com IA
+- Versão: gemini-2.0-flash (15 RPM, 1M tokens/dia)
 
-Modal para anotar problemas em fotos com:
-- Marcadores numerados
-- Linhas de chamada (callout lines)
-- 16 problemas pré-definidos
-- Edição de anotações existentes
+### Marca d'Água
+- Toggle para ativar/desativar
+- Texto da marca d'água
+- Upload de imagem (logo)
 
-### PhotoPreview (inline no page.tsx)
+### Opções
+- Análise automática ao adicionar fotos
 
-Modal de preview grande de fotos com:
-- Imagem em tamanho real
-- Lista de anotações no canto
+### Problemas
+- **Personalizados**: Adicionar vários de uma vez (um por linha)
+- **Padrão (53)**: Lista completa com opção de deletar cada um
+- **Restaurar todos**: Botão para restaurar problemas deletados
 
 ---
 
@@ -100,69 +151,65 @@ Modal de preview grande de fotos com:
 
 ### POST `/api/admin/vistoria/analyze`
 
-Analisa fotos de um cômodo com Google Gemini.
+Analisa fotos com Google Gemini.
 
-**Request:**
 ```json
 {
-  "rooms": [
-    {
-      "name": "SALA",
-      "photos": ["data:image/jpeg;base64,..."]
-    }
-  ],
+  "rooms": [{ "name": "SALA", "photos": ["data:image/jpeg;base64,..."] }],
   "propertyType": "APARTAMENTO",
   "finality": "RESIDENCIAL"
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "results": {
-    "SALA": [
-      "✓ Porta de entrada de madeira em bom estado",
-      "✓ Piso em laminado marrom em bom estado"
-    ]
-  }
-}
-```
+### GET `/api/admin/vistoria/cep/[cep]`
+
+Busca endereço por CEP via ViaCEP.
 
 ### POST `/api/admin/vistoria/generate-pdf`
 
-Gera o HTML do laudo para impressão.
+Gera HTML do laudo profissional.
 
-**Request:**
 ```json
 {
   "condominio": "EDIFÍCIO COLUMBUS TOWER",
   "endereco": "Avenida Dumont Villares",
   "numero": "1410",
-  "rooms": [
-    {
-      "name": "SALA",
-      "items": ["✓ Porta de madeira em bom estado"],
-      "photos": [
-        {
-          "dataUrl": "data:image/jpeg;base64,...",
-          "name": "foto1.jpg",
-          "annotations": [
-            { "x": 45.2, "y": 32.1, "label": "Rachadura na parede" }
-          ]
-        }
-      ]
-    }
-  ],
-  "consideracoes": "Imóvel entregue com pintura nova"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "html": "<!DOCTYPE html>..."
+  "conjApto": "Conj. 103",
+  "apto": "",
+  "andar": "",
+  "cep": "05640-003",
+  "bairro": "Vila Suzana",
+  "cidade": "São Paulo",
+  "estado": "SP",
+  "tipoImovel": "SALA",
+  "finalidade": "COMERCIAL",
+  "metragem": "35m²",
+  "mobiliado": "NÃO",
+  "locadora": "ALEXANDRA ESCOBAR",
+  "locadoraCpf": "153.224.928-44",
+  "locadoraTelefone": "(11) 99876-5432",
+  "locatario": "IGOR MIRA",
+  "locatarioCpf": "277.246.018-52",
+  "locatarioTelefone": "(11) 98765-4321",
+  "vistoriadora": "Mônica Barbosa",
+  "dataFotografia": "23/12/2025",
+  "dataLaudo": "27/12/2025",
+  "solicitante": "ARTIMOB",
+  "emailContestacao": "monica@artimob.com",
+  "rooms": [{
+    "name": "SALA",
+    "items": ["✓ Porta de madeira em bom estado", "..."],
+    "furniture": ["Porta", "Janela", "Ar condicionado"],
+    "damages": ["Manchas na persiana"],
+    "problems": ["Rachadura na parede"],
+    "observations": "Sala em bom estado geral",
+    "photos": [{
+      "dataUrl": "https://...",
+      "name": "sala_1.jpg",
+      "annotations": [{ "x": 35, "y": 45, "label": "Manchas na persiana" }]
+    }]
+  }],
+  "consideracoes": "Conforme laudo, o imóvel encontra-se em bom estado..."
 }
 ```
 
@@ -170,167 +217,66 @@ Gera o HTML do laudo para impressão.
 
 ## Estrutura do PDF Gerado
 
-O laudo segue o padrão profissional de laudos de vistoria:
-
-1. **Capa** - Título, vistoriadora, datas
-2. **Dados do Imóvel** - Informações gerais, critérios de avaliação
-3. **Sumário** - Lista de cômodos
-4. **Cômodos** - Para cada cômodo:
-   - Lista de itens com estado de conservação
-   - Fotos com anotações (marcadores + linhas de chamada)
-   - Legenda das anotações
-5. **Considerações Finais** - Texto livre + templates
-6. **Contestação** - Regras de prazo
-7. **Assinaturas** - Locadora e Locatário
-
-### Formato das Anotações no PDF
-
-```
-┌─────────────────────────────────┐
-│  ┌─┐                           │
-│  │1│── ── ── ── ── ┌──────────┐│
-│  └─┘               │Rachadura ││
-│                    │na parede ││
-│    [FOTO]          └──────────┘│
-│  ┌─┐                           │
-│  │2│── ── ── ── ┌────────────┐│
-│  └─┘            │Mancha de   ││
-│                 │umidade     ││
-│                 └────────────┘│
-└─────────────────────────────────┘
-```
+1. **Capa** - Título com gradiente, vistoriadora, datas
+2. **Critérios + Info** - 5 níveis de conservação, dados do imóvel, resumo
+3. **Sumário** - Tabela com cômodos, fotos e páginas reais
+4. **Cômodos** (1 por página):
+   - Header com número + nome
+   - Itens com ✓ verde
+   - Box de problemas (vermelho ⚠)
+   - Box de observações (azul 📋)
+   - Grid de fotos com marcadores e linhas de chamada
+5. **Considerações Finais** - Texto + contestação + email
+6. **Assinaturas** - Locadora e Locatário
 
 ---
 
-## Dicas de Fotos por Cômodo
+## Problemas Comuns (53)
 
-O sistema sugere automaticamente quais fotos tirar baseado no nome do cômodo:
+**Paredes e Teto (11):** Rachadura, Mancha de umidade, Pintura descascando, Furo, Teto descascando, Infiltração, Mofo, Vazamento, Parede com bolhas, Reboco soltando, Teto com manchas
 
-| Cômodo | Dicas |
-|--------|-------|
-| ENTRADA | Porta, fechadura, interfone, piso, parede, quadro de luz |
-| SALA | Parede (4 faces), piso, janelas, teto, tomadas, ar condicionado |
-| COZINHA | Bancada, pia, armários, torneira, piso, fogão/forno |
-| BANHEIRO | Vaso sanitário, pia, espelho, torneira, chuveiro, piso |
-| QUARTO | Parede, piso, janelas, teto, armários |
-| VARANDA | Piso, grade/vidraça, teto, luminária |
+**Piso (8):** Desgaste, Quebrado, Rachadura, Azulejo solto, Rejunte, Manchas, Desnível, Ladrilho trincado
 
----
+**Hidráulica (9):** Vazamento torneira/registro/vaso, Pressão baixa, Louça quebrada, Torneira com vazamento, Vazamento caixa d'água, Tubo exposto, Registro travado
 
-## Problemas Comuns (Quick-Select)
+**Elétrica (8):** Tomada com defeito, Interruptor com defeito, Fiação aparente, Quadro de luz, Disjuntor, Luz piscando, Falta de tomadas, Fio desencapado
 
-Ao anotar fotos, o sistema oferece 16 problemas pré-definidos:
+**Portas/Janelas (8):** Porta com desajuste, Fechadura com defeito, Janela emperrando, Vidro rachado, Persiana quebrada, Mosqueiro rasgado, Porta rangendo, Batente danificado
 
-1. Rachadura na parede
-2. Mancha de umidade
-3. Desgaste no piso
-4. Vazamento
-5. Infiltração
-6. Pintura descascando
-7. Furo na parede
-8. Serragem/trincas
-9. Metais oxidados
-10. Louça quebrada
-11. Tomada com defeito
-12. Interruptor com defeito
-13. Porta com desajuste
-14. Janela emperrando
-15. Mofo
-16. Barulho
+**Outros (5):** Barulho, Vazamento na varanda, Grade com ferrugem, Luminária com defeito, Ar condicionado vazamento
 
 ---
 
 ## Configuração
 
 ### Variável de Ambiente
-
-Adicione no `.env`:
-
 ```
 GEMINI_API_KEY=sua-chave-aqui
 ```
-
 Obtenha em: https://aistudio.google.com/app/apikey
 
 ### localStorage
-
-Opções criadas são salvas automaticamente:
-
 ```
-vistoria_tipo_imovel: ["APARTAMENTO", "SALA", "CASA", "LOFT"]
+vistoria_tipo_imovel: ["APARTAMENTO", "SALA", "LOFT"]
 vistoria_finalidade: ["RESIDENCIAL", "COMERCIAL"]
 vistoria_mobiliado: ["NÃO", "SIM", "PARCIALMENTE"]
+vistoria_furniture: ["Porta", "Janela", "Ar condicionado"]
+vistoria_settings: { ... }
+vistoria_saved: [ ... laudos salvos ... ]
 ```
-
----
-
-## Componentes de UI
-
-| Componente | Uso |
-|------------|-----|
-| `CreatableSelect` | Dropdown com opção "+ Criar" |
-| `Button` | Botões de ação |
-| `Input` | Campos de texto |
-| `Label` | Labels dos campos |
-| `Badge` | Indicadores de status |
-| `ResponsiveTable` | Tabelas responsivas |
-| `AdaptiveModal` | Modais adaptativos |
-
----
-
-## Animações
-
-- **Framer Motion** em todos os componentes
-- Transições suaves entre passos do wizard
-- Animação de entrada/saída de modais
-- Hover effects em cards e botões
-- Loading spinner durante geração
-
----
-
-## Responsividade
-
-- **Mobile:** Layout vertical, upload simplificado
-- **Tablet:** Grid 2 colunas, sidebar colapsada
-- **Desktop:** Grid 3-4 colunas, sidebar expandida
-- **Preview:** Tela cheia no mobile, modal no desktop
-
----
-
-## Exemplos de Laudos
-
-O sistema gera laudos no padrão dos exemplos:
-- LAUDO DE VISTORIA DE ENTRADA - COLUMBUS TOWER
-- LAUDO DE VISTORIA ENTRADA - SAINT PETER
-- LAUDO DE VISTORIA ENTRADA - TIFFANY'S
 
 ---
 
 ## Manutenção
 
-### Adicionar novos problemas comuns
+### Adicionar problemas
+Edite `COMMON_PROBLEMS` em `app/admin/vistoria/page.tsx`
 
-Edite a constante `COMMON_PROBLEMS` em `app/admin/vistoria/page.tsx`:
+### Adicionar dicas de fotos
+Edite `ROOM_PHOTO_TIPS`
 
-```ts
-const COMMON_PROBLEMS = [
-  'Rachadura na parede',
-  'Seu novo problema aqui',
-  // ...
-];
-```
+### Modificar PDF
+Edite `generateHtml()` em `app/api/admin/vistoria/generate-pdf/route.ts`
 
-### Adicionar dicas para novo cômodo
-
-Edite `ROOM_PHOTO_TIPS`:
-
-```ts
-const ROOM_PHOTO_TIPS: Record<string, string[]> = {
-  'NOVO CÔMODO': ['Dica 1', 'Dica 2'],
-  // ...
-};
-```
-
-### Modificar o layout do PDF
-
-Edite a função `generateHtml()` em `app/api/admin/vistoria/generate-pdf/route.ts`.
+### Adicionar tipo de cômodo
+Edite `ROOM_PHOTO_TIPS` e `getQuestionsForType()` no componente `RoomQuestionnaire`

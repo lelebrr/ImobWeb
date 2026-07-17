@@ -223,9 +223,21 @@ fun VistoriaDetailScreen(
                                 Text(room.name.ifBlank { "Sem nome" },
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold)
-                                Text("${room.photos.size} fotos · ${room.items.size} itens",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("${room.photos.size} fotos",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (room.furniture.isNotEmpty()) {
+                                        Text("· ${room.furniture.size} móveis",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    if (room.damages.isNotEmpty() || room.problems.isNotEmpty()) {
+                                        Text("· ${room.damages.size + room.problems.size} não conf.",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
                             }
                         }
                     }

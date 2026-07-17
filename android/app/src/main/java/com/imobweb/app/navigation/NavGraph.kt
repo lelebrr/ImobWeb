@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.ui.home.HomeScreen
 import com.imobweb.app.ui.login.LoginScreen
+import com.imobweb.app.ui.settings.SettingsScreen
 import com.imobweb.app.ui.vistoria.VistoriaDetailScreen
 import com.imobweb.app.ui.vistoria.VistoriaListScreen
 import com.imobweb.app.ui.vistoria.VistoriaWizardScreen
@@ -20,6 +21,7 @@ object Routes {
     const val WIZARD_EDIT = "wizard/{vistoriaId}"
     const val VISTORIA_LIST = "vistorias"
     const val VISTORIA_DETAIL = "vistoria/{vistoriaId}"
+    const val SETTINGS = "settings"
 
     fun wizardEdit(id: Long) = "wizard/$id"
     fun vistoriaDetail(id: Long) = "vistoria/$id"
@@ -47,7 +49,15 @@ fun AppNavGraph(
             HomeScreen(
                 repository = repository,
                 onNewVistoria = { navController.navigate(Routes.WIZARD) },
-                onViewVistorias = { navController.navigate(Routes.VISTORIA_LIST) }
+                onViewVistorias = { navController.navigate(Routes.VISTORIA_LIST) },
+                onSettings = { navController.navigate(Routes.SETTINGS) }
+            )
+        }
+
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                repository = repository,
+                onBack = { navController.popBackStack() }
             )
         }
 
