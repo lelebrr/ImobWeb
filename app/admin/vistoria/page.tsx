@@ -1026,6 +1026,7 @@ export default function AdminVistoriaPage() {
   const [generationStep, setGenerationStep] = useState('');
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
   const [selectedProblems, setSelectedProblems] = useState<Record<string, string[]>>({});
+  const [searchEdit, setSearchEdit] = useState('');
 
   // Load from localStorage
   useEffect(() => {
@@ -1313,7 +1314,6 @@ export default function AdminVistoriaPage() {
 
   // ==================== EDIT VIEW ====================
   if (view === 'edit') {
-    const [searchEdit, setSearchEdit] = useState('');
     const filteredLaudos = [...savedLaudos]
       .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
       .filter(l => {
