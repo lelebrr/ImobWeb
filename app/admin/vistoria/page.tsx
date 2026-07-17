@@ -49,21 +49,21 @@ const COMMON_PROBLEMS = [
 const LAUDO_TEMPLATES = [
   {
     id: 'apartamento-residencial',
-    name: 'Apartamento Residencial',
+    name: 'Apartamento',
     icon: '🏢',
     tipoImovel: 'APARTAMENTO',
     finalidade: 'RESIDENCIAL',
-    rooms: ['ENTRADA', 'SALA', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO', 'QUARTO', 'SUÍTE', 'BANHEIRO SUÍTE', 'VARANDA'],
-    description: 'Template completo para apartamentos residenciais',
+    rooms: ['ENTRADA', 'SALA', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO SOCIAL', 'QUARTO 1', 'QUARTO 2', 'SUÍTE', 'BANHEIRO SUÍTE', 'VARANDA'],
+    description: '10 cômodos · Padrão apartamento 2 quartos',
   },
   {
     id: 'casa-residencial',
-    name: 'Casa Residencial',
+    name: 'Casa',
     icon: '🏠',
     tipoImovel: 'CASA',
     finalidade: 'RESIDENCIAL',
-    rooms: ['ENTRADA', 'SALA', 'SALA DE JANTAR', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO', 'QUARTO', 'QUARTO 2', 'SUÍTE', 'BANHEIRO SUÍTE', 'GARAGEM', 'QUINTAL'],
-    description: 'Template completo para casas residenciais',
+    rooms: ['ENTRADA', 'SALA DE ESTAR', 'SALA DE JANTAR', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO SOCIAL', 'QUARTO 1', 'QUARTO 2', 'QUARTO 3', 'SUÍTE', 'BANHEIRO SUÍTE', 'GARAGEM', 'QUINTAL'],
+    description: '13 cômodos · Padrão casa 3 quartos',
   },
   {
     id: 'sala-comercial',
@@ -71,8 +71,8 @@ const LAUDO_TEMPLATES = [
     icon: '🏬',
     tipoImovel: 'SALA',
     finalidade: 'COMERCIAL',
-    rooms: ['ENTRADA', 'SALA PRINCIPAL', 'BANHEIRO', 'DEPÓSITO'],
-    description: 'Template para salas comerciais',
+    rooms: ['ENTRADA', 'SALA PRINCIPAL', 'SALA DE REUNIÃO', 'BANHEIRO', 'COZINHETE', 'DEPÓSITO'],
+    description: '6 cômodos · Padrão sala empresarial',
   },
   {
     id: 'cobertura',
@@ -80,8 +80,8 @@ const LAUDO_TEMPLATES = [
     icon: '🏙️',
     tipoImovel: 'COBERTURA',
     finalidade: 'RESIDENCIAL',
-    rooms: ['ENTRADA', 'SALA', 'SALA DE JANTAR', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO SOCIAL', 'QUARTO', 'QUARTO 2', 'SUÍTE', 'BANHEIRO SUÍTE', 'VARANDA', 'TERRAÇO'],
-    description: 'Template para coberturas de alto padrão',
+    rooms: ['ENTRADA', 'SALA DE ESTAR', 'SALA DE JANTAR', 'COZINHA', 'ÁREA DE SERVIÇO', 'BANHEIRO SOCIAL', 'QUARTO 1', 'QUARTO 2', 'QUARTO 3', 'SUÍTE', 'BANHEIRO SUÍTE', 'SUÍTE MASTER', 'BANHEIRO MASTER', 'VARANDA GOURMET', 'TERRAÇO', 'CHURRASQUEIRA'],
+    description: '16 cômodos · Padrão cobertura alto padrão',
   },
   {
     id: 'studio',
@@ -90,7 +90,7 @@ const LAUDO_TEMPLATES = [
     tipoImovel: 'APARTAMENTO',
     finalidade: 'RESIDENCIAL',
     rooms: ['SALA/QUARTO', 'COZINHA AMERICANA', 'BANHEIRO'],
-    description: 'Template para studios e flats compactos',
+    description: '3 cômodos · Padrão compacto',
   },
   {
     id: 'personalizado',
@@ -99,7 +99,7 @@ const LAUDO_TEMPLATES = [
     tipoImovel: '',
     finalidade: '',
     rooms: [],
-    description: 'Comece do zero com cômodos personalizados',
+    description: 'Defina seus próprios cômodos',
   },
 ];
 
@@ -416,9 +416,9 @@ export default function AdminVistoriaPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { label: 'Laudos Criados', value: totalLaudos, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-                { label: 'Cômodos Total', value: totalRoomsAll, icon: Building2, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { label: 'Fotos Tiradas', value: savedLaudos.reduce((s, l) => s + (l.rooms?.reduce((s2, r) => s2 + (r.photos?.length || 0), 0) || 0), 0), icon: Camera, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { label: 'Anotações', value: savedLaudos.reduce((s, l) => s + (l.rooms?.reduce((s2, r) => s2 + (r.photos?.reduce((s3, p) => s3 + (p.annotations?.length || 0), 0) || 0), 0) || 0), 0), icon: MapPin, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                { label: 'Último Laudo', value: savedLaudos.length > 0 ? new Date(savedLaudos[savedLaudos.length - 1].savedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—', icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                { label: 'Templates', value: LAUDO_TEMPLATES.length, icon: Layers, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                { label: 'Problemas Cadastrados', value: COMMON_PROBLEMS.length + (settings.customProblems?.length || 0), icon: Target, color: 'text-amber-400', bg: 'bg-amber-500/10' },
               ].map((stat, idx) => (
                 <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="rounded-2xl bg-white/[0.03] border border-white/5 p-4">
                   <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-3", stat.bg)}><stat.icon className={cn("w-4 h-4", stat.color)} /></div>
@@ -459,7 +459,7 @@ export default function AdminVistoriaPage() {
                     className="p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-500/20 text-left transition-all group">
                     <div className="text-2xl mb-2">{template.icon}</div>
                     <p className="text-xs font-bold text-white mb-0.5">{template.name}</p>
-                    <p className="text-[10px] text-slate-500">{template.rooms.length} cômodos</p>
+                    <p className="text-[10px] text-slate-500">{template.description}</p>
                   </motion.button>
                 ))}
               </div>
