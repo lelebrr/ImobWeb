@@ -40,10 +40,29 @@ const ROOM_PHOTO_TIPS: Record<string, string[]> = {
 const DEFAULT_PHOTO_TIPS = ['Parede geral (4 faces)', 'Piso e rodapé', 'Janelas', 'Teto e luminárias', 'Tomadas e interruptores', 'Portas'];
 
 const COMMON_PROBLEMS = [
-  'Rachadura na parede', 'Mancha de umidade', 'Desgaste no piso', 'Vazamento',
-  'Infiltração', 'Pintura descascando', 'Furo na parede', 'Serragem/trincas',
-  'Metais oxidados', 'Louça quebrada', 'Tomada com defeito', 'Interruptor com defeito',
-  'Porta com desajuste', 'Janela emperrando', 'Mofo', 'Barulho',
+  // Paredes e Teto
+  'Rachadura na parede', 'Mancha de umidade na parede', 'Pintura descascando', 'Furo na parede',
+  'Teto descascando', 'Infiltração no teto', 'Mofo na parede', 'Vazamento de água na parede',
+  'Parede com bolhas', 'Reboco soltando', 'Teto com manchas',
+  // Piso
+  'Desgaste no piso', 'Piso quebrado', 'Rachadura no piso', 'Azulejo solto', 'Rejunte deteriorado',
+  'Piso com manchas', 'Desnível no piso', 'Ladrilho trincado',
+  // Hidráulica
+  'Vazamento na torneira', 'Vazamento no registro', 'Vazamento no vaso sanitário',
+  'Pressão de água baixa', 'Louça quebrada', 'Torneira com vazamento',
+  'Caixa d\'água com vazamento', 'Tubo exposto', 'Registro travado',
+  // Elétrica
+  'Tomada com defeito', 'Interruptor com defeito', 'Fiação aparente',
+  'Quadro de luz com defeito', 'Disjuntor desarmando', 'Luz piscando',
+  'Falta de tomadas', 'Fio desencapado',
+  // Portas e Janelas
+  'Porta com desajuste', 'Fechadura com defeito', 'Janela emperrando',
+  'Vidro rachado', 'Persiana quebrada', 'Mosqueiro rasgado',
+  'Porta rangendo', 'Batente danificado', 'Ferragens soltas',
+  // Outros
+  'Barulho excessivo', 'Vazamento na varanda', 'Grade com ferrugem',
+  'Luminária com defeito', 'Ar condicionado com vazamento', 'Encanamento exposto',
+  'Proteção contra quedas danificada', 'Detector de fumaça com defeito',
 ];
 
 const LAUDO_TEMPLATES = [
@@ -117,14 +136,15 @@ function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-// CEP lookup via ViaCEP
+// CEP lookup via API route (avoids CSP issues)
 async function lookupCep(cep: string): Promise<{ endereco: string; bairro: string; cidade: string; estado: string } | null> {
   const clean = cep.replace(/\D/g, '');
   if (clean.length !== 8) return null;
   try {
-    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+    const res = await fetch(`/api/admin/vistoria/cep/${clean}`);
+    if (!res.ok) return null;
     const data = await res.json();
-    if (data.erro) return null;
+    if (data.error) return null;
     return { endereco: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' };
   } catch { return null; }
 }
@@ -464,6 +484,9 @@ interface VistoriaSettings {
   defaultEstado: string; defaultTipoImovel: string; defaultFinalidade: string;
   autoAnalyze: boolean; customProblems: string[];
   watermarkImage: string; watermarkText: string; watermarkEnabled: boolean;
+  geminiApiKey: string;
+  aiAnalysisEnabled: boolean;
+  aiConsiderationsEnabled: boolean;
 }
 
 const defaultPropertyInfo: PropertyInfo = {
@@ -480,6 +503,7 @@ const defaultSettings: VistoriaSettings = {
   defaultEstado: 'SP', defaultTipoImovel: 'APARTAMENTO', defaultFinalidade: 'RESIDENCIAL',
   autoAnalyze: true, customProblems: [],
   watermarkImage: '', watermarkText: 'imobWeb Vistoria', watermarkEnabled: false,
+  geminiApiKey: '', aiAnalysisEnabled: true, aiConsiderationsEnabled: true,
 };
 
 const WIZARD_STEPS = [
@@ -1002,12 +1026,11 @@ export default function AdminVistoriaPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-5xl mx-auto space-y-8">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 { label: 'Laudos Criados', value: totalLaudos, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
                 { label: 'Último Laudo', value: savedLaudos.length > 0 ? new Date(savedLaudos[savedLaudos.length - 1].savedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—', icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { label: 'Templates', value: LAUDO_TEMPLATES.length, icon: Layers, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { label: 'Problemas Cadastrados', value: COMMON_PROBLEMS.length + (settings.customProblems?.length || 0), icon: Target, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                { label: 'Análise IA', value: settings.aiAnalysisEnabled ? 'Ativa' : 'Desligada', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10' },
               ].map((stat, idx) => (
                 <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="rounded-2xl bg-white/[0.03] border border-white/5 p-4">
                   <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-3", stat.bg)}><stat.icon className={cn("w-4 h-4", stat.color)} /></div>
@@ -1033,22 +1056,6 @@ export default function AdminVistoriaPage() {
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><card.icon className={cn("w-5 h-5", card.iconColor)} /></div>
                     <h3 className="text-sm font-bold text-white mb-0.5">{card.title}</h3>
                     <p className="text-[11px] text-slate-400">{card.desc}</p>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
-            {/* Templates Quick Start */}
-            <div>
-              <h2 className="text-sm font-bold text-white mb-4">Templates Rápidos</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {LAUDO_TEMPLATES.filter(t => t.id !== 'personalizado').map((template, idx) => (
-                  <motion.button key={template.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} whileHover={{ scale: 1.03, y: -2 }}
-                    onClick={() => { setSelectedTemplate(template.id); startWizard(template); }}
-                    className="p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-500/20 text-left transition-all group">
-                    <div className="text-2xl mb-2">{template.icon}</div>
-                    <p className="text-xs font-bold text-white mb-0.5">{template.name}</p>
-                    <p className="text-[10px] text-slate-500">{template.description}</p>
                   </motion.button>
                 ))}
               </div>
@@ -1387,11 +1394,55 @@ export default function AdminVistoriaPage() {
               </div>
             </div>
 
+            {/* Google Gemini AI */}
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+              <div className="p-5 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-sm font-bold text-white">Google Gemini AI</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">Configuração da inteligência artificial (versões gratuitas)</p>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">API Key do Google Gemini</Label>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy... (obtenha em aistudio.google.com)"
+                    value={settings.geminiApiKey}
+                    onChange={e => setSettings({ ...settings, geminiApiKey: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  />
+                  <p className="text-[10px] text-slate-600">Versão gratuita: gemini-2.0-flash (15 RPM, 1M tokens/dia)</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Análise de Fotos com IA</p>
+                    <p className="text-[11px] text-slate-500">Analisa fotos e descreve itens automaticamente</p>
+                  </div>
+                  <button onClick={() => setSettings({ ...settings, aiAnalysisEnabled: !settings.aiAnalysisEnabled })} className={cn("w-12 h-6 rounded-full transition-colors", settings.aiAnalysisEnabled ? 'bg-indigo-500' : 'bg-white/10')}>
+                    <div className={cn("w-5 h-5 rounded-full bg-white shadow transition-transform", settings.aiAnalysisEnabled ? 'translate-x-6' : 'translate-x-0.5')} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Considerações com IA</p>
+                    <p className="text-[11px] text-slate-500">Gera considerações finais automaticamente</p>
+                  </div>
+                  <button onClick={() => setSettings({ ...settings, aiConsiderationsEnabled: !settings.aiConsiderationsEnabled })} className={cn("w-12 h-6 rounded-full transition-colors", settings.aiConsiderationsEnabled ? 'bg-indigo-500' : 'bg-white/10')}>
+                    <div className={cn("w-5 h-5 rounded-full bg-white shadow transition-transform", settings.aiConsiderationsEnabled ? 'translate-x-6' : 'translate-x-0.5')} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
               <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Opções</h3></div>
               <div className="p-5">
                 <div className="flex items-center justify-between">
-                  <div><p className="text-sm font-semibold text-white">Análise Automática com IA</p><p className="text-[11px] text-slate-500">Analisar fotos automaticamente ao adicioná-las</p></div>
+                  <div><p className="text-sm font-semibold text-white">Análise Automática</p><p className="text-[11px] text-slate-500">Analisar fotos automaticamente ao adicioná-las</p></div>
                   <button onClick={() => setSettings({ ...settings, autoAnalyze: !settings.autoAnalyze })} className={cn("w-12 h-6 rounded-full transition-colors", settings.autoAnalyze ? 'bg-indigo-500' : 'bg-white/10')}>
                     <div className={cn("w-5 h-5 rounded-full bg-white shadow transition-transform", settings.autoAnalyze ? 'translate-x-6' : 'translate-x-0.5')} />
                   </button>

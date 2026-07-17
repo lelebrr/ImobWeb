@@ -37,6 +37,8 @@ export function getCSP(nonce: string) {
     ...trustedDomains,
     "wss://*.supabase.co",
     "https://vitals.vercel-insights.com",
+    "https://viacep.com.br",
+    "https://generativelanguage.googleapis.com",
   ];
 
   const policy = `
