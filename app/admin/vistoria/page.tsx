@@ -117,6 +117,293 @@ function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+// CEP lookup via ViaCEP
+async function lookupCep(cep: string): Promise<{ endereco: string; bairro: string; cidade: string; estado: string } | null> {
+  const clean = cep.replace(/\D/g, '');
+  if (clean.length !== 8) return null;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+    const data = await res.json();
+    if (data.erro) return null;
+    return { endereco: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' };
+  } catch { return null; }
+}
+
+// CPF/CNPJ validation
+function validateCpfCnpj(value: string): { valid: boolean; type: 'CPF' | 'CNPJ' | 'invalid' } {
+  const clean = value.replace(/\D/g, '');
+  if (clean.length === 11) {
+    // CPF validation
+    if (/^(\d)\1{10}$/.test(clean)) return { valid: false, type: 'invalid' };
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i);
+    let rev = 11 - (sum % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(clean[9])) return { valid: false, type: 'invalid' };
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i);
+    rev = 11 - (sum % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(clean[10])) return { valid: false, type: 'invalid' };
+    return { valid: true, type: 'CPF' };
+  }
+  if (clean.length === 14) {
+    // CNPJ validation
+    if (/^(\d)\1{13}$/.test(clean)) return { valid: false, type: 'invalid' };
+    const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += parseInt(clean[i]) * weights1[i];
+    let rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (rev !== parseInt(clean[12])) return { valid: false, type: 'invalid' };
+    sum = 0;
+    for (let i = 0; i < 13; i++) sum += parseInt(clean[i]) * weights2[i];
+    rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (rev !== parseInt(clean[13])) return { valid: false, type: 'invalid' };
+    return { valid: true, type: 'CNPJ' };
+  }
+  return { valid: false, type: 'invalid' };
+}
+
+// Format CPF/CNPJ
+function formatCpfCnpj(value: string): string {
+  const clean = value.replace(/\D/g, '');
+  if (clean.length <= 11) {
+    return clean.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  return clean.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+}
+
+// Format phone
+function formatPhone(value: string): string {
+  const clean = value.replace(/\D/g, '');
+  if (clean.length <= 10) {
+    return clean.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
+  }
+  return clean.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+}
+
+// Property types that have condominiums
+const CONDOMINIO_TYPES = ['APARTAMENTO', 'COBERTURA', 'LOFT'];
+
+// ==================== AUTOCOMPLETE INPUT ====================
+function AutocompleteInput({ label, value, onChange, suggestions, placeholder, required, storageKey }: {
+  label: string; value: string; onChange: (v: string) => void; suggestions: string[];
+  placeholder?: string; required?: boolean; storageKey?: string;
+}) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [saved, setSaved] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (storageKey) {
+      try { const s = localStorage.getItem(storageKey); if (s) setSaved(JSON.parse(s)); } catch {}
+    }
+  }, [storageKey]);
+
+  const allSuggestions = [...new Set([...saved, ...suggestions])].filter(s =>
+    s.toLowerCase().includes(value.toLowerCase()) && s.toLowerCase() !== value.toLowerCase()
+  ).slice(0, 8);
+
+  const handleSelect = (v: string) => {
+    onChange(v);
+    setShowSuggestions(false);
+    if (storageKey && !saved.includes(v)) {
+      const updated = [...saved, v];
+      setSaved(updated);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
+  };
+
+  return (
+    <div className="space-y-1.5 relative">
+      <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{label} {required && <span className="text-red-400">*</span>}</Label>
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setShowSuggestions(true); }}
+        onFocus={() => value.length > 0 && setShowSuggestions(true)}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        placeholder={placeholder}
+        className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+      />
+      {showSuggestions && allSuggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto">
+          {allSuggestions.map((s, i) => (
+            <button key={i} onMouseDown={() => handleSelect(s)}
+              className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-indigo-500/10 hover:text-white transition-colors flex items-center gap-2">
+              <span className="text-slate-600">📝</span> {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== CPF/CNPJ INPUT ====================
+function CpfCnpjInput({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const validation = value ? validateCpfCnpj(value) : null;
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{label}</Label>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(formatCpfCnpj(e.target.value))}
+          placeholder={placeholder || '000.000.000-00 ou 00.000.000/0000-00'}
+          maxLength={18}
+          className={cn(
+            "w-full h-10 px-3 rounded-xl border bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 transition-all",
+            validation?.valid ? 'border-emerald-500/30 focus:ring-emerald-500/30' :
+            validation && !validation.valid ? 'border-red-500/30 focus:ring-red-500/30' :
+            'border-white/5 focus:ring-indigo-500/30'
+          )}
+        />
+        {validation && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {validation.valid ? (
+              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{validation.type}</span>
+            ) : (
+              <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">Inválido</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================== PHONE INPUT ====================
+function PhoneInput({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{label}</Label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(formatPhone(e.target.value))}
+        placeholder="(11) 99999-9999"
+        maxLength={15}
+        className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+      />
+    </div>
+  );
+}
+
+// ==================== PROPERTY STEP ====================
+function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: PropertyInfo; setPropertyInfo: (v: PropertyInfo) => void }) {
+  const [cepLoading, setCepLoading] = useState(false);
+
+  const handleCepChange = async (cep: string) => {
+    setPropertyInfo({ ...propertyInfo, cep });
+    const clean = cep.replace(/\D/g, '');
+    if (clean.length === 8) {
+      setCepLoading(true);
+      const result = await lookupCep(clean);
+      if (result) {
+        setPropertyInfo({
+          ...propertyInfo,
+          cep,
+          endereco: result.endereco,
+          bairro: result.bairro,
+          cidade: result.cidade,
+          estado: result.estado,
+        });
+        toast.success('Endereço preenchido automaticamente!');
+      }
+      setCepLoading(false);
+    }
+  };
+
+  const showCondominio = CONDOMINIO_TYPES.includes(propertyInfo.tipoImovel);
+  const showConjApto = CONDOMINIO_TYPES.includes(propertyInfo.tipoImovel);
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-xl font-bold text-white mb-1">Dados do Imóvel</h2><p className="text-sm text-slate-500">Informações básicas do imóvel</p></div>
+
+      {/* Property Type - First Question */}
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+        <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-3 block">O que é o imóvel? *</Label>
+        <CreatableSelect options={TIPO_IMOVEL_OPTIONS} value={propertyInfo.tipoImovel} onChange={v => setPropertyInfo({ ...propertyInfo, tipoImovel: v })} storageKey="vistoria_tipo_imovel" />
+      </div>
+
+      {/* CEP with Auto-fill */}
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+        <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-3 block">CEP do Imóvel</Label>
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Input
+              placeholder="00000-000"
+              value={propertyInfo.cep}
+              onChange={e => handleCepChange(e.target.value)}
+              maxLength={9}
+              className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm"
+            />
+            {cepLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 className="w-4 h-4 text-indigo-400 animate-spin" /></div>}
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-600 mt-1.5">Digite o CEP para preencher endereço, bairro, cidade e estado automaticamente</p>
+      </div>
+
+      {/* Address Fields */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <AutocompleteInput label="Endereço" value={propertyInfo.endereco} onChange={v => setPropertyInfo({ ...propertyInfo, endereco: v })}
+          suggestions={['Avenida', 'Rua', 'Alameda', 'Travessa', 'Praça']} placeholder="Rua/Avenida..." />
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Número</Label>
+          <Input placeholder="1410" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.numero} onChange={e => setPropertyInfo({ ...propertyInfo, numero: e.target.value })} />
+        </div>
+        {showConjApto && (
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Conjunto / Apto</Label>
+            <Input placeholder="conj. 103 / APTO 182" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.conjApto} onChange={e => setPropertyInfo({ ...propertyInfo, conjApto: e.target.value })} />
+          </div>
+        )}
+        <AutocompleteInput label="Bairro" value={propertyInfo.bairro} onChange={v => setPropertyInfo({ ...propertyInfo, bairro: v })}
+          suggestions={['Vila Suzana', 'Vila Mariana', 'Moema', 'Pinheiros', 'Itaim Bibi', 'Jardins', 'Brooklin', 'Morumbi', 'Vila Olímpia', 'Campo Belo']} placeholder="Bairro" />
+        <AutocompleteInput label="Cidade" value={propertyInfo.cidade} onChange={v => setPropertyInfo({ ...propertyInfo, cidade: v })}
+          suggestions={['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre', 'Florianópolis', 'Brasília', 'Goiânia', 'Campinas', 'Guarulhos']} placeholder="Cidade" />
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Estado</Label>
+          <Input placeholder="SP" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm w-20" value={propertyInfo.estado} onChange={e => setPropertyInfo({ ...propertyInfo, estado: e.target.value.toUpperCase().slice(0, 2) })} />
+        </div>
+      </div>
+
+      {/* Condominio - Only for apt/cobertura */}
+      {showCondominio && (
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Nome do Condomínio *</Label>
+          <AutocompleteInput label="" value={propertyInfo.condominio} onChange={v => setPropertyInfo({ ...propertyInfo, condominio: v })}
+            suggestions={['EDIFÍCIO', 'CONDOMÍNIO', 'TORRE', 'BLOCO']} placeholder="EDIFÍCIO COLUMBUS TOWER" storageKey="vistoria_condominios" />
+        </div>
+      )}
+
+      {/* Other Fields */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Finalidade</Label><CreatableSelect options={FINALIDADE_OPTIONS} value={propertyInfo.finalidade} onChange={v => setPropertyInfo({ ...propertyInfo, finalidade: v })} storageKey="vistoria_finalidade" /></div>
+        <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Mobiliado</Label><CreatableSelect options={MOBILIADO_OPTIONS} value={propertyInfo.mobiliado} onChange={v => setPropertyInfo({ ...propertyInfo, mobiliado: v })} storageKey="vistoria_mobiliado" /></div>
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Metragem</Label>
+          <Input placeholder="87m²" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.metragem} onChange={e => setPropertyInfo({ ...propertyInfo, metragem: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Data da Vistoria</Label>
+          <Input className="rounded-xl bg-white/5 border-white/5 text-white text-sm" value={propertyInfo.dataLaudo} onChange={e => setPropertyInfo({ ...propertyInfo, dataLaudo: e.target.value })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== TYPES ====================
 interface PhotoAnnotation { x: number; y: number; label: string; }
 interface PhotoData { dataUrl: string; name: string; annotations: PhotoAnnotation[]; }
@@ -125,7 +412,9 @@ interface PropertyInfo {
   condominio: string; endereco: string; numero: string; conjApto: string; cep: string;
   bairro: string; cidade: string; estado: string; tipoImovel: string; finalidade: string;
   metragem: string; mobiliado: string; locadora: string; locadoraCpf: string;
-  locatario: string; locatarioCpf: string; vistoriadora: string; dataFotografia: string;
+  locadoraTelefone: string;
+  locatario: string; locatarioCpf: string; locatarioTelefone: string;
+  vistoriadora: string; dataFotografia: string;
   dataLaudo: string; solicitante: string; consideracoes: string; totalComodos: number;
 }
 interface SavedLaudo {
@@ -141,9 +430,10 @@ interface VistoriaSettings {
 
 const defaultPropertyInfo: PropertyInfo = {
   condominio: '', endereco: '', numero: '', conjApto: '', cep: '', bairro: '',
-  cidade: 'São Paulo', estado: 'SP', tipoImovel: 'APARTAMENTO', finalidade: 'RESIDENCIAL',
-  metragem: '', mobiliado: 'NÃO', locadora: '', locadoraCpf: '', locatario: '',
-  locatarioCpf: '', vistoriadora: '', dataFotografia: new Date().toLocaleDateString('pt-BR'),
+  cidade: '', estado: '', tipoImovel: '', finalidade: 'RESIDENCIAL',
+  metragem: '', mobiliado: 'NÃO', locadora: '', locadoraCpf: '', locadoraTelefone: '',
+  locatario: '', locatarioCpf: '', locatarioTelefone: '',
+  vistoriadora: '', dataFotografia: new Date().toLocaleDateString('pt-BR'),
   dataLaudo: new Date().toLocaleDateString('pt-BR'), solicitante: '', consideracoes: '', totalComodos: 0,
 };
 
@@ -1139,53 +1429,45 @@ export default function AdminVistoriaPage() {
 
               {/* STEP 0: Property */}
               {wizardStep === 0 && (
-                <div className="space-y-6">
-                  <div><h2 className="text-xl font-bold text-white mb-1">Dados do Imóvel</h2><p className="text-sm text-slate-500">Informações básicas do imóvel</p></div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { label: 'Condomínio', key: 'condominio', placeholder: 'EDIFÍCIO COLUMBUS TOWER', required: true },
-                      { label: 'Endereço', key: 'endereco', placeholder: 'Avenida...' },
-                      { label: 'Número', key: 'numero', placeholder: '1410' },
-                      { label: 'Conjunto/Apto', key: 'conjApto', placeholder: 'conj. 103' },
-                      { label: 'CEP', key: 'cep', placeholder: '05640-003' },
-                      { label: 'Bairro', key: 'bairro', placeholder: 'Vila Suzana' },
-                      { label: 'Cidade', key: 'cidade' },
-                      { label: 'Estado', key: 'estado', short: true },
-                      { label: 'Metragem', key: 'metragem', placeholder: '87m²' },
-                    ].map(f => (
-                      <div key={f.key} className={cn("space-y-1.5", f.short && 'w-24')}>
-                        <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{f.label} {f.required && <span className="text-red-400">*</span>}</Label>
-                        <Input placeholder={f.placeholder} className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={(propertyInfo as any)[f.key]} onChange={e => setPropertyInfo({ ...propertyInfo, [f.key]: e.target.value })} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Tipo</Label><CreatableSelect options={TIPO_IMOVEL_OPTIONS} value={propertyInfo.tipoImovel} onChange={v => setPropertyInfo({ ...propertyInfo, tipoImovel: v })} storageKey="vistoria_tipo_imovel" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Finalidade</Label><CreatableSelect options={FINALIDADE_OPTIONS} value={propertyInfo.finalidade} onChange={v => setPropertyInfo({ ...propertyInfo, finalidade: v })} storageKey="vistoria_finalidade" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Mobiliado</Label><CreatableSelect options={MOBILIADO_OPTIONS} value={propertyInfo.mobiliado} onChange={v => setPropertyInfo({ ...propertyInfo, mobiliado: v })} storageKey="vistoria_mobiliado" /></div>
-                    <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Data</Label><Input className="rounded-xl bg-white/5 border-white/5 text-white text-sm" value={propertyInfo.dataLaudo} onChange={e => setPropertyInfo({ ...propertyInfo, dataLaudo: e.target.value })} /></div>
-                  </div>
-                </div>
+                <PropertyStep propertyInfo={propertyInfo} setPropertyInfo={setPropertyInfo} />
               )}
 
               {/* STEP 1: Parties */}
               {wizardStep === 1 && (
                 <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-white mb-1">Partes Envolvidas</h2><p className="text-sm text-slate-500">Dados do locador, locatário e vistoriadora</p></div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { label: 'Locadora', key: 'locadora', placeholder: 'Nome completo', required: true },
-                      { label: 'CPF Locadora', key: 'locadoraCpf', placeholder: '000.000.000-00' },
-                      { label: 'Locatário(a)', key: 'locatario', placeholder: 'Nome completo', required: true },
-                      { label: 'CPF Locatário(a)', key: 'locatarioCpf', placeholder: '000.000.000-00' },
-                      { label: 'Vistoriadora', key: 'vistoriadora', placeholder: 'Nome' },
-                      { label: 'Solicitante', key: 'solicitante', placeholder: 'ARTIMOB' },
-                    ].map(f => (
-                      <div key={f.key} className="space-y-1.5">
-                        <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{f.label} {f.required && <span className="text-red-400">*</span>}</Label>
-                        <Input placeholder={f.placeholder} className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={(propertyInfo as any)[f.key]} onChange={e => setPropertyInfo({ ...propertyInfo, [f.key]: e.target.value })} />
-                      </div>
-                    ))}
+
+                  {/* Locadora */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+                    <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Locadora (Proprietário)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <AutocompleteInput label="Nome da Locadora" value={propertyInfo.locadora} onChange={v => setPropertyInfo({ ...propertyInfo, locadora: v })}
+                        suggestions={['Pessoa Física', 'Imobiliária', 'Construtora']} placeholder="Nome completo" storageKey="vistoria_locadoras" />
+                      <CpfCnpjInput label="CPF / CNPJ" value={propertyInfo.locadoraCpf} onChange={v => setPropertyInfo({ ...propertyInfo, locadoraCpf: v })} />
+                      <PhoneInput label="Telefone" value={propertyInfo.locadoraTelefone} onChange={v => setPropertyInfo({ ...propertyInfo, locadoraTelefone: v })} />
+                    </div>
+                  </div>
+
+                  {/* Locatário */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+                    <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Locatário(a) (Inquilino)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <AutocompleteInput label="Nome do Locatário" value={propertyInfo.locatario} onChange={v => setPropertyInfo({ ...propertyInfo, locatario: v })}
+                        suggestions={[]} placeholder="Nome completo" storageKey="vistoria_locatarios" />
+                      <CpfCnpjInput label="CPF / CNPJ" value={propertyInfo.locatarioCpf} onChange={v => setPropertyInfo({ ...propertyInfo, locatarioCpf: v })} />
+                      <PhoneInput label="Telefone" value={propertyInfo.locatarioTelefone} onChange={v => setPropertyInfo({ ...propertyInfo, locatarioTelefone: v })} />
+                    </div>
+                  </div>
+
+                  {/* Vistoriadora & Solicitante */}
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+                    <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Vistoria</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <AutocompleteInput label="Vistoriadora" value={propertyInfo.vistoriadora} onChange={v => setPropertyInfo({ ...propertyInfo, vistoriadora: v })}
+                        suggestions={settings.defaultVistoriadora ? [settings.defaultVistoriadora] : []} placeholder="Nome da vistoriadora" storageKey="vistoria_vistoriadoras" />
+                      <AutocompleteInput label="Solicitante" value={propertyInfo.solicitante} onChange={v => setPropertyInfo({ ...propertyInfo, solicitante: v })}
+                        suggestions={settings.defaultSolicitante ? [settings.defaultSolicitante] : []} placeholder="Ex: ARTIMOB" storageKey="vistoria_solicitantes" />
+                    </div>
                   </div>
                 </div>
               )}
