@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
             select: { users: true, properties: true, leads: true },
           },
           subscriptions: {
-            where: { status: { in: ['ACTIVE', 'TRIALING'] } },
+            where: { status: 'ATIVO' },
             take: 1,
-            select: { monthlyPrice: true, planName: true, status: true },
+            select: { status: true, billingCycle: true },
           },
         },
       }),

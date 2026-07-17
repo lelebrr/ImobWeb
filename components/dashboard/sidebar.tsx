@@ -48,8 +48,8 @@ const menuItems = [
 ]
 
 const sidebarVariants = {
-  open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
-  closed: { x: -288, transition: { type: 'spring', stiffness: 300, damping: 30 } }
+  open: { x: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 30 } },
+  closed: { x: -288, transition: { type: 'spring' as const, stiffness: 300, damping: 30 } }
 }
 
 const overlayVariants = {
@@ -62,7 +62,7 @@ const navItemVariants = {
   visible: (i: number) => ({
     opacity: 1,
     x: 0,
-    transition: { delay: i * 0.03, type: 'spring', stiffness: 300, damping: 25 }
+    transition: { delay: i * 0.03, type: 'spring' as const, stiffness: 300, damping: 25 }
   })
 }
 

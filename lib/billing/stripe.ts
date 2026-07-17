@@ -12,7 +12,7 @@ function getStripe(): Stripe {
     if (!key) {
       throw new Error("STRIPE_SECRET_KEY environment variable is required for billing operations")
     }
-    stripeInstance = new Stripe(key, { apiVersion: "2025-06-30.basil" })
+    stripeInstance = new Stripe(key, { apiVersion: "2025-02-24.acacia" as any })
   }
   return stripeInstance
 }

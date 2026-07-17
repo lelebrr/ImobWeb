@@ -138,7 +138,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={{ type: 'spring' as const, damping: 30, stiffness: 300 }}
               className="fixed top-0 bottom-0 left-0 w-[280px] bg-[#0c0c14] z-50 flex flex-col border-r border-white/5"
             >
               <div className="p-5 flex items-center justify-between">

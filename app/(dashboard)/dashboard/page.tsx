@@ -110,13 +110,13 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: {
     opacity: 1, y: 0, scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 }
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
   }
 };
 
 const cardHoverVariants = {
   rest: { scale: 1, y: 0 },
-  hover: { scale: 1.02, y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }
+  hover: { scale: 1.02, y: -4, transition: { type: "spring" as const, stiffness: 400, damping: 25 } }
 };
 
 // Skeleton components
@@ -264,14 +264,14 @@ export default function DashboardPage() {
   };
 
   const tabs = [
-    { id: "overview", label: "Visão Geral", icon: BarChart3 },
+    { id: "overview", label: "VisÃ£o Geral", icon: BarChart3 },
     { id: "finance", label: "ImobPay", icon: DollarSign },
     { id: "contracts", label: "Contratos", icon: FileText },
     { id: "proof-of-life", label: "Garantia de Vida", icon: ShieldCheck },
     { id: "insights", label: "Insights AI", icon: Brain },
     { id: "franchise", label: "Franquias", icon: Store },
     { id: "marketplace", label: "Marketplace", icon: ShoppingBag },
-    { id: "integrations", label: "Integrações", icon: Database },
+    { id: "integrations", label: "IntegraÃ§Ãµes", icon: Database },
     { id: "monitoring", label: "Monitoramento", icon: Activity },
     { id: "alerts", label: "Alertas", icon: AlertCircle },
   ];
@@ -320,11 +320,11 @@ export default function DashboardPage() {
     const diffMs = now.getTime() - then.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 1) return 'Agora';
-    if (diffMins < 60) return `${diffMins}min atrás`;
+    if (diffMins < 60) return `${diffMins}min atrÃ¡s`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h atrás`;
+    if (diffHours < 24) return `${diffHours}h atrÃ¡s`;
     const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d atrás`;
+    return `${diffDays}d atrÃ¡s`;
   };
 
   const renderOverview = () => (
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-black tracking-tighter text-white">Modo Corretor em Campo</h3>
-                  <p className="text-blue-200 text-sm">GPS, Voz e Câmera IA ativados</p>
+                  <p className="text-blue-200 text-sm">GPS, Voz e CÃ¢mera IA ativados</p>
                 </div>
               </div>
               <ChevronRight className="w-6 h-6 text-blue-400" />
@@ -384,7 +384,7 @@ export default function DashboardPage() {
             icon={Users}
           />
           <AnimatedStatCard
-            label="Visualizações"
+            label="VisualizaÃ§Ãµes"
             value={analytics?.overview?.todayViews || 0}
             color="emerald-400"
             icon={TrendingUp}
@@ -395,7 +395,7 @@ export default function DashboardPage() {
       {/* Health Overview */}
       <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-black tracking-tighter">Status de Saúde</h2>
+          <h2 className="text-xl font-black tracking-tighter">Status de SaÃºde</h2>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
             {isRefreshing ? "Atualizando..." : "Atualizar"}
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                     <span className="font-black">{getPortalStats(portal).activeProperties}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Última Sincronização</span>
+                    <span className="text-muted-foreground">Ãšltima SincronizaÃ§Ã£o</span>
                     <span className="font-medium">
                       {portal.syncStatus?.lastSync
                         ? new Date(portal.syncStatus.lastSync).toLocaleString("pt-BR")
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status de Saúde</span>
+                    <span className="text-muted-foreground">Status de SaÃºde</span>
                     <span className="font-medium">{portal.health?.status || "N/A"}</span>
                   </div>
                 </div>
@@ -476,7 +476,7 @@ export default function DashboardPage() {
               <Flame className="w-5 h-5 text-orange-500" />
             </div>
             <h2 className="text-xl font-black tracking-tighter">
-              Imóveis Quentes <span className="text-muted-foreground font-medium text-sm ml-2">Chance {'>'} 70%</span>
+              ImÃ³veis Quentes <span className="text-muted-foreground font-medium text-sm ml-2">Chance {'>'} 70%</span>
             </h2>
           </div>
           <Link href="/properties">
@@ -532,10 +532,10 @@ export default function DashboardPage() {
         ) : (
           <div className="text-center py-12">
             <Home className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground font-medium">Nenhum imóvel ativo encontrado</p>
+            <p className="text-muted-foreground font-medium">Nenhum imÃ³vel ativo encontrado</p>
             <Link href="/properties/new">
               <Button className="mt-4" size="sm">
-                <Plus className="w-4 h-4 mr-2" /> Adicionar Imóvel
+                <Plus className="w-4 h-4 mr-2" /> Adicionar ImÃ³vel
               </Button>
             </Link>
           </div>
@@ -576,7 +576,7 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-lg">
-                              {portals.find((p) => p.id === log.portalId)?.icon || "📄"}
+                              {portals.find((p) => p.id === log.portalId)?.icon || "ðŸ“„"}
                             </span>
                             <span className="font-medium text-sm">{log.action}</span>
                             <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
@@ -624,7 +624,7 @@ export default function DashboardPage() {
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar portal ou ação..."
+            placeholder="Buscar portal ou aÃ§Ã£o..."
             className="pl-12 glass border-none h-12 sm:h-14 rounded-2xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -669,7 +669,7 @@ export default function DashboardPage() {
                 <span className="font-medium">{getPortalStats(portal).activeProperties}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Visualizações</span>
+                <span className="text-muted-foreground">VisualizaÃ§Ãµes</span>
                 <span className="font-medium">{getPortalStats(portal).totalViews}</span>
               </div>
               <div className="flex justify-between">
@@ -710,11 +710,11 @@ export default function DashboardPage() {
       className="space-y-6"
     >
       <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
-        <h2 className="text-xl font-black tracking-tighter mb-4">Métricas de Saúde</h2>
+        <h2 className="text-xl font-black tracking-tighter mb-4">MÃ©tricas de SaÃºde</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: "Uptime", value: analytics?.uptime || "99.9%", color: "emerald", icon: ActivityIcon },
-            { label: "Taxa de Sincronização", value: analytics?.syncRate || "98.2%", color: "blue", icon: TrendingUp },
+            { label: "Taxa de SincronizaÃ§Ã£o", value: analytics?.syncRate || "98.2%", color: "blue", icon: TrendingUp },
             { label: "Erros", value: analytics?.errorRate || "0.8%", color: "yellow", icon: AlertCircle },
             { label: "Cobertura", value: analytics?.coverage || "92.5%", color: "green", icon: DollarSign },
           ].map((metric, idx) => (
@@ -774,7 +774,7 @@ export default function DashboardPage() {
       className="space-y-6"
     >
       <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
-        <h2 className="text-xl font-black tracking-tighter mb-4">Alertas e Notificações</h2>
+        <h2 className="text-xl font-black tracking-tighter mb-4">Alertas e NotificaÃ§Ãµes</h2>
         <div className="space-y-3">
           {portals.some(p => p.status === "error") && (
             <motion.div
@@ -791,7 +791,7 @@ export default function DashboardPage() {
               </div>
             </motion.div>
           )}
-          {portals.some(p => p.syncStatus?.isSyncing) && (
+          {portals.some(p => (p.syncStatus as any)?.isSyncing || p.syncStatus?.status === 'syncing') && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -801,8 +801,8 @@ export default function DashboardPage() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-yellow-700">Sincronização Pendente</p>
-                  <p className="text-xs text-yellow-600 mt-1">Portais com sincronizações agendadas para o dia</p>
+                  <p className="text-sm font-medium text-yellow-700">SincronizaÃ§Ã£o Pendente</p>
+                  <p className="text-xs text-yellow-600 mt-1">Portais com sincronizaÃ§Ãµes agendadas para o dia</p>
                 </div>
               </div>
             </motion.div>
@@ -818,7 +818,7 @@ export default function DashboardPage() {
                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-green-700">Tudo Funcionando</p>
-                  <p className="text-xs text-green-600 mt-1">Todos os portais estão conectados e sincronizados</p>
+                  <p className="text-xs text-green-600 mt-1">Todos os portais estÃ£o conectados e sincronizados</p>
                 </div>
               </div>
             </motion.div>
@@ -856,7 +856,7 @@ export default function DashboardPage() {
       className="space-y-6"
     >
       <motion.div variants={itemVariants} className="flex items-center justify-between">
-        <h2 className="text-2xl font-black tracking-tight">Gestão de Contratos</h2>
+        <h2 className="text-2xl font-black tracking-tight">GestÃ£o de Contratos</h2>
         <Link href="/contracts">
           <Button className="rounded-2xl font-bold">
             <FileText className="w-4 h-4 mr-2" /> Novo Contrato
@@ -868,9 +868,9 @@ export default function DashboardPage() {
           <ContractListComponent
             contracts={contracts}
             columns={[
-              { accessorKey: "numero" as const, header: "Nº Contrato" },
+              { accessorKey: "numero" as const, header: "NÂº Contrato" },
               { accessorKey: "cliente" as const, header: "Cliente" },
-              { accessorKey: "imovel" as const, header: "Imóvel" },
+              { accessorKey: "imovel" as const, header: "ImÃ³vel" },
               { accessorKey: "valor" as const, header: "Valor" },
               { accessorKey: "status" as const, header: "Status" },
             ]}
@@ -879,7 +879,7 @@ export default function DashboardPage() {
           <div className="text-center py-16">
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-bold mb-2">Nenhum contrato encontrado</h3>
-            <p className="text-muted-foreground text-sm">Crie seu primeiro contrato para começar.</p>
+            <p className="text-muted-foreground text-sm">Crie seu primeiro contrato para comeÃ§ar.</p>
           </div>
         )}
       </motion.div>
@@ -901,7 +901,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="text-2xl font-black tracking-tighter">Garantia de Vida AI</h2>
-              <p className="text-blue-200 text-sm">Anti-fraude e Verificação de Status Ativos</p>
+              <p className="text-blue-200 text-sm">Anti-fraude e VerificaÃ§Ã£o de Status Ativos</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
@@ -937,7 +937,7 @@ export default function DashboardPage() {
 
       <motion.div variants={itemVariants} className="glass border-none rounded-3xl p-6">
         <h3 className="text-lg font-black mb-4">Monitoramento em Tempo Real</h3>
-        <p className="text-muted-foreground text-sm mb-6">Lista de imóveis em ciclo de verificação ativa via WhatsApp.</p>
+        <p className="text-muted-foreground text-sm mb-6">Lista de imÃ³veis em ciclo de verificaÃ§Ã£o ativa via WhatsApp.</p>
         <div className="space-y-3">
           {properties.slice(0, 5).map((property, idx) => (
             <motion.div
@@ -959,7 +959,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-bold text-sm tracking-tight">{property.title}</p>
                   <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
-                    Última prova: {idx === 0 ? "Agora" : `${idx * 2}h atrás`}
+                    Ãšltima prova: {idx === 0 ? "Agora" : `${idx * 2}h atrÃ¡s`}
                   </p>
                 </div>
               </div>
@@ -1004,8 +1004,8 @@ export default function DashboardPage() {
               confidence: 0.88,
               marketAverage: (properties[0]?.price?.amount || 850000) * 1.02,
               reasoning: [
-                "Alta demanda por 3 dormitórios na região",
-                "Acabamento superior à média local",
+                "Alta demanda por 3 dormitÃ³rios na regiÃ£o",
+                "Acabamento superior Ã  mÃ©dia local",
                 "Proximidade com infraestrutura de transporte"
               ],
               comparablesCount: Math.max(5, properties.length)
@@ -1013,13 +1013,13 @@ export default function DashboardPage() {
             <HealthScoreCard scoreData={{
               score: Math.min(95, 60 + properties.length * 3),
               factors: [
-                { label: "Qualidade das Fotos", impact: 15, description: "Fotos em HDR aumentam conversão" },
-                { label: "Descrição Completa", impact: 10, description: "Meta-tags otimizadas para SEO" },
-                { label: "Preço vs Mercado", impact: -5, description: "Levemente acima da média local" }
+                { label: "Qualidade das Fotos", impact: 15, description: "Fotos em HDR aumentam conversÃ£o" },
+                { label: "DescriÃ§Ã£o Completa", impact: 10, description: "Meta-tags otimizadas para SEO" },
+                { label: "PreÃ§o vs Mercado", impact: -5, description: "Levemente acima da mÃ©dia local" }
               ],
               recommendations: [
-                "Adicionar tour virtual 360°",
-                "Incluir valor do IPTU no cabeçalho"
+                "Adicionar tour virtual 360Â°",
+                "Incluir valor do IPTU no cabeÃ§alho"
               ]
             }} />
           </div>
@@ -1032,13 +1032,13 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-balance">
               {properties.length > 0
-                ? `Baseado nos dados da última semana, notei que ${properties[0]?.address?.neighborhood || 'sua região'} está com demanda ativa. Recomendo manter preços competitivos.`
-                : "Cadastre seus primeiros imóveis para receber análises inteligentes da IA."
+                ? `Baseado nos dados da Ãºltima semana, notei que ${properties[0]?.address?.neighborhood || 'sua regiÃ£o'} estÃ¡ com demanda ativa. Recomendo manter preÃ§os competitivos.`
+                : "Cadastre seus primeiros imÃ³veis para receber anÃ¡lises inteligentes da IA."
               }
             </p>
             <Link href="/properties">
               <Button className="w-full mt-4 rounded-xl text-xs font-bold" variant="outline">
-                {properties.length > 0 ? "Ver Análise Completa" : "Adicionar Imóveis"}
+                {properties.length > 0 ? "Ver AnÃ¡lise Completa" : "Adicionar ImÃ³veis"}
               </Button>
             </Link>
           </div>
@@ -1060,10 +1060,10 @@ export default function DashboardPage() {
       <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black tracking-tight">Marketplace de Oportunidades</h2>
-          <p className="text-muted-foreground text-sm">Colaboração e troca de leads entre parceiros da rede.</p>
+          <p className="text-muted-foreground text-sm">ColaboraÃ§Ã£o e troca de leads entre parceiros da rede.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="rounded-xl font-bold text-xs">Meus Anúncios</Button>
+          <Button variant="outline" className="rounded-xl font-bold text-xs">Meus AnÃºncios</Button>
           <Button className="rounded-xl font-bold text-xs text-white">Criar Oferta</Button>
         </div>
       </motion.div>
@@ -1089,7 +1089,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h1 className="text-base font-bold tracking-tight text-white">Dashboard</h1>
-                <p className="text-[10px] text-slate-500 font-medium">Gestão de Integrações</p>
+                <p className="text-[10px] text-slate-500 font-medium">GestÃ£o de IntegraÃ§Ãµes</p>
               </div>
             </Link>
 
@@ -1122,7 +1122,7 @@ export default function DashboardPage() {
                       className="absolute right-0 top-full mt-2 w-80 bg-[#12121a] rounded-2xl shadow-2xl border border-white/5 overflow-hidden z-50"
                     >
                       <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                        <h3 className="font-bold text-white text-sm">Notificações</h3>
+                        <h3 className="font-bold text-white text-sm">NotificaÃ§Ãµes</h3>
                         {notifications.length > 0 && (
                           <button onClick={(e) => { e.stopPropagation(); handleClearNotifications(); }}
                             className="text-xs font-medium text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors">
@@ -1134,7 +1134,7 @@ export default function DashboardPage() {
                         {notifications.length === 0 ? (
                           <div className="p-8 text-center text-slate-500">
                             <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">Nenhuma notificação</p>
+                            <p className="text-sm">Nenhuma notificaÃ§Ã£o</p>
                           </div>
                         ) : (
                           notifications.map((notification, idx) => (
@@ -1180,8 +1180,8 @@ export default function DashboardPage() {
                     {(user?.name || "U").charAt(0).toUpperCase()}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-white">{user?.name || "Usuário"}</p>
-                    <p className="text-[10px] text-slate-500">{organization?.name || "Organização"}</p>
+                    <p className="text-sm font-semibold text-white">{user?.name || "UsuÃ¡rio"}</p>
+                    <p className="text-[10px] text-slate-500">{organization?.name || "OrganizaÃ§Ã£o"}</p>
                   </div>
                 </button>
 
@@ -1200,15 +1200,15 @@ export default function DashboardPage() {
                             {(user?.name || "U").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-white text-sm">{user?.name || "Usuário"}</p>
-                            <p className="text-[10px] text-slate-500">{organization?.name || "Organização"}</p>
+                            <p className="font-semibold text-white text-sm">{user?.name || "UsuÃ¡rio"}</p>
+                            <p className="text-[10px] text-slate-500">{organization?.name || "OrganizaÃ§Ã£o"}</p>
                           </div>
                         </div>
                       </div>
                       <div className="py-1">
                         {[
-                          { href: "/settings/profile", icon: Settings, label: "Configurações da Conta" },
-                          { href: "/settings/organization", icon: Building2, label: "Organização" },
+                          { href: "/settings/profile", icon: Settings, label: "ConfiguraÃ§Ãµes da Conta" },
+                          { href: "/settings/organization", icon: Building2, label: "OrganizaÃ§Ã£o" },
                           { href: "/settings/billing", icon: CreditCard, label: "Faturamento" },
                         ].map((item) => (
                           <Link key={item.href} href={item.href} onClick={() => setShowUserMenu(false)}
@@ -1244,7 +1244,7 @@ export default function DashboardPage() {
         >
           <User className="w-4 h-4 text-slate-500" />
           <span className="text-sm font-medium text-slate-400">
-            {user?.name || "Usuário"} - {organization?.name}
+            {user?.name || "UsuÃ¡rio"} - {organization?.name}
           </span>
         </motion.div>
 

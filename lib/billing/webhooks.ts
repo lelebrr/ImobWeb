@@ -6,7 +6,10 @@
 
 export const handleWebhook = async (request: Request) => {
   console.log('[Webhook] Received webhook request');
-  return { success: true };
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 };
 
 export const handleStripeEvents = {

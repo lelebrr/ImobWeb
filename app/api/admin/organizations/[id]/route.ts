@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const organization = await prisma.organization.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: { users: true, properties: true, leads: true, contracts: true },
@@ -45,9 +46,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
 
     const allowedFields = [
@@ -75,7 +77,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.organization.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -91,11 +93,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const org = await prisma.organization.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { isPlatform: true },
     });
 
@@ -106,7 +109,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.organization.delete({ where: { id: params.id } });
+    await prisma.organization.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Admin organization delete error:', error);
