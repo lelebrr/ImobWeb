@@ -298,28 +298,40 @@ function PhoneInput({ label, value, onChange }: {
   );
 }
 
+// Format CEP with hyphen
+function formatCep(value: string): string {
+  const clean = value.replace(/\D/g, '');
+  if (clean.length > 5) return clean.slice(0, 5) + '-' + clean.slice(5, 8);
+  return clean;
+}
+
 // ==================== PROPERTY STEP ====================
 function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: PropertyInfo; setPropertyInfo: (v: PropertyInfo) => void }) {
   const [cepLoading, setCepLoading] = useState(false);
 
-  const handleCepChange = async (cep: string) => {
-    setPropertyInfo({ ...propertyInfo, cep });
-    const clean = cep.replace(/\D/g, '');
+  const handleCepChange = async (rawCep: string) => {
+    const formatted = formatCep(rawCep);
+    const clean = rawCep.replace(/\D/g, '');
+
     if (clean.length === 8) {
       setCepLoading(true);
       const result = await lookupCep(clean);
       if (result) {
         setPropertyInfo({
           ...propertyInfo,
-          cep,
+          cep: formatted,
           endereco: result.endereco,
           bairro: result.bairro,
           cidade: result.cidade,
           estado: result.estado,
         });
         toast.success('Endereço preenchido automaticamente!');
+      } else {
+        setPropertyInfo({ ...propertyInfo, cep: formatted });
       }
       setCepLoading(false);
+    } else {
+      setPropertyInfo({ ...propertyInfo, cep: formatted });
     }
   };
 
@@ -341,17 +353,34 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
         <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-3 block">CEP do Imóvel</Label>
         <div className="flex gap-3">
           <div className="flex-1 relative">
-            <Input
+            <input
+              type="text"
               placeholder="00000-000"
               value={propertyInfo.cep}
               onChange={e => handleCepChange(e.target.value)}
               maxLength={9}
-              className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm"
+              className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             />
-            {cepLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 className="w-4 h-4 text-indigo-400 animate-spin" /></div>}
+            {cepLoading && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                <span className="text-[10px] text-indigo-400">Buscando...</span>
+              </div>
+            )}
+            {!cepLoading && propertyInfo.endereco && propertyInfo.cep.replace(/\D/g, '').length === 8 && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              </div>
+            )}
           </div>
         </div>
-        <p className="text-[10px] text-slate-600 mt-1.5">Digite o CEP para preencher endereço, bairro, cidade e estado automaticamente</p>
+        <p className="text-[10px] text-slate-600 mt-1.5">
+          {propertyInfo.endereco ? (
+            <span className="text-emerald-400">✓ Endereço preenchido: {propertyInfo.endereco}, {propertyInfo.bairro} - {propertyInfo.cidade}/{propertyInfo.estado}</span>
+          ) : (
+            'Digite o CEP para preencher endereço, bairro, cidade e estado automaticamente'
+          )}
+        </p>
       </div>
 
       {/* Address Fields */}
@@ -393,7 +422,16 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
         <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Mobiliado</Label><CreatableSelect options={MOBILIADO_OPTIONS} value={propertyInfo.mobiliado} onChange={v => setPropertyInfo({ ...propertyInfo, mobiliado: v })} storageKey="vistoria_mobiliado" /></div>
         <div className="space-y-1.5">
           <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Metragem</Label>
-          <Input placeholder="87m²" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.metragem} onChange={e => setPropertyInfo({ ...propertyInfo, metragem: e.target.value })} />
+          <input
+            type="text"
+            placeholder="87"
+            value={propertyInfo.metragem.replace('m²', '')}
+            onChange={e => {
+              const num = e.target.value.replace(/\D/g, '');
+              setPropertyInfo({ ...propertyInfo, metragem: num ? `${num}m²` : '' });
+            }}
+            className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Data da Vistoria</Label>
@@ -499,7 +537,7 @@ function getQuestionsForType(tipo: string) {
         { key: 'cozinha', label: 'Cozinha separada?', type: 'boolean' as const, icon: '🍳', group: 'Service' },
         { key: 'areaServico', label: 'Tem área de serviço?', type: 'boolean' as const, icon: '🧺', group: 'Service' },
         { key: 'varanda', label: 'Tem varanda/sacada?', type: 'boolean' as const, icon: '🌿', group: 'Externo' },
-        { key: 'garagem', label: 'Tem garagem?', type: 'boolean' as const, icon: '🚗', group: 'Externo' },
+        { key: 'garagem', label: 'Quantas vagas de garagem?', type: 'number' as const, min: 0, max: 20, icon: '🚗', group: 'Externo' },
         { key: 'quintal', label: 'Tem quintal/jardim?', type: 'boolean' as const, icon: '🌳', group: 'Externo' },
         { key: 'churrasqueira', label: 'Tem churrasqueira?', type: 'boolean' as const, icon: '🔥', group: 'Externo' },
         { key: 'piscina', label: 'Tem piscina?', type: 'boolean' as const, icon: '🏊', group: 'Externo' },
@@ -597,7 +635,10 @@ function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, removeRoom 
       if (answers.escritório) r.push(mk('ESCRITÓRIO'));
       if (answers.varanda) r.push(mk('VARANDA'));
       if (answers.quintal) r.push(mk('QUINTAL'));
-      if (answers.garagem) r.push(mk('GARAGEM'));
+      if (answers.garagem && answers.garagem > 0) {
+        if (answers.garagem === 1) r.push(mk('GARAGEM'));
+        else r.push(mk(`GARAGEM (${answers.garagem} VAGAS)`));
+      }
       if (answers.churrasqueira) { r.push(mk('CHURRASQUEIRA')); }
       if (answers.terraço) r.push(mk('TERRAÇO'));
       if (answers.piscina) r.push(mk('PISCINA'));
@@ -925,7 +966,15 @@ export default function AdminVistoriaPage() {
   const analyzedRooms = rooms.filter(r => r.analyzed).length;
   const currentRoom = rooms[currentRoomIdx];
 
-  const canProceed = () => { switch (wizardStep) { case 0: return propertyInfo.condominio.trim() !== ''; case 1: return propertyInfo.locadora.trim() !== '' && propertyInfo.locatario.trim() !== ''; case 2: return rooms.length > 0; default: return true; } };
+  const canProceed = () => { switch (wizardStep) { case 0: return true; case 1: return true; case 2: return rooms.length > 0; default: return true; } };
+
+  const handleNext = () => {
+    // Warn if metragem is empty on step 0
+    if (wizardStep === 0 && !propertyInfo.metragem.trim()) {
+      toast.warning('Metragem não informada - o laudo será gerado sem essa informação');
+    }
+    setWizardStep(wizardStep + 1);
+  };
 
   // ==================== HOME VIEW ====================
   if (view === 'home') {
@@ -1658,7 +1707,7 @@ export default function AdminVistoriaPage() {
           <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/5">
             <Button variant="ghost" onClick={() => setWizardStep(Math.max(0, wizardStep - 1))} disabled={wizardStep === 0} className="rounded-xl text-xs text-slate-400 hover:text-white"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Anterior</Button>
             {wizardStep < WIZARD_STEPS.length - 1 && (
-              <Button onClick={() => setWizardStep(wizardStep + 1)} disabled={!canProceed()} className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20">Próximo <ArrowRight className="w-3.5 h-3.5 ml-1" /></Button>
+              <Button onClick={handleNext} disabled={!canProceed()} className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20">Próximo <ArrowRight className="w-3.5 h-3.5 ml-1" /></Button>
             )}
           </div>
         </div>
