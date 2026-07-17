@@ -911,8 +911,6 @@ export default function AdminVistoriaPage() {
                     <Input className="rounded-xl bg-white/5 border-white/5 text-white text-sm" value={(settings as any)[field.key]} onChange={e => setSettings({ ...settings, [field.key]: e.target.value })} />
                   </div>
                 ))}
-                <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Tipo do Imóvel</Label><CreatableSelect options={TIPO_IMOVEL_OPTIONS} value={settings.defaultTipoImovel} onChange={v => setSettings({ ...settings, defaultTipoImovel: v })} storageKey="vistoria_tipo_imovel" /></div>
-                <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Finalidade</Label><CreatableSelect options={FINALIDADE_OPTIONS} value={settings.defaultFinalidade} onChange={v => setSettings({ ...settings, defaultFinalidade: v })} storageKey="vistoria_finalidade" /></div>
               </div>
             </div>
 
@@ -929,10 +927,26 @@ export default function AdminVistoriaPage() {
             </div>
 
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-              <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Problemas Personalizados</h3></div>
+              <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Problemas Personalizados</h3><p className="text-[11px] text-slate-500">Adicione vários de uma vez, um por linha</p></div>
               <div className="p-5 space-y-3">
-                <Input placeholder="Ex: Portão com ruído" className="rounded-xl bg-white/5 border-white/5 text-white text-sm"
-                  onKeyDown={e => { if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) { setSettings({ ...settings, customProblems: [...settings.customProblems, (e.target as HTMLInputElement).value.trim()] }); (e.target as HTMLInputElement).value = ''; } }} />
+                <textarea
+                  placeholder={"Portão com ruído\nVazamento na torneira\nParede com mancha\nRachadura no piso\nInterruptor com defeito"}
+                  className="w-full h-32 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
+                  id="customProblemsInput"
+                />
+                <Button size="sm" onClick={() => {
+                  const textarea = document.getElementById('customProblemsInput') as HTMLTextAreaElement;
+                  if (textarea && textarea.value.trim()) {
+                    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+                    const newProblems = [...settings.customProblems];
+                    lines.forEach(line => { if (!newProblems.includes(line)) newProblems.push(line); });
+                    setSettings({ ...settings, customProblems: newProblems });
+                    textarea.value = '';
+                    toast.success(`${lines.length} problema(s) adicionado(s)`);
+                  }
+                }} className="rounded-xl text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 font-semibold">
+                  <Plus className="w-3 h-3 mr-1" /> Adicionar Todos
+                </Button>
                 {settings.customProblems.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">{settings.customProblems.map((p, i) => (
                     <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5">{p}<button onClick={() => setSettings({ ...settings, customProblems: settings.customProblems.filter((_, j) => j !== i) })} className="hover:text-red-400"><X className="w-3 h-3" /></button></span>
