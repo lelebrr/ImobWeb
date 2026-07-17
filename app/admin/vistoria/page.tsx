@@ -313,7 +313,7 @@ export default function AdminVistoriaPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [view, propertyInfo, rooms]);
 
-  const saveLaudo = (silent = false) => {
+  const saveLaudo = (silent: boolean = false) => {
     const id = editingLaudoId || Date.now().toString();
     const laudo: SavedLaudo = { id, name: propertyInfo.condominio || `Laudo ${new Date().toLocaleDateString('pt-BR')}`, condominio: propertyInfo.condominio, savedAt: new Date().toISOString(), propertyInfo: { ...propertyInfo }, rooms: rooms.map(r => ({ ...r, photos: r.photos.map(p => ({ ...p, dataUrl: '' })) })) };
     const updated = editingLaudoId ? savedLaudos.map(l => l.id === id ? laudo : l) : [...savedLaudos, laudo];
@@ -718,7 +718,7 @@ export default function AdminVistoriaPage() {
             <button onClick={() => setView('home')} className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"><ArrowLeft className="w-3 h-3" /> Voltar</button>
             <div className="flex items-center gap-3">
               <Badge className="bg-indigo-500/10 text-indigo-400 border-0 text-[9px] font-bold">Passo {wizardStep + 1}/{WIZARD_STEPS.length}</Badge>
-              <Button variant="ghost" size="sm" onClick={saveLaudo} className="rounded-xl text-xs text-slate-400 hover:text-white"><FileText className="w-3 h-3 mr-1" /> Salvar</Button>
+              <Button variant="ghost" size="sm" onClick={() => saveLaudo()} className="rounded-xl text-xs text-slate-400 hover:text-white"><FileText className="w-3 h-3 mr-1" /> Salvar</Button>
             </div>
           </div>
         </div>
