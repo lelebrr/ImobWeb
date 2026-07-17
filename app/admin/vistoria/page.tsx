@@ -330,7 +330,8 @@ function ProblemsStep({ rooms, setRooms, settings }: { rooms: RoomData[]; setRoo
   const [currentRoomIdx, setCurrentRoomIdx] = useState(0);
   const [problemInput, setProblemInput] = useState('');
   const currentRoom = rooms[currentRoomIdx];
-  const allProblems = [...COMMON_PROBLEMS, ...settings.customProblems];
+  const activeDefaultProblems = COMMON_PROBLEMS.filter(p => !(settings.deletedDefaultProblems || []).includes(p));
+  const allProblems = [...activeDefaultProblems, ...settings.customProblems];
   const roomProblems = currentRoom?.items || [];
 
   const filteredProblems = allProblems.filter(p =>
@@ -573,16 +574,19 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
         <div className="space-y-1.5"><Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Mobiliado</Label><CreatableSelect options={MOBILIADO_OPTIONS} value={propertyInfo.mobiliado} onChange={v => setPropertyInfo({ ...propertyInfo, mobiliado: v })} storageKey="vistoria_mobiliado" /></div>
         <div className="space-y-1.5">
           <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Metragem</Label>
-          <input
-            type="text"
-            placeholder="87"
-            value={propertyInfo.metragem.replace('m²', '')}
-            onChange={e => {
-              const num = e.target.value.replace(/\D/g, '');
-              setPropertyInfo({ ...propertyInfo, metragem: num ? `${num}m²` : '' });
-            }}
-            className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="87"
+              value={propertyInfo.metragem.replace('m²', '')}
+              onChange={e => {
+                const num = e.target.value.replace(/\D/g, '');
+                setPropertyInfo({ ...propertyInfo, metragem: num ? `${num}m²` : '' });
+              }}
+              className="w-full h-10 px-3 pr-8 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-semibold">m²</span>
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Data da Vistoria</Label>
@@ -618,6 +622,7 @@ interface VistoriaSettings {
   geminiApiKey: string;
   aiAnalysisEnabled: boolean;
   aiConsiderationsEnabled: boolean;
+  deletedDefaultProblems: string[];
 }
 
 const defaultPropertyInfo: PropertyInfo = {
@@ -636,6 +641,7 @@ const defaultSettings: VistoriaSettings = {
   autoAnalyze: true, customProblems: [],
   watermarkImage: '', watermarkText: 'imobWeb Vistoria', watermarkEnabled: false,
   geminiApiKey: '', aiAnalysisEnabled: true, aiConsiderationsEnabled: true,
+  deletedDefaultProblems: [],
 };
 
 const WIZARD_STEPS = [
@@ -1031,7 +1037,13 @@ export default function AdminVistoriaPage() {
   // Load from localStorage
   useEffect(() => {
     try { const s = localStorage.getItem('vistoria_saved'); if (s) setSavedLaudos(JSON.parse(s)); } catch {}
-    try { const s = localStorage.getItem('vistoria_settings'); if (s) setSettings({ ...defaultSettings, ...JSON.parse(s) }); } catch {}
+    try {
+      const s = localStorage.getItem('vistoria_settings');
+      if (s) {
+        const parsed = JSON.parse(s);
+        setSettings(prev => ({ ...prev, ...parsed }));
+      }
+    } catch {}
   }, []);
 
   // Auto-save every 30 seconds
@@ -1065,8 +1077,23 @@ export default function AdminVistoriaPage() {
   const saveSettings = () => { localStorage.setItem('vistoria_settings', JSON.stringify(settings)); toast.success('Configurações salvas!'); };
 
   const startWizard = (template?: typeof LAUDO_TEMPLATES[0]) => {
+    // Load fresh settings from localStorage
+    let freshSettings = settings;
+    try {
+      const s = localStorage.getItem('vistoria_settings');
+      if (s) freshSettings = { ...defaultSettings, ...JSON.parse(s) };
+    } catch {}
+
     const t = template || LAUDO_TEMPLATES.find(t => t.id === selectedTemplate) || LAUDO_TEMPLATES[0];
-    setPropertyInfo({ ...defaultPropertyInfo, vistoriadora: settings.defaultVistoriadora, solicitante: settings.defaultSolicitante, cidade: settings.defaultCidade, estado: settings.defaultEstado, tipoImovel: t.tipoImovel || settings.defaultTipoImovel, finalidade: t.finalidade || settings.defaultFinalidade });
+    setPropertyInfo({
+      ...defaultPropertyInfo,
+      vistoriadora: freshSettings.defaultVistoriadora || '',
+      solicitante: freshSettings.defaultSolicitante || '',
+      cidade: freshSettings.defaultCidade || '',
+      estado: freshSettings.defaultEstado || '',
+      tipoImovel: t.tipoImovel || freshSettings.defaultTipoImovel || '',
+      finalidade: t.finalidade || freshSettings.defaultFinalidade || 'RESIDENCIAL',
+    });
     setRooms(t.rooms.filter(Boolean).map((name, i) => ({ id: Date.now().toString() + i, name, photos: [], items: [], analyzing: false, analyzed: false })));
     setCurrentRoomIdx(0); setWizardStep(0); setEditingLaudoId(null); setView('wizard');
   };
@@ -1616,11 +1643,19 @@ export default function AdminVistoriaPage() {
                   </div>
                 )}
 
-                {/* Default Problems List - Read Only */}
+                {/* Default Problems List - Deletable */}
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Problemas Padrão ({COMMON_PROBLEMS.length})</p>
-                  <div className="flex flex-wrap gap-1.5">{COMMON_PROBLEMS.map((p, i) => (
-                    <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-white/5 bg-white/[0.03] text-slate-400 flex items-center gap-1.5">{p}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Problemas Padrão ({settings.deletedDefaultProblems ? COMMON_PROBLEMS.length - settings.deletedDefaultProblems.length : COMMON_PROBLEMS.length})</p>
+                    {settings.deletedDefaultProblems && settings.deletedDefaultProblems.length > 0 && (
+                      <button onClick={() => setSettings({ ...settings, deletedDefaultProblems: [] })} className="text-[9px] text-indigo-400 hover:text-indigo-300 font-semibold">Restaurar todos</button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">{COMMON_PROBLEMS.filter(p => !(settings.deletedDefaultProblems || []).includes(p)).map((p, i) => (
+                    <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-white/5 bg-white/[0.03] text-slate-400 flex items-center gap-1.5 cursor-default group">
+                      {p}
+                      <button onClick={() => setSettings({ ...settings, deletedDefaultProblems: [...(settings.deletedDefaultProblems || []), p] })} className="hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
+                    </span>
                   ))}</div>
                 </div>
               </div>
@@ -1761,7 +1796,8 @@ export default function AdminVistoriaPage() {
                   {currentRoom && (() => {
                     const roomKey = currentRoom.id;
                     const roomProblems = selectedProblems[roomKey] || [];
-                    const allProblems = [...COMMON_PROBLEMS, ...settings.customProblems];
+                    const activeDefaultProblems = COMMON_PROBLEMS.filter(p => !(settings.deletedDefaultProblems || []).includes(p));
+  const allProblems = [...activeDefaultProblems, ...settings.customProblems];
                     const toggleProblem = (problem: string) => {
                       setSelectedProblems(prev => {
                         const current = prev[roomKey] || [];
