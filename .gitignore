@@ -54,3 +54,4 @@ Thumbs.db
 
 # Scripts
 /scripts/logs/
+.env*

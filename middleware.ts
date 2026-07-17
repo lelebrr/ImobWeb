@@ -30,6 +30,15 @@ const ADMIN_ROUTES = [
   "/admin/platform",
   "/admin/billing",
   "/admin/settings",
+  "/admin/reports",
+  "/admin/marketplace",
+  "/admin/partners",
+  "/admin/integrations",
+  "/admin/security",
+  "/admin/vistoria",
+  "/admin/tenants",
+  "/admin/audit",
+  "/admin/design",
 ];
 
 // Rotas de agência/imobiliária

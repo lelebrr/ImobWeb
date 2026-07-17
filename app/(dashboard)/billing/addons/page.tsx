@@ -1,0 +1,16 @@
+'use client';
+
+import React from 'react';
+import { Package } from 'lucide-react';
+
+export default function BillingAddonsPage() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] p-6">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/10 flex items-center justify-center border border-emerald-500/10"><Package className="w-5 h-5 text-emerald-400" /></div>
+        <div><h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">Add-ons</h1><p className="text-xs text-slate-500">Gerenciar complementos do plano</p></div>
+      </div>
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-12 flex items-center justify-center"><p className="text-slate-500 text-sm">Página de add-ons em desenvolvimento</p></div>
+    </div>
+  );
+}

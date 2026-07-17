@@ -35,13 +35,35 @@ interface VistoriaData {
   vistoriadora: string;
   dataFotografia: string;
   dataLaudo: string;
+  dataContrato: string;
   solicitante: string;
+  emailContestacao: string;
   rooms: {
     name: string;
     items: string[];
     photos: PhotoData[];
   }[];
   consideracoes: string;
+}
+
+const MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+function formatDateLong(dateStr: string): string {
+  if (!dateStr) return '';
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    let day = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10);
+    let year = parseInt(parts[2], 10);
+    if (parts[2].length === 2) year += 2000;
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      return `${day} de ${MONTHS[month - 1]} de ${year}`;
+    }
+  }
+  return dateStr;
 }
 
 function buildAnnotatedPhotoHtml(photo: PhotoData, globalIdx: number): string {
@@ -118,8 +140,9 @@ function buildAnnotatedPhotoHtml(photo: PhotoData, globalIdx: number): string {
     .join('\n');
 
   return `
-    <div class="photo-container annotated">
+    <div class="photo-container${photo.annotations && photo.annotations.length > 0 ? ' annotated' : ''}">
       <img src="${photo.dataUrl}" class="photo-img" />
+      <div class="photo-label">Foto ${globalIdx}</div>
       <svg class="photo-overlay" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">
         ${markers}
       </svg>
@@ -170,7 +193,7 @@ function generateHtml(data: VistoriaData): string {
       <ul class="items">
         ${(room.items || []).map((item) => `<li>${item}</li>`).join('\n        ')}
       </ul>
-      ${photosHtml}
+      ${room.photos && room.photos.length > 0 ? `<div class="photo-section"><div class="photo-section-title">Fotos – ${room.name}</div>${photosHtml}</div>` : photosHtml}
       ${annotationsList}
     </div>`;
     })
@@ -194,6 +217,18 @@ function generateHtml(data: VistoriaData): string {
     @page {
       size: A4;
       margin: 20mm 15mm 20mm 15mm;
+      @bottom-center {
+        content: "Página " counter(page);
+        font-size: 8pt;
+        color: #94a3b8;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+    }
+    @page :first {
+      @bottom-center { content: none; }
+    }
+    @page cover-page {
+      @bottom-center { content: none; }
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -201,6 +236,7 @@ function generateHtml(data: VistoriaData): string {
       font-size: 10pt;
       line-height: 1.5;
       color: #1a1a1a;
+      counter-reset: page 1;
     }
 
     /* === COVER === */
@@ -213,24 +249,55 @@ function generateHtml(data: VistoriaData): string {
       text-align: center;
       page-break-after: always;
     }
-    .cover-title { font-size: 26pt; font-weight: 800; color: #0F172A; margin-bottom: 6px; }
-    .cover-subtitle { font-size: 14pt; color: #64748b; margin-bottom: 50px; font-weight: 500; }
-    .cover-info { font-size: 11pt; color: #334155; margin-bottom: 5px; }
+    .cover-title { font-size: 28pt; font-weight: 800; color: #0F172A; margin-bottom: 4px; letter-spacing: -0.5px; }
+    .cover-subtitle { font-size: 13pt; color: #64748b; margin-bottom: 40px; font-weight: 500; }
+    .cover-info { font-size: 11pt; color: #334155; margin-bottom: 4px; }
     .cover-info strong { color: #0F172A; }
-    .cover-line { width: 80px; height: 4px; background: linear-gradient(90deg, #0b5bd3, #667eea); border-radius: 2px; margin: 25px auto; }
-    .cover-date { font-size: 10pt; color: #64748b; margin-top: 30px; }
+    .cover-line {
+      width: 70px; height: 3px;
+      background: linear-gradient(90deg, #0b5bd3, #667eea);
+      border-radius: 2px; margin: 20px auto;
+    }
+    .cover-date { font-size: 10pt; color: #64748b; margin-top: 40px; }
+
+    /* === PAGE HEADER (page number top right) === */
+    .page-header {
+      text-align: right;
+      font-size: 8pt;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #e2e8f0;
+    }
 
     /* === INFO === */
     .info-page { page-break-after: always; }
     .info-page h2 { font-size: 14pt; color: #0F172A; border-bottom: 3px solid #0b5bd3; padding-bottom: 6px; margin-bottom: 16px; }
-    .legal-text { font-size: 9pt; color: #475569; line-height: 1.6; margin: 10px 0; text-align: justify; }
+    .legal-text { font-size: 9pt; color: #475569; line-height: 1.7; margin: 10px 0; text-align: justify; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
-    .info-item { padding: 8px 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #0b5bd3; }
-    .info-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+    .info-item {
+      padding: 7px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+      border-left: 3px solid #0b5bd3;
+    }
+    .info-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      font-weight: 700;
+    }
     .info-value { font-size: 10pt; color: #0F172A; font-weight: 600; margin-top: 1px; }
 
     .criteria-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px 16px; margin: 16px 0; }
-    .criteria-box h3 { font-size: 9pt; color: #0369a1; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .criteria-box h3 {
+      font-size: 9pt;
+      color: #0369a1;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
     .criteria-list { list-style: none; font-size: 9pt; }
     .criteria-list li { padding: 3px 0; color: #334155; }
     .criteria-list li::before { content: "•"; color: #0b5bd3; font-weight: bold; margin-right: 6px; }
@@ -240,25 +307,66 @@ function generateHtml(data: VistoriaData): string {
     .sumario-page h2 { font-size: 14pt; color: #0F172A; margin-bottom: 16px; }
     .sumario-table { width: 100%; border-collapse: collapse; }
     .sumario-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 10pt; }
+    .sumario-table td:last-child { text-align: right; color: #94a3b8; font-size: 9pt; }
+
+    /* === ROOMS HEADING === */
+    .rooms-heading {
+      font-size: 12pt;
+      color: #0F172A;
+      border-bottom: 3px solid #0b5bd3;
+      padding-bottom: 6px;
+      margin-bottom: 16px;
+    }
 
     /* === ROOMS === */
-    .room-section { margin-bottom: 24px; page-break-inside: avoid; }
-    .room-section h2 { font-size: 12pt; color: #0F172A; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
+    .room-section { margin-bottom: 28px; page-break-inside: avoid; }
+    .room-section h2 {
+      font-size: 12pt;
+      color: #0F172A;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      padding-left: 0;
+    }
     .items { list-style: none; padding: 0; margin-bottom: 14px; }
-    .items li { padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-size: 9.5pt; line-height: 1.4; color: #1e293b; }
-    .items li::before { content: "✓"; color: #10b981; font-weight: bold; margin-right: 6px; }
+    .items li {
+      padding: 4px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      color: #1e293b;
+    }
+    .items li::before {
+      content: "✓";
+      color: #10b981;
+      font-weight: bold;
+      margin-right: 6px;
+    }
 
     /* === PHOTOS === */
+    .photo-section {
+      page-break-before: auto;
+      margin: 16px 0 8px;
+    }
+    .photo-section-title {
+      font-size: 9pt;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
     .photo-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin: 12px 0;
+      gap: 10px;
       page-break-inside: auto;
     }
     .photo-container {
       position: relative;
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
       border: 1px solid #e2e8f0;
       background: #f8fafc;
@@ -271,6 +379,18 @@ function generateHtml(data: VistoriaData): string {
       width: 100%;
       height: auto;
       display: block;
+    }
+    .photo-label {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.65);
+      color: white;
+      font-size: 7pt;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 3px;
+      backdrop-filter: blur(2px);
     }
     .photo-overlay {
       position: absolute;
@@ -288,37 +408,118 @@ function generateHtml(data: VistoriaData): string {
       padding: 10px 14px;
       margin: 10px 0;
     }
-    .annotations-list h4 { font-size: 9pt; color: #991b1b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .annotations-list ol { margin-left: 16px; font-size: 9pt; color: #7f1d1d; }
+    .annotations-list h4 {
+      font-size: 9pt;
+      color: #991b1b;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .annotations-list ol { margin-left: 18px; font-size: 9pt; color: #7f1d1d; }
     .annotations-list li { margin-bottom: 3px; }
 
     .no-photos { font-size: 9pt; color: #94a3b8; font-style: italic; margin: 8px 0; }
 
     /* === CONSIDERATIONS === */
     .considerations-page { page-break-before: always; }
-    .considerations-page h2 { font-size: 14pt; color: #0F172A; border-bottom: 3px solid #0b5bd3; padding-bottom: 6px; margin-bottom: 16px; }
-    .considerations-text { font-size: 10pt; line-height: 1.7; color: #1e293b; text-align: justify; }
+    .considerations-page h2 {
+      font-size: 14pt;
+      color: #0F172A;
+      border-bottom: 3px solid #0b5bd3;
+      padding-bottom: 6px;
+      margin-bottom: 16px;
+    }
+    .considerations-text { font-size: 10pt; line-height: 1.75; color: #1e293b; text-align: justify; }
     .considerations-text p { margin-bottom: 10px; }
 
-    .dispute-section { margin-top: 24px; padding: 16px; background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; }
-    .dispute-section h3 { font-size: 11pt; color: #92400e; margin-bottom: 10px; }
-    .dispute-section ol { margin-left: 16px; font-size: 9pt; color: #78350f; }
+    .dispute-section {
+      margin-top: 24px;
+      padding: 16px;
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+    }
+    .dispute-section h3 {
+      font-size: 11pt;
+      color: #92400e;
+      margin-bottom: 10px;
+    }
+    .dispute-section ol { margin-left: 18px; font-size: 9pt; color: #78350f; }
     .dispute-section li { margin-bottom: 4px; }
 
-    /* === SIGNATURES === */
-    .signature-page { page-break-before: always; padding-top: 30px; }
-    .signature-block { margin-top: 50px; text-align: center; }
-    .signature-line { width: 280px; border-top: 1px solid #94a3b8; margin: 0 auto 6px; padding-top: 6px; }
-    .signature-name { font-size: 10pt; font-weight: 700; color: #0F172A; }
-    .signature-role { font-size: 8pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-    .signature-date { font-size: 9pt; color: #64748b; margin-top: 30px; text-align: center; }
+    .email-contestacao-box {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 9pt;
+      color: #334155;
+    }
+    .email-contestacao-box strong { color: #0F172A; }
+    .email-contestacao-box a { color: #0b5bd3; text-decoration: none; }
 
-    .footer-note { margin-top: 30px; padding: 10px; background: #f8fafc; border-radius: 6px; font-size: 8pt; color: #64748b; text-align: center; }
+    .acompanha-fotos {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 6px;
+      font-size: 9pt;
+      color: #0369a1;
+    }
+
+    /* === SIGNATURES === */
+    .signature-page { page-break-before: always; padding-top: 40px; }
+    .signature-block { margin-top: 50px; text-align: center; }
+    .signature-line {
+      width: 280px;
+      border-top: 1px solid #94a3b8;
+      margin: 0 auto 8px;
+      padding-top: 8px;
+    }
+    .signature-name { font-size: 10pt; font-weight: 700; color: #0F172A; }
+    .signature-role {
+      font-size: 8pt;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .signature-date {
+      font-size: 10pt;
+      color: #475569;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .footer-note {
+      margin-top: 40px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 7.5pt;
+      color: #94a3b8;
+      text-align: center;
+    }
 
     /* === SUMMARY BOX === */
-    .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin: 12px 0; display: flex; gap: 20px; font-size: 9pt; }
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      display: flex;
+      gap: 24px;
+      font-size: 9pt;
+    }
     .summary-box span { color: #64748b; }
     .summary-box strong { color: #0F172A; }
+
+    /* === PRINT HELPER === */
+    @media print {
+      .no-break { page-break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -340,7 +541,8 @@ function generateHtml(data: VistoriaData): string {
       O presente anexo faz parte integrante do "Contrato de Locação" do imóvel
       CONDOMÍNIO ${data.condominio} situado na ${data.endereco} nº ${data.numero}
       ${data.conjApto ? `- ${data.conjApto}` : ''} - CEP: ${data.cep} –
-      ${data.bairro} – ${data.cidade}/${data.estado}, datado de ${data.dataLaudo},
+      ${data.bairro} – ${data.cidade}/${data.estado},
+      datado de ${data.dataContrato || data.dataLaudo},
       tendo como partes:
     </p>
     <p class="legal-text">De um lado, na qualidade de LOCADORA: ${data.locadora}, inscrita no CPF nº ${data.locadoraCpf};</p>
@@ -357,14 +559,14 @@ function generateHtml(data: VistoriaData): string {
       <div class="info-item"><div class="info-label">Finalidade</div><div class="info-value">${data.finalidade}</div></div>
       <div class="info-item"><div class="info-label">Metragem</div><div class="info-value">${data.metragem}</div></div>
       <div class="info-item"><div class="info-label">Mobiliado</div><div class="info-value">${data.mobiliado}</div></div>
-      <div class="info-item"><div class="info-label">Cômodos</div><div class="info-value">${roomCount}</div></div>
+      <div class="info-item"><div class="info-label">Fotos</div><div class="info-value">${totalPhotos}</div></div>
       <div class="info-item"><div class="info-label">Solicitante</div><div class="info-value">${data.solicitante}</div></div>
     </div>
 
     <div class="summary-box">
-      <div><span>Fotos:</span> <strong>${totalPhotos}</strong></div>
-      <div><span>Anotações:</span> <strong>${totalAnnotations}</strong></div>
       <div><span>Cômodos:</span> <strong>${roomCount}</strong></div>
+      <div><span>Fotos:</span> <strong>${totalPhotos}</strong></div>
+      ${totalAnnotations > 0 ? `<div><span>Anotações:</span> <strong>${totalAnnotations}</strong></div>` : ''}
     </div>
 
     <div class="criteria-box">
@@ -389,7 +591,7 @@ function generateHtml(data: VistoriaData): string {
   </div>
 
   <!-- ROOMS -->
-  <h2 style="font-size: 12pt; color: #0F172A; border-bottom: 3px solid #0b5bd3; padding-bottom: 6px; margin-bottom: 16px;">
+  <h2 class="rooms-heading">
     INDICAÇÃO DO ESTADO DO IMÓVEL, ACESSÓRIOS, SUAS PARTES E COMPONENTES
   </h2>
   ${roomsHtml}
@@ -398,26 +600,45 @@ function generateHtml(data: VistoriaData): string {
   <div class="considerations-page">
     <h2>Considerações finais</h2>
     <div class="considerations-text">
-      <p>${data.consideracoes || 'Conforme laudo, o imóvel encontra-se em bom estado de conservação. O estado do imóvel foi relatado acima de forma textual. Foram testadas torneiras, vasos sanitários, interruptores e constatado que a parte hidráulica e elétrica está em funcionamento.'}</p>
+      <p>${data.consideracoes || 'No laudo relatado acima, o imóvel encontra-se em bom estado de conservação. O estado do imóvel foi relatado acima de forma textual. Foram testadas torneiras, vasos sanitários, interruptores e constatado que a parte hidráulica e elétrica está em funcionamento.'}</p>
       <p>O LOCATÁRIO(A) se responsabiliza pela conservação do imóvel, comprometendo-se a restituí-lo à LOCADORA nas condições recebidas e declaradas acima, exceto pelo desgaste natural.</p>
       <p>Em caso de modificações ou benfeitorias feitas pelo LOCATÁRIO(A) no imóvel durante o período de locação, deve ser informado e autorizado pela LOCADORA.</p>
       <p>As fotos poderão ser utilizadas como forma de comprovação do real estado do imóvel se caso o laudo escrito não o relate.</p>
       <p>LOCATÁRIO(A) e LOCADORA terão até 10 (dez) dias a contar da data de recebimento da mesma para contestar algum item da vistoria para uma possível verificação, alteração ou reparo, caso haja.</p>
     </div>
 
+    <div class="acompanha-fotos">
+      A vistoria está acompanhada de um arquivo de fotos que será enviado às partes
+      via e-mail ou WhatsApp.
+    </div>
+
     <div class="dispute-section">
       <h3>CONTESTAÇÃO</h3>
       <ol>
-        <li>Verifique o prazo de contestação da vistoria. Serão aceitas contestações apenas dentro do prazo previsto (10 dias corridos);</li>
+        <li>Verifique o prazo de contestação da vistoria. Serão aceitas contestações apenas dentro do prazo previsto (10 dias corridos) a partir da data de entrada;</li>
         <li>Verifique no registro textual e no zip de fotos deste relatório se as divergências já estão identificadas;</li>
         <li>Caso não estejam, formalize sua contestação via e-mail, apresentando a descrição dos problemas e as fotos para comprovar cada divergência.</li>
       </ol>
     </div>
+
+    ${data.emailContestacao ? `
+    <div class="email-contestacao-box">
+      <strong>Caso haja alguma divergência no relatório</strong>, para contestação,
+      favor enviar para o e-mail <a href="mailto:${data.emailContestacao}">${data.emailContestacao}</a>
+      para as devidas alterações.
+    </div>` : ''}
   </div>
 
   <!-- SIGNATURES -->
   <div class="signature-page">
-    <p class="signature-date">São Paulo, ${data.dataLaudo}</p>
+    <p class="signature-date">São Paulo, ${formatDateLong(data.dataLaudo)}</p>
+
+    <p style="font-size: 9pt; color: #475569; text-align: justify; line-height: 1.6; margin-bottom: 20px;">
+      E, assim, por estarem justos e contratados, LOCADORA e LOCATÁRIO(A) declaram terem
+      vistoriado o imóvel, firmando o presente instrumento, acompanhado de fotografias,
+      fazendo-o juntamente, para todos os fins e efeitos de direito.
+    </p>
+
     <div class="signature-block">
       <div class="signature-line"></div>
       <div class="signature-name">${data.locadora}</div>
@@ -428,7 +649,7 @@ function generateHtml(data: VistoriaData): string {
       <div class="signature-name">${data.locatario}</div>
       <div class="signature-role">LOCATÁRIO(A)</div>
     </div>
-    <div class="footer-note">Laudo de vistoria gerado automaticamente · imobWeb · ${data.dataLaudo}</div>
+    <div class="footer-note">Laudo de vistoria gerado automaticamente · imobWeb · ${formatDateLong(data.dataLaudo)}</div>
   </div>
 
 </body>
