@@ -325,6 +325,124 @@ function formatCep(value: string): string {
   return clean;
 }
 
+// ==================== PROBLEMS STEP ====================
+function ProblemsStep({ rooms, setRooms, settings }: { rooms: RoomData[]; setRooms: React.Dispatch<React.SetStateAction<RoomData[]>>; settings: VistoriaSettings }) {
+  const [currentRoomIdx, setCurrentRoomIdx] = useState(0);
+  const [problemInput, setProblemInput] = useState('');
+  const currentRoom = rooms[currentRoomIdx];
+  const allProblems = [...COMMON_PROBLEMS, ...settings.customProblems];
+  const roomProblems = currentRoom?.items || [];
+
+  const filteredProblems = allProblems.filter(p =>
+    p.toLowerCase().includes(problemInput.toLowerCase()) && !roomProblems.includes(p)
+  ).slice(0, 15);
+
+  const addProblem = (problem: string) => {
+    if (!roomProblems.includes(problem)) {
+      setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: [...r.items, problem] } : r));
+    }
+    setProblemInput('');
+  };
+
+  const removeProblem = (idx: number) => {
+    setRooms(rooms.map((r, i) => i === currentRoomIdx ? { ...r, items: r.items.filter((_, j) => j !== idx) } : r));
+  };
+
+  const roomsWithProblems = rooms.filter(r => r.items.length > 0).length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-5 h-5 text-amber-400" /><h2 className="text-xl font-bold text-white">Problemas por Cômodo</h2></div>
+        <p className="text-sm text-slate-500">Selecione os problemas encontrados em cada cômodo</p>
+      </div>
+
+      {/* Progress */}
+      <div className="flex items-center justify-between text-[10px] text-slate-500">
+        <span>{roomsWithProblems}/{rooms.length} cômodo(s) com problemas</span>
+        <span>{currentRoomIdx + 1}/{rooms.length}</span>
+      </div>
+
+      {/* Room Tabs */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+        {rooms.map((room, idx) => (
+          <button key={room.id} onClick={() => { setCurrentRoomIdx(idx); setProblemInput(''); }}
+            className={cn("flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all shrink-0",
+              idx === currentRoomIdx ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : room.items.length > 0 ? 'text-emerald-400 border border-emerald-500/20' : 'text-slate-500 border border-white/5 hover:bg-white/5')}>
+            {room.items.length > 0 && <CheckCircle2 className="w-3 h-3" />}
+            {room.name || `C${idx + 1}`}
+            {room.items.length > 0 && <span className="text-[9px] bg-emerald-500/20 px-1 rounded">{room.items.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Current Room Problems */}
+      {currentRoom && (
+        <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+          <h3 className="text-sm font-bold text-white">{currentRoom.name || `Cômodo ${currentRoomIdx + 1}`}</h3>
+
+          {/* Input */}
+          <div className="relative">
+            <Input placeholder="Digite ou selecione um problema..."
+              value={problemInput}
+              onChange={e => setProblemInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && problemInput.trim()) { addProblem(problemInput.trim()); } }}
+              className="rounded-xl bg-white/5 border-white/5 text-white text-sm placeholder:text-slate-600 pr-10" />
+            {problemInput && (
+              <button onClick={() => { if (problemInput.trim()) addProblem(problemInput.trim()); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Quick Suggestions */}
+          {problemInput && filteredProblems.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {filteredProblems.map((p, i) => (
+                <button key={i} onClick={() => addProblem(p)}
+                  className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+                  + {p}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Selected Problems */}
+          {roomProblems.length > 0 && (
+            <div>
+              <p className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold mb-2">Problemas encontrados ({roomProblems.length})</p>
+              <div className="flex flex-wrap gap-1.5">
+                {roomProblems.map((p, i) => (
+                  <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 flex items-center gap-1.5">
+                    {p}
+                    <button onClick={() => removeProblem(i)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Add Common Problems */}
+          {roomProblems.length === 0 && !problemInput && (
+            <div>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Problemas Comuns</p>
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_PROBLEMS.slice(0, 12).map((p, i) => (
+                  <button key={i} onClick={() => addProblem(p)}
+                    className="text-[10px] px-2 py-1 rounded-lg border border-white/5 bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-colors">
+                    + {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ==================== PROPERTY STEP ====================
 function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: PropertyInfo; setPropertyInfo: (v: PropertyInfo) => void }) {
   const [cepLoading, setCepLoading] = useState(false);
@@ -356,7 +474,8 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
   };
 
   const showCondominio = CONDOMINIO_TYPES.includes(propertyInfo.tipoImovel);
-  const showConjApto = CONDOMINIO_TYPES.includes(propertyInfo.tipoImovel);
+  const showAptoFields = CONDOMINIO_TYPES.includes(propertyInfo.tipoImovel);
+  const showAndar = ['APARTAMENTO', 'COBERTURA', 'LOFT', 'SALA'].includes(propertyInfo.tipoImovel);
 
   return (
     <div className="space-y-6">
@@ -411,11 +530,23 @@ function PropertyStep({ propertyInfo, setPropertyInfo }: { propertyInfo: Propert
           <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Número</Label>
           <Input placeholder="1410" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.numero} onChange={e => setPropertyInfo({ ...propertyInfo, numero: e.target.value })} />
         </div>
-        {showConjApto && (
+        {showAndar && (
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Conjunto / Apto</Label>
-            <Input placeholder="conj. 103 / APTO 182" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.conjApto} onChange={e => setPropertyInfo({ ...propertyInfo, conjApto: e.target.value })} />
+            <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Andar</Label>
+            <Input placeholder="Ex: 10º andar" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.andar} onChange={e => setPropertyInfo({ ...propertyInfo, andar: e.target.value })} />
           </div>
+        )}
+        {showAptoFields && (
+          <>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Conjunto</Label>
+              <Input placeholder="Ex: conj. 103" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.conjApto} onChange={e => setPropertyInfo({ ...propertyInfo, conjApto: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Apartamento</Label>
+              <Input placeholder="Ex: APTO 182" className="rounded-xl bg-white/5 border-white/5 text-white placeholder:text-slate-600 text-sm" value={propertyInfo.apto} onChange={e => setPropertyInfo({ ...propertyInfo, apto: e.target.value })} />
+            </div>
+          </>
         )}
         <AutocompleteInput label="Bairro" value={propertyInfo.bairro} onChange={v => setPropertyInfo({ ...propertyInfo, bairro: v })}
           suggestions={['Vila Suzana', 'Vila Mariana', 'Moema', 'Pinheiros', 'Itaim Bibi', 'Jardins', 'Brooklin', 'Morumbi', 'Vila Olímpia', 'Campo Belo']} placeholder="Bairro" />
@@ -467,10 +598,10 @@ interface PhotoAnnotation { x: number; y: number; label: string; }
 interface PhotoData { dataUrl: string; name: string; annotations: PhotoAnnotation[]; }
 interface RoomData { id: string; name: string; photos: PhotoData[]; items: string[]; analyzing: boolean; analyzed: boolean; }
 interface PropertyInfo {
-  condominio: string; endereco: string; numero: string; conjApto: string; cep: string;
+  condominio: string; endereco: string; numero: string; conjApto: string; apto: string; cep: string;
   bairro: string; cidade: string; estado: string; tipoImovel: string; finalidade: string;
-  metragem: string; mobiliado: string; locadora: string; locadoraCpf: string;
-  locadoraTelefone: string;
+  metragem: string; mobiliado: string; andar: string;
+  locadora: string; locadoraCpf: string; locadoraTelefone: string;
   locatario: string; locatarioCpf: string; locatarioTelefone: string;
   vistoriadora: string; dataFotografia: string;
   dataLaudo: string; solicitante: string; consideracoes: string; totalComodos: number;
@@ -490,9 +621,10 @@ interface VistoriaSettings {
 }
 
 const defaultPropertyInfo: PropertyInfo = {
-  condominio: '', endereco: '', numero: '', conjApto: '', cep: '', bairro: '',
+  condominio: '', endereco: '', numero: '', conjApto: '', apto: '', cep: '', bairro: '',
   cidade: '', estado: '', tipoImovel: '', finalidade: 'RESIDENCIAL',
-  metragem: '', mobiliado: 'NÃO', locadora: '', locadoraCpf: '', locadoraTelefone: '',
+  metragem: '', mobiliado: 'NÃO', andar: '',
+  locadora: '', locadoraCpf: '', locadoraTelefone: '',
   locatario: '', locatarioCpf: '', locatarioTelefone: '',
   vistoriadora: '', dataFotografia: new Date().toLocaleDateString('pt-BR'),
   dataLaudo: new Date().toLocaleDateString('pt-BR'), solicitante: '', consideracoes: '', totalComodos: 0,
@@ -510,6 +642,7 @@ const WIZARD_STEPS = [
   { id: 'property', title: 'Dados do Imóvel', icon: Building2 },
   { id: 'parties', title: 'Partes', icon: Edit3 },
   { id: 'rooms', title: 'Cômodos', icon: ClipboardCheck },
+  { id: 'problems', title: 'Problemas', icon: AlertTriangle },
   { id: 'photos', title: 'Fotos', icon: Camera },
   { id: 'review', title: 'Finalizar', icon: FileText },
 ];
@@ -990,7 +1123,7 @@ export default function AdminVistoriaPage() {
   const analyzedRooms = rooms.filter(r => r.analyzed).length;
   const currentRoom = rooms[currentRoomIdx];
 
-  const canProceed = () => { switch (wizardStep) { case 0: return true; case 1: return true; case 2: return rooms.length > 0; default: return true; } };
+  const canProceed = () => { switch (wizardStep) { case 0: return true; case 1: return true; case 2: return rooms.length > 0; case 3: return true; case 4: return true; default: return true; } };
 
   const handleNext = () => {
     // Warn if metragem is empty on step 0
@@ -1401,7 +1534,7 @@ export default function AdminVistoriaPage() {
                   <Zap className="w-4 h-4 text-indigo-400" />
                   <h3 className="text-sm font-bold text-white">Google Gemini AI</h3>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1">Configuração da inteligência artificial (versões gratuitas)</p>
+                <p className="text-[11px] text-slate-500 mt-1">Configuração da inteligência artificial</p>
               </div>
               <div className="p-5 space-y-4">
                 <div className="space-y-1.5">
@@ -1413,7 +1546,7 @@ export default function AdminVistoriaPage() {
                     onChange={e => setSettings({ ...settings, geminiApiKey: e.target.value })}
                     className="w-full h-10 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
-                  <p className="text-[10px] text-slate-600">Versão gratuita: gemini-2.0-flash (15 RPM, 1M tokens/dia)</p>
+                  <p className="text-[10px] text-slate-600">gemini-2.0-flash (15 RPM, 1M tokens/dia)</p>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -1450,12 +1583,13 @@ export default function AdminVistoriaPage() {
               </div>
             </div>
 
+            {/* Problems Management */}
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-              <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Problemas Personalizados</h3><p className="text-[11px] text-slate-500">Adicione vários de uma vez, um por linha</p></div>
-              <div className="p-5 space-y-3">
+              <div className="p-5 border-b border-white/5"><h3 className="text-sm font-bold text-white">Gerenciar Problemas</h3><p className="text-[11px] text-slate-500">Problemas disponíveis para seleção nos cômodos</p></div>
+              <div className="p-5 space-y-4">
                 <textarea
-                  placeholder={"Portão com ruído\nVazamento na torneira\nParede com mancha\nRachadura no piso\nInterruptor com defeito"}
-                  className="w-full h-32 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
+                  placeholder={"Adicione novos problemas, um por linha:\nPortão com ruído\nVazamento na torneira\nParede com mancha"}
+                  className="w-full h-24 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
                   id="customProblemsInput"
                 />
                 <Button size="sm" onClick={() => {
@@ -1471,11 +1605,24 @@ export default function AdminVistoriaPage() {
                 }} className="rounded-xl text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 font-semibold">
                   <Plus className="w-3 h-3 mr-1" /> Adicionar Todos
                 </Button>
+
+                {/* Custom Problems List */}
                 {settings.customProblems.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">{settings.customProblems.map((p, i) => (
-                    <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5">{p}<button onClick={() => setSettings({ ...settings, customProblems: settings.customProblems.filter((_, j) => j !== i) })} className="hover:text-red-400"><X className="w-3 h-3" /></button></span>
-                  ))}</div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2">Problemas Personalizados ({settings.customProblems.length})</p>
+                    <div className="flex flex-wrap gap-1.5">{settings.customProblems.map((p, i) => (
+                      <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5 cursor-default">{p}<button onClick={() => setSettings({ ...settings, customProblems: settings.customProblems.filter((_, j) => j !== i) })} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button></span>
+                    ))}</div>
+                  </div>
                 )}
+
+                {/* Default Problems List - Read Only */}
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-2">Problemas Padrão ({COMMON_PROBLEMS.length})</p>
+                  <div className="flex flex-wrap gap-1.5">{COMMON_PROBLEMS.map((p, i) => (
+                    <span key={i} className="text-[10px] px-2.5 py-1.5 rounded-lg border border-white/5 bg-white/[0.03] text-slate-400 flex items-center gap-1.5">{p}</span>
+                  ))}</div>
+                </div>
               </div>
             </div>
 
@@ -1583,8 +1730,13 @@ export default function AdminVistoriaPage() {
                 />
               )}
 
-              {/* STEP 3: Photos */}
+              {/* STEP 3: Problems per Room */}
               {wizardStep === 3 && (
+                <ProblemsStep rooms={rooms} setRooms={setRooms} settings={settings} />
+              )}
+
+              {/* STEP 4: Photos */}
+              {wizardStep === 4 && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold text-white mb-1">Fotos e Anotações</h2><p className="text-sm text-slate-500">{totalPhotos} fotos · {totalAnnotations} anotações · {analyzedRooms}/{rooms.length} analisados</p></div>
                     <Button size="sm" onClick={analyzeAllRooms} disabled={batchAnalyzing || rooms.every(r => r.analyzed || r.photos.length === 0)} className="rounded-xl text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
@@ -1702,8 +1854,8 @@ export default function AdminVistoriaPage() {
                 </div>
               )}
 
-              {/* STEP 4: Review */}
-              {wizardStep === 4 && (
+              {/* STEP 5: Review */}
+              {wizardStep === 5 && (
                 <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-white mb-1">Revisão e Observações</h2><p className="text-sm text-slate-500">Revise, adicione observações e gere o laudo</p></div>
 
