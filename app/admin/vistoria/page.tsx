@@ -1221,16 +1221,44 @@ export default function AdminVistoriaPage() {
   const [selectedProblems, setSelectedProblems] = useState<Record<string, string[]>>({});
   const [searchEdit, setSearchEdit] = useState('');
 
-  // Load from localStorage
+  // Load from localStorage + fetch examples from API
   useEffect(() => {
-    try { const s = localStorage.getItem('vistoria_saved'); if (s) setSavedLaudos(JSON.parse(s)); } catch {}
-    try {
-      const s = localStorage.getItem('vistoria_settings');
-      if (s) {
-        const parsed = JSON.parse(s);
-        setSettings(prev => ({ ...prev, ...parsed }));
+    const loadData = async () => {
+      // Load saved laudos from localStorage
+      let saved: any[] = [];
+      try {
+        const s = localStorage.getItem('vistoria_saved');
+        if (s) saved = JSON.parse(s);
+      } catch {}
+
+      // Fetch example laudos from API
+      try {
+        const res = await fetch('/api/admin/vistoria/examples');
+        const data = await res.json();
+        if (data.success && data.examples) {
+          data.examples.forEach((ex: any) => {
+            if (!saved.some((l: any) => l.id === ex.data.id)) {
+              saved.push(ex.data);
+            }
+          });
+          localStorage.setItem('vistoria_saved', JSON.stringify(saved));
+        }
+      } catch (err) {
+        console.error('Error fetching examples:', err);
       }
-    } catch {}
+
+      setSavedLaudos(saved);
+
+      // Load settings
+      try {
+        const s = localStorage.getItem('vistoria_settings');
+        if (s) {
+          const parsed = JSON.parse(s);
+          setSettings(prev => ({ ...prev, ...parsed }));
+        }
+      } catch {}
+    };
+    loadData();
   }, []);
 
   // Auto-save every 30 seconds
