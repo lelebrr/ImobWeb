@@ -1424,7 +1424,11 @@ export default function AdminVistoriaPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 { label: 'Laudos Criados', value: totalLaudos, icon: FileText, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-                { label: 'Último Laudo', value: savedLaudos.length > 0 ? new Date(savedLaudos[savedLaudos.length - 1].savedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—', icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                { label: 'Último Laudo', value: (() => {
+                  if (savedLaudos.length === 0) return '—';
+                  const last = savedLaudos[savedLaudos.length - 1];
+                  try { const d = new Date(last.savedAt); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); } catch { return '—'; }
+                })(), icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10' },
                 { label: 'Análise IA', value: settings.aiAnalysisEnabled ? 'Ativa' : 'Desligada', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10' },
               ].map((stat, idx) => (
                 <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="rounded-2xl bg-white/[0.03] border border-white/5 p-4">
