@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireUser } from '@/lib/vistoria/api-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,6 +8,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ cep: string }> }
 ) {
+  const guard = await requireUser();
+  if ('response' in guard) return guard.response;
   try {
     const { cep } = await params;
     const clean = cep.replace(/\D/g, '');
@@ -15,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'CEP inválido' }, { status: 400 });
     }
 
-    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`, { signal: AbortSignal.timeout(6000), next: { revalidate: 86400 } });
     const data = await res.json();
 
     if (data.erro) {

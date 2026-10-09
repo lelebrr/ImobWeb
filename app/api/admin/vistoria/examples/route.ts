@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireUser } from '@/lib/vistoria/api-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -338,6 +339,8 @@ function generateExample2() {
 }
 
 export async function GET() {
+  const guard = await requireUser();
+  if ('response' in guard) return guard.response;
   try {
     return NextResponse.json({
       success: true,

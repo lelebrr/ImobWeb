@@ -131,7 +131,7 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value:
-              "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+              "camera=(self), microphone=(self), geolocation=(self), fullscreen=(self), payment=(), usb=()",
           },
 
           // Content Security Policy

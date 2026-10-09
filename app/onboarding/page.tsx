@@ -35,6 +35,20 @@ export default function OnboardingPage() {
     setLoading(false);
   }, []);
 
+  // Check if onboarding is already completed (in a real app, this would come from an API)
+  // For this example, we'll check localStorage as a simple persistence mechanism
+  useEffect(() => {
+    if (!user) return;
+    const onboardingCompleted = localStorage.getItem(
+      `onboardingCompleted_${user?.id}`,
+    );
+    if (onboardingCompleted === "true") {
+      // Redirect to dashboard if onboarding is already completed
+      // FIX: Redirect to /dashboard instead of /(dashboard)
+      router.push("/dashboard");
+    }
+  }, [user, router]);
+
   // If user data is not available, show loading state
   if (loading || !user) {
     return (
@@ -53,19 +67,6 @@ export default function OnboardingPage() {
       </div>
     );
   }
-
-  // Check if onboarding is already completed (in a real app, this would come from an API)
-  // For this example, we'll check localStorage as a simple persistence mechanism
-  useEffect(() => {
-    const onboardingCompleted = localStorage.getItem(
-      `onboardingCompleted_${user.id}`,
-    );
-    if (onboardingCompleted === "true") {
-      // Redirect to dashboard if onboarding is already completed
-      // FIX: Redirect to /dashboard instead of /(dashboard)
-      router.push("/dashboard");
-    }
-  }, [user.id, router]);
 
   return (
     <div className="min-h-screen bg-background">

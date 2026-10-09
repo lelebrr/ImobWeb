@@ -41,7 +41,7 @@ export default function ExemplosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-dvh bg-[#0a0a0f]">
       <div className="border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center gap-4">

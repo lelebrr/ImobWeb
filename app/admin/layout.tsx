@@ -25,7 +25,9 @@ import { useResponsive } from '@/hooks/use-responsive';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
-  const isAdmin = useHasRole(UserRole.PLATFORM_MASTER) || useHasRole(UserRole.ADMIN);
+  const isPlatformMaster = useHasRole(UserRole.PLATFORM_MASTER);
+  const isAdminRole = useHasRole(UserRole.ADMIN);
+  const isAdmin = isPlatformMaster || isAdminRole;
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const [isCollapsed, setIsCollapsed] = useState(false);

@@ -118,9 +118,11 @@ export const resetOnboardingProgress = async (
   }
 };
 
-export default {
+const onboardingService = {
   getOnboardingProgress,
   saveOnboardingProgress,
   completeOnboardingItem,
   resetOnboardingProgress,
 };
+
+export default onboardingService;
