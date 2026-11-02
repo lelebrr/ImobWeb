@@ -2,6 +2,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { verifyToken } from "@/lib/auth/jwt";
 
 /**
  * ============================================
@@ -147,51 +148,53 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes("placeholder")) {
-    return response;
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
-      },
-      set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name: string, options: CookieOptions) {
-        request.cookies.set({ name, value: "", ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({ name, value: "", ...options });
-      },
-    },
-  });
-
-  const isProtected = PROTECTED_ROUTES.some((route) =>
+    const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route),
   );
 
   let user: any = null;
-  try {
-    const result = await supabase.auth.getUser();
-    user = result.data?.user;
-  } catch (err) {
-    console.error("[Middleware] Erro ao verificar autenticação:", err);
-    // On error, let the request through for public routes
-    if (isProtected) {
-      return NextResponse.redirect(new URL("/login", request.url));
+
+  // 1. Verificar cookie JWT nativo
+  const nativeToken = request.cookies.get("imobweb_token")?.value;
+  if (nativeToken) {
+    try {
+      const payload = await verifyToken(nativeToken);
+      if (payload) {
+        user = {
+          id: payload.id,
+          email: payload.email,
+          user_metadata: {
+            role: payload.role,
+            organizationId: payload.organizationId,
+            name: payload.name,
+          },
+        };
+      }
+    } catch {
+      // Token inválido
     }
-    return response;
+  }
+
+  // 2. Fallback Supabase
+  if (!user && supabaseUrl && supabaseKey && !supabaseUrl.includes("placeholder")) {
+    try {
+      const supabase = createServerClient(supabaseUrl, supabaseKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet: any[]) {
+            cookiesToSet.forEach(({ name, value }: any) =>
+              request.cookies.set(name, value)
+            );
+          },
+        },
+      });
+      const result = await supabase.auth.getUser();
+      user = result.data?.user;
+    } catch (err) {
+      console.error("[Middleware] Erro auth Supabase:", err);
+    }
   }
 
   if (isProtected && !user) {

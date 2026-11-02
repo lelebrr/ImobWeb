@@ -10,8 +10,15 @@
  * ============================================
  */
 
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cloudflare Workers external packages
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
+
   // ============================================
   // IA 1 - CORE CONFIG
   // ============================================
@@ -340,6 +347,12 @@ const nextConfig = {
   // ============================================
   async rewrites() {
     return [
+      // Rewrite for public API (migrated from vercel.json)
+      {
+        source: "/api/public/:path*",
+        destination: "/api/public/v1/:path*",
+      },
+
       // Rewrite for API proxy (if needed)
       {
         source: "/proxy/:path*",

@@ -3,7 +3,6 @@ import React from "react";
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { RootProvider } from "@/providers/root-provider";
-import { Analytics } from "@vercel/analytics/react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -88,7 +87,6 @@ export default function RootLayout({
             {children}
           </main>
         </RootProvider>
-        <Analytics />
       </body>
     </html>
   );

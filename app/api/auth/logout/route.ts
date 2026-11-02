@@ -1,31 +1,35 @@
-import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function POST() {
   const cookieStore = await cookies();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
+  // 1. Limpar cookie nativo
+  cookieStore.delete("imobweb_token");
 
-  const { error } = await supabase.auth.signOut();
+  // 2. Limpar Supabase se configurado
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (supabaseUrl && supabaseKey && !supabaseUrl.includes("placeholder")) {
+    try {
+      const { createServerClient } = await import("@supabase/ssr");
+      const supabase = createServerClient(supabaseUrl, supabaseKey, {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          },
+        },
+      });
+      await supabase.auth.signOut();
+    } catch {
+      // Ignora erro
+    }
   }
 
   return NextResponse.json({ success: true });

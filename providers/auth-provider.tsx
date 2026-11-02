@@ -67,7 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * Inicializar sessão e monitorar mudanças
      */
     useEffect(() => {
-        let mounted = true
+        let mounted = true;
+        refreshSession();
 
         // O listener onAuthStateChange é disparado imediatamente com o estado atual
         const {

@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "imobweb",
+  "compatibility_date": "2024-12-30",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "imobweb"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "imobweb-db",
+      "database_id": "b9b5c429-6d96-4d3c-a930-79e8b24f9864"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "imobweb-opennext-cache"
+    },
+    {
+      "binding": "STORAGE",
+      "bucket_name": "imobweb-storage"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "triggers": {
+    "crons": ["0 9 * * *"]
+  }
+}
