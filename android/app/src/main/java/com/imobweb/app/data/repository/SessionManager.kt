@@ -37,7 +37,18 @@ class SessionManager(private val context: Context) {
     suspend fun getToken(): String? = context.dataStore.data.first()[TOKEN_KEY]
 
     suspend fun getBaseUrl(): String {
-        return context.dataStore.data.first()[BASE_URL_KEY] ?: "https://imobweb.com.br"
+        return context.dataStore.data.first()[BASE_URL_KEY] ?: "https://imobweb.lelebrr.workers.dev"
+    }
+
+    suspend fun setBaseUrl(url: String) {
+        val cleanUrl = url.trim().removeSuffix("/")
+        context.dataStore.edit {
+            if (cleanUrl.isNotBlank()) {
+                it[BASE_URL_KEY] = cleanUrl
+            } else {
+                it.remove(BASE_URL_KEY)
+            }
+        }
     }
 
     suspend fun clearSession() {

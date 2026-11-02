@@ -30,32 +30,35 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var showSplash by remember { mutableStateOf(true) }
+                    var isCheckingSession by remember { mutableStateOf(true) }
                     var startDestination by remember { mutableStateOf(Routes.LOGIN) }
 
-                    if (showSplash) {
+                    LaunchedEffect(Unit) {
+                        val isLoggedIn = app.sessionManager.isLoggedIn()
+                        startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
+                        isCheckingSession = false
+
+                        // Schedule periodic sync
+                        SyncWorker.schedule(this@MainActivity)
+
+                        // Trigger immediate sync if online
+                        if (isLoggedIn) {
+                            // Pull server data first, then push pending
+                            app.repository.pullVistoriasFromServer()
+                            SyncWorker.syncNow(this@MainActivity)
+                        }
+                    }
+
+                    var splashFinished by remember { mutableStateOf(false) }
+
+                    if (!splashFinished || isCheckingSession) {
                         SplashScreen(
                             onFinished = {
-                                showSplash = false
+                                splashFinished = true
                             }
                         )
                     } else {
                         val navController = rememberNavController()
-
-                        LaunchedEffect(Unit) {
-                            val isLoggedIn = app.sessionManager.isLoggedIn()
-                            startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
-
-                            // Schedule periodic sync
-                            SyncWorker.schedule(this@MainActivity)
-
-                            // Trigger immediate sync if online
-                            if (isLoggedIn) {
-                                // Pull server data first, then push pending
-                                app.repository.pullVistoriasFromServer()
-                                SyncWorker.syncNow(this@MainActivity)
-                            }
-                        }
 
                         AppNavGraph(
                             navController = navController,

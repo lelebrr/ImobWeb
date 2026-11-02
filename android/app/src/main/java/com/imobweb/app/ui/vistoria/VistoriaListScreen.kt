@@ -13,8 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.model.Vistoria
+import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.ReportPdfExporter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,8 +29,11 @@ fun VistoriaListScreen(
     onViewVistoria: (Long) -> Unit
 ) {
     val vistorias by repository.getAllVistorias().collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
     var filterStatus by remember { mutableStateOf("all") }
     var searchQuery by remember { mutableStateOf("") }
+    var reportVistoria by remember { mutableStateOf<Vistoria?>(null) }
+    var vistoriaToDelete by remember { mutableStateOf<Vistoria?>(null) }
 
     val filteredVistorias = remember(vistorias, filterStatus, searchQuery) {
         vistorias.filter { v ->
@@ -124,12 +131,58 @@ fun VistoriaListScreen(
                         VistoriaListItem(
                             vistoria = vistoria,
                             onView = { onViewVistoria(vistoria.id) },
-                            onEdit = { onEditVistoria(vistoria.id) }
+                            onEdit = { onEditVistoria(vistoria.id) },
+                            onReport = { reportVistoria = vistoria },
+                            onDelete = { vistoriaToDelete = vistoria }
                         )
                     }
                 }
             }
         }
+    }
+
+    // Diálogo de confirmação de exclusão
+    if (vistoriaToDelete != null) {
+        val target = vistoriaToDelete!!
+        AlertDialog(
+            onDismissRequest = { vistoriaToDelete = null },
+            icon = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Excluir Vistoria") },
+            text = {
+                Text("Deseja realmente excluir a vistoria de \"${target.condominio.ifBlank { target.endereco.ifBlank { "Vistoria" } }}\"? Esta ação não pode ser desfeita.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val toDel = vistoriaToDelete
+                        vistoriaToDelete = null
+                        if (toDel != null) {
+                            scope.launch {
+                                repository.deleteVistoria(toDel)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Excluir", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vistoriaToDelete = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    val report = reportVistoria
+    if (report != null) {
+        PdfPreviewScreen(
+            htmlContent = remember(report.id) { LaudoHtmlBuilder.build(report) },
+            title = "Laudo - ${report.condominio.ifBlank { "Vistoria" }}",
+            fileName = remember(report.id) { ReportPdfExporter.fileNameFor(report) },
+            onClose = { reportVistoria = null }
+        )
     }
 }
 
@@ -137,7 +190,9 @@ fun VistoriaListScreen(
 private fun VistoriaListItem(
     vistoria: Vistoria,
     onView: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onReport: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onView),
@@ -182,9 +237,17 @@ private fun VistoriaListItem(
                     StatusBadge(vistoria.status)
                 }
             }
+            IconButton(onClick = onReport) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = "Gerar laudo em PDF",
+                    tint = MaterialTheme.colorScheme.secondary)
+            }
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar",
                     tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.DeleteOutline, contentDescription = "Excluir",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
             }
         }
     }

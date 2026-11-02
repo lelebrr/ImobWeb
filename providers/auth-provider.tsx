@@ -47,17 +47,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const refreshSession = async () => {
         try {
-            const { data: { session }, error } = await supabase.auth.getSession()
-            if (error) throw error
-
-            setSession(session)
-            setUser(session?.user ?? null)
-
-            if (session?.user.user_metadata) {
-                setOrganizationId(session.user.user_metadata.organizationId || null)
+            // 1. Tentar obter a sessão atual através do endpoint nativo /api/auth/me
+            const response = await fetch('/api/auth/me', {
+                credentials: 'include',
+                headers: { 'Cache-Control': 'no-cache' },
+            })
+            if (response.ok) {
+                const data = await response.json()
+                if (data.user) {
+                    setUser(data.user)
+                    setSession({ user: data.user })
+                    setOrganizationId(data.organizationId || data.user.user_metadata?.organizationId || null)
+                    return
+                }
             }
+
+            // 2. Fallback para Supabase se houver URL válida
+            const isSupabaseConfigured =
+                process.env.NEXT_PUBLIC_SUPABASE_URL &&
+                !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+
+            if (isSupabaseConfigured) {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                if (!error && session?.user) {
+                    setSession(session)
+                    setUser(session.user)
+                    if (session.user.user_metadata) {
+                        setOrganizationId(session.user.user_metadata.organizationId || null)
+                    }
+                    return
+                }
+            }
+
+            setUser(null)
+            setSession(null)
+            setOrganizationId(null)
         } catch (error) {
             console.error('Erro ao atualizar sessão:', error)
+            setUser(null)
+            setSession(null)
+            setOrganizationId(null)
         } finally {
             setLoading(false)
         }
@@ -67,45 +96,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * Inicializar sessão e monitorar mudanças
      */
     useEffect(() => {
-        let mounted = true;
-        refreshSession();
+        let mounted = true
+        refreshSession()
 
-        // O listener onAuthStateChange é disparado imediatamente com o estado atual
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (!mounted) return
+        const isSupabaseConfigured =
+            process.env.NEXT_PUBLIC_SUPABASE_URL &&
+            !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
 
-            console.log(`[Auth] Evento: ${_event}`)
-            setSession(session)
-            setUser(session?.user ?? null)
-            setLoading(false)
+        if (isSupabaseConfigured) {
+            const {
+                data: { subscription },
+            } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+                if (!mounted) return
+                if (session?.user) {
+                    setSession(session)
+                    setUser(session.user)
+                    if (session.user.user_metadata) {
+                        setOrganizationId(session.user.user_metadata.organizationId || null)
+                    }
+                }
+            })
 
-            if (session?.user.user_metadata) {
-                setOrganizationId(session.user.user_metadata.organizationId || null)
+            return () => {
+                mounted = false
+                subscription.unsubscribe()
             }
-        })
-
-        return () => {
-            mounted = false
-            subscription.unsubscribe()
         }
     }, [supabase])
 
     /**
      * Determinar papel do usuário
      */
-    const role = (user?.user_metadata?.role as UserRole) || null
+    const role = (user?.user_metadata?.role as UserRole) || (user?.role as UserRole) || null
 
     /**
      * Fazer login
      */
     const signIn = async ({ email, password }: any) => {
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
         })
-        if (error) throw error
+        if (!response.ok) {
+            const err = await response.json()
+            throw new Error(err.error || 'Falha no login')
+        }
+        await refreshSession()
     }
 
     /**
@@ -113,15 +150,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const signOut = async () => {
         try {
-            await supabase.auth.signOut()
+            await fetch('/api/auth/logout', { method: 'POST' })
+            const isSupabaseConfigured =
+                process.env.NEXT_PUBLIC_SUPABASE_URL &&
+                !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+            if (isSupabaseConfigured) {
+                await supabase.auth.signOut()
+            }
         } catch (error) {
-            console.error('Erro na chamada de signOut do Supabase:', error)
+            console.error('Erro na chamada de signOut:', error)
         } finally {
-            // Garantir que o estado local seja limpo independentemente do sucesso da API
             setUser(null)
             setSession(null)
             setOrganizationId(null)
             setLoading(false)
+            window.location.href = '/login'
         }
     }
 
@@ -186,7 +229,7 @@ export function useHasRole(requiredRole: UserRole): boolean {
         [UserRole.ASSISTENTE]: 10, // Legado
     }
 
-    return roleHierarchy[role] >= roleHierarchy[requiredRole]
+    return (roleHierarchy[role] ?? 0) >= (roleHierarchy[requiredRole] ?? 0)
 }
 
 /**

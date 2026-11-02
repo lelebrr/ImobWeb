@@ -1,13 +1,5 @@
 package com.imobweb.app.ui.vistoria
 
-import android.content.ContentValues
-import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.pdf.PdfDocument
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -21,27 +13,52 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import kotlinx.coroutines.Dispatchers
+import com.imobweb.app.util.ReportPdfExporter
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfPreviewScreen(
     htmlContent: String,
     title: String = "Laudo de Vistoria",
-    onClose: () -> Unit,
-    onShare: ((String) -> Unit)? = null
+    fileName: String = "Laudo_Vistoria.pdf",
+    onClose: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var isSaving by remember { mutableStateOf(false) }
+    var isBusy by remember { mutableStateOf(false) }
+    var busyLabel by remember { mutableStateOf("Gerando PDF...") }
     var webView by remember { mutableStateOf<WebView?>(null) }
+
+    fun runExport(share: Boolean) {
+        if (isBusy) return
+        scope.launch {
+            isBusy = true
+            busyLabel = if (share) "Preparando compartilhamento..." else "Gerando PDF..."
+            runCatching {
+                val pdf = ReportPdfExporter.exportHtml(context, htmlContent, fileName)
+                if (share) {
+                    ReportPdfExporter.sharePdf(context, pdf, title)
+                    null
+                } else {
+                    ReportPdfExporter.saveToDownloads(context, pdf, fileName)
+                }
+            }.onSuccess { path ->
+                if (!share) {
+                    Toast.makeText(
+                        context,
+                        if (path != null) "PDF salvo em $path" else "Não foi possível salvar o PDF",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }.onFailure { error ->
+                Toast.makeText(context, "Erro: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+            isBusy = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -58,26 +75,25 @@ fun PdfPreviewScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { runExport(share = false) }) {
+                        Icon(Icons.Default.Download, contentDescription = "Salvar PDF")
+                    }
+                    IconButton(onClick = { runExport(share = true) }) {
+                        Icon(Icons.Default.Share, contentDescription = "Compartilhar PDF")
+                    }
                     IconButton(onClick = {
-                        webView?.let { wv ->
-                            wv.evaluateJavascript(
-                                "(function() { window.android.savePDF(document.documentElement.outerHTML); })()",
-                                null
+                        val printManager = context.getSystemService(android.content.Context.PRINT_SERVICE) as? android.print.PrintManager
+                        val printAdapter = webView?.createPrintDocumentAdapter(fileName)
+                        if (printManager != null && printAdapter != null) {
+                            printManager.print(
+                                fileName.removeSuffix(".pdf"),
+                                printAdapter,
+                                android.print.PrintAttributes.Builder()
+                                    .setMediaSize(android.print.PrintAttributes.MediaSize.ISO_A4)
+                                    .build()
                             )
-                        }
-                    }) {
-                        Icon(Icons.Default.Download, contentDescription = "Salvar")
-                    }
-                    IconButton(onClick = {
-                        scope.launch {
-                            sharePdf(context, htmlContent, title)
-                        }
-                    }) {
-                        Icon(Icons.Default.Share, contentDescription = "Compartilhar")
-                    }
-                    IconButton(onClick = {
-                        webView?.let {
-                            it.evaluateJavascript("window.print()", null)
+                        } else {
+                            runExport(share = false)
                         }
                     }) {
                         Icon(Icons.Default.Print, contentDescription = "Imprimir")
@@ -107,19 +123,10 @@ fun PdfPreviewScreen(
                             loadWithOverviewMode = true
                             useWideViewPort = true
                             defaultTextEncodingName = "UTF-8"
-                            // Custom handler for Android JavaScript interface
-                            addJavascriptInterface(object {
-                                @android.webkit.JavascriptInterface
-                                fun savePDF(html: String) {
-                                    scope.launch {
-                                        savePdfToDevice(context, htmlContent, title)
-                                    }
-                                }
-                            }, "android")
                         }
                         loadDataWithBaseURL(
                             "file:///android_asset/",
-                            wrapHtmlForMobile(htmlContent),
+                            previewHtml(htmlContent),
                             "text/html",
                             "UTF-8",
                             null
@@ -130,7 +137,7 @@ fun PdfPreviewScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            if (isSaving) {
+            if (isBusy) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -142,7 +149,7 @@ fun PdfPreviewScreen(
                         ) {
                             CircularProgressIndicator()
                             Spacer(Modifier.height(12.dp))
-                            Text("Salvando PDF...")
+                            Text(busyLabel)
                         }
                     }
                 }
@@ -151,7 +158,25 @@ fun PdfPreviewScreen(
     }
 }
 
-private fun wrapHtmlForMobile(html: String): String {
+private fun previewHtml(html: String): String {
+    if (html.contains("<html", ignoreCase = true)) {
+        return html.replace(
+            "</head>",
+            """
+            <style>
+                body { width: auto !important; padding: 8px !important; font-size: 11px; }
+                .photo-grid { grid-template-columns: 1fr !important; }
+                .cover { min-height: auto !important; }
+                .cover-kicker { margin-top: 24px !important; }
+                .cover-title { font-size: 40px !important; }
+                .sig-grid { grid-template-columns: 1fr !important; }
+                .page-break { page-break-before: auto !important; }
+            </style>
+            </head>
+            """.trimIndent(),
+            ignoreCase = true
+        )
+    }
     return """
     <!DOCTYPE html>
     <html>
@@ -161,94 +186,14 @@ private fun wrapHtmlForMobile(html: String): String {
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 12px;
-                line-height: 1.5;
-                color: #1a1a1a;
-                padding: 12px;
-                background: white;
+                font-size: 12px; line-height: 1.5; color: #1a1a1a;
+                padding: 12px; background: white;
             }
-            .cover-page { display: block !important; height: auto !important; padding: 20px 0; }
             .photo-grid { grid-template-columns: 1fr !important; }
-            .photo-container { margin-bottom: 8px; }
-            .photo-img { width: 100%; height: auto; }
-            .photo-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
             .info-grid { grid-template-columns: 1fr !important; }
-            .signature-page { padding-top: 10px; }
-            .room-section { margin-bottom: 16px; }
-            @media (min-width: 600px) {
-                .photo-grid { grid-template-columns: repeat(2, 1fr) !important; }
-                .info-grid { grid-template-columns: 1fr 1fr !important; }
-            }
         </style>
     </head>
     <body>$html</body>
     </html>
     """.trimIndent()
-}
-
-private suspend fun savePdfToDevice(context: Context, html: String, title: String) {
-    withContext(Dispatchers.IO) {
-        try {
-            val filename = "Laudo_Vistoria_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale("pt", "BR")).format(Date())}.html"
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, filename)
-                    put(MediaStore.Downloads.MIME_TYPE, "text/html")
-                    put(MediaStore.Downloads.IS_PENDING, 1)
-                }
-                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                uri?.let {
-                    context.contentResolver.openOutputStream(it)?.use { out ->
-                        out.write(wrapHtmlForMobile(html).toByteArray(Charsets.UTF_8))
-                    }
-                    values.clear()
-                    values.put(MediaStore.Downloads.IS_PENDING, 0)
-                    context.contentResolver.update(it, values, null, null)
-                }
-            } else {
-                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                val file = File(dir, filename)
-                FileOutputStream(file).use { it.write(wrapHtmlForMobile(html).toByteArray(Charsets.UTF_8)) }
-            }
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Laudo salvo em Downloads/$filename", Toast.LENGTH_LONG).show()
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Erro ao salvar: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-}
-
-private suspend fun sharePdf(context: Context, html: String, title: String) {
-    withContext(Dispatchers.IO) {
-        try {
-            val cacheDir = File(context.cacheDir, "share")
-            cacheDir.mkdirs()
-            val file = File(cacheDir, "laudo_vistoria.html")
-            FileOutputStream(file).use { it.write(wrapHtmlForMobile(html).toByteArray(Charsets.UTF_8)) }
-
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/html"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, title)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            withContext(Dispatchers.Main) {
-                context.startActivity(Intent.createChooser(intent, "Compartilhar Laudo"))
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Erro ao compartilhar: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 }

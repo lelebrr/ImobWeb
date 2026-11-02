@@ -27,7 +27,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, loading, signOut } = useAuth();
   const isPlatformMaster = useHasRole(UserRole.PLATFORM_MASTER);
   const isAdminRole = useHasRole(UserRole.ADMIN);
-  const isAdmin = isPlatformMaster || isAdminRole;
+  const userRole = (user?.user_metadata?.role || user?.role) as string | undefined;
+  const isAdmin =
+    isPlatformMaster ||
+    isAdminRole ||
+    userRole === 'PLATFORM_MASTER' ||
+    userRole === 'SUPER_ADMIN' ||
+    userRole === 'ADMIN';
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const [isCollapsed, setIsCollapsed] = useState(false);

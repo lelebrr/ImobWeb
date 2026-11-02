@@ -1,7 +1,5 @@
 package com.imobweb.app.ui.vistoria
 
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,11 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.model.Vistoria
+import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.ReportPdfExporter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,9 +27,11 @@ fun VistoriaDetailScreen(
 ) {
     var vistoria by remember { mutableStateOf<Vistoria?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    var generatingPdf by remember { mutableStateOf(false) }
+    var showPdfViewer by remember { mutableStateOf(false) }
+    var pdfContent by remember { mutableStateOf("") }
+    var pdfFileName by remember { mutableStateOf("Laudo_Vistoria.pdf") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     LaunchedEffect(vistoriaId) {
         vistoria = repository.getVistoriaById(vistoriaId)
@@ -49,6 +50,13 @@ fun VistoriaDetailScreen(
                 actions = {
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar")
+                    }
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(
+                            Icons.Default.DeleteOutline,
+                            contentDescription = "Excluir",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -73,40 +81,16 @@ fun VistoriaDetailScreen(
                         }
                         Button(
                             onClick = {
-                                scope.launch {
-                                    generatingPdf = true
-                                    val result = repository.generatePdf(vistoria!!)
-                                    result.fold(
-                                        onSuccess = { html ->
-                                            // Share HTML or open in browser
-                                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                                type = "text/html"
-                                                putExtra(Intent.EXTRA_TEXT, html)
-                                                putExtra(Intent.EXTRA_SUBJECT,
-                                                    "Laudo de Vistoria - ${vistoria!!.condominio}")
-                                            }
-                                            context.startActivity(
-                                                Intent.createChooser(intent, "Compartilhar Laudo")
-                                            )
-                                            generatingPdf = false
-                                        },
-                                        onFailure = { e ->
-                                            Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
-                                            generatingPdf = false
-                                        }
-                                    )
-                                }
+                                val v = vistoria ?: return@Button
+                                pdfContent = LaudoHtmlBuilder.build(v)
+                                pdfFileName = ReportPdfExporter.fileNameFor(v)
+                                showPdfViewer = true
                             },
-                            enabled = !generatingPdf,
                             modifier = Modifier.weight(1f)
                         ) {
-                            if (generatingPdf) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Gerar PDF")
-                            }
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Gerar Laudo")
                         }
                     }
                 }
@@ -254,6 +238,46 @@ fun VistoriaDetailScreen(
                 Spacer(Modifier.height(16.dp))
             }
         }
+    }
+
+    if (showDeleteConfirm && vistoria != null) {
+        val target = vistoria!!
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            icon = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Excluir Vistoria") },
+            text = {
+                Text("Deseja realmente excluir a vistoria de \"${target.condominio.ifBlank { target.endereco.ifBlank { "Vistoria" } }}\"? Esta ação não pode ser desfeita.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        scope.launch {
+                            repository.deleteVistoria(target)
+                            onBack()
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Excluir", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (showPdfViewer) {
+        PdfPreviewScreen(
+            htmlContent = pdfContent,
+            title = "Laudo - ${vistoria?.condominio.orEmpty().ifBlank { "Vistoria" }}",
+            fileName = pdfFileName,
+            onClose = { showPdfViewer = false }
+        )
     }
 }
 

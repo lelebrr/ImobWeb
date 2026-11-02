@@ -5,6 +5,7 @@ import com.imobweb.app.data.api.ApiService
 import com.imobweb.app.data.local.AppDatabase
 import com.imobweb.app.model.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class VistoriaRepository(
     private val database: AppDatabase,
@@ -14,6 +15,10 @@ class VistoriaRepository(
     private val gson = Gson()
 
     fun getAllVistorias(): Flow<List<Vistoria>> = dao.getAllVistorias()
+
+    suspend fun getBaseUrl(): String = sessionManager.getBaseUrl()
+
+    suspend fun setBaseUrl(url: String) = sessionManager.setBaseUrl(url)
 
     fun getVistoriasByStatus(status: String): Flow<List<Vistoria>> = dao.getVistoriasByStatus(status)
 
@@ -263,5 +268,4 @@ private fun Vistoria.toSyncData(): SyncVistoriaData {
         },
         status = status, createdAt = createdAt, updatedAt = updatedAt
     )
-}
 }

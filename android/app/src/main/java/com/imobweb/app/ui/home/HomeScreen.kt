@@ -198,7 +198,7 @@ fun HomeScreen(
                     Icons.Default.Assessment, MaterialTheme.colorScheme.primary,
                     Modifier.weight(1f))
                 StatCard("Cômodos", "$totalRooms", "registrados",
-                    Icons.Default.Meal, MaterialTheme.colorScheme.secondary,
+                    Icons.Default.MeetingRoom, MaterialTheme.colorScheme.secondary,
                     Modifier.weight(1f))
                 StatCard("Fotos", "$totalPhotos", "tiradas",
                     Icons.Default.CameraAlt, MaterialTheme.colorScheme.tertiary,
@@ -248,7 +248,53 @@ fun HomeScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Recent inspections
+            // Relatórios / laudos
+            Card(
+                onClick = onViewVistorias,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    ) {
+                        Icon(
+                            Icons.Default.PictureAsPdf,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(9.dp).size(24.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Relatórios de Vistoria",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Gere o laudo em PDF com fotos e anotações, mesmo offline",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

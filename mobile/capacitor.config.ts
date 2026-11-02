@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * Troque CAP_SERVER_URL pelo endereço real do site (sem barra no final) antes de gerar o APK:
  *   set CAP_SERVER_URL=https://seu-dominio.com.br   (Windows)
  */
-const SERVER = (process.env.CAP_SERVER_URL || 'https://imobweb2.vercel.app').replace(/\/+$/, '');
+const SERVER = (process.env.CAP_SERVER_URL || 'https://imobweb.lelebrr.workers.dev').replace(/\/+$/, '');
 const START_PATH = process.env.CAP_START_PATH || '/admin/vistoria';
 const host = new URL(SERVER).host;
 

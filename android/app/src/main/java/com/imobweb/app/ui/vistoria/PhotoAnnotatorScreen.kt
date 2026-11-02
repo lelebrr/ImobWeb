@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,40 +71,14 @@ fun PhotoAnnotatorScreen(
                 .padding(padding)
         ) {
             // Photo with annotation overlay
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .background(Color.Black)
             ) {
-                // Use Canvas for drawing annotation markers on the image
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    // Draw marker circles and lines
-                    annotations.forEachIndexed { idx, ann ->
-                        val x = (ann.x / 100.0) * size.width
-                        val y = (ann.y / 100.0) * size.height
-                        val isSelected = idx == selectedAnnotationIdx
-
-                        // Marker circle
-                        drawCircle(
-                            color = if (isSelected) Color(0xFFF59E0B) else Color(0xFFEF4444),
-                            radius = if (isSelected) 22f else 18f,
-                            center = Offset(x.toFloat(), y.toFloat())
-                        )
-                        drawCircle(
-                            color = Color.White,
-                            radius = if (isSelected) 16f else 13f,
-                            center = Offset(x.toFloat(), y.toFloat())
-                        )
-
-                        // Number text (simplified - drawing text on canvas)
-                        drawCircle(
-                            color = if (isSelected) Color(0xFFF59E0B) else Color(0xFFEF4444),
-                            radius = 10f,
-                            center = Offset(x.toFloat(), y.toFloat())
-                        )
-                    }
-                }
+                val boxWidth = maxWidth
+                val boxHeight = maxHeight
 
                 // The image
                 AsyncImage(
@@ -113,8 +88,8 @@ fun PhotoAnnotatorScreen(
                         .fillMaxSize()
                         .pointerInput(Unit) {
                             detectTapGestures { offset ->
-                                val x = (offset.x / size.width * 100).coerceIn(0.0, 100.0)
-                                val y = (offset.y / size.height * 100).coerceIn(0.0, 100.0)
+                                val x = (offset.x.toDouble() / size.width * 100.0).coerceIn(0.0, 100.0)
+                                val y = (offset.y.toDouble() / size.height * 100.0).coerceIn(0.0, 100.0)
                                 pendingPosition = Offset(x.toFloat(), y.toFloat())
                                 annotationIdCounter++
                                 editingText = ""
@@ -124,19 +99,21 @@ fun PhotoAnnotatorScreen(
                     contentScale = ContentScale.Fit
                 )
 
-                // Floating markers overlay (non-Canvas approach for text)
+                // Floating markers overlay
                 annotations.forEachIndexed { idx, ann ->
-                    // Marker position
+                    val isSelected = idx == selectedAnnotationIdx
+                    val markerX = (boxWidth * (ann.x.toFloat() / 100f)) - 14.dp
+                    val markerY = (boxHeight * (ann.y.toFloat() / 100f)) - 14.dp
+
+                    // Marker pin
                     Box(
                         modifier = Modifier
-                            .offset(
-                                x = ((ann.x / 100.0) * 1000).dp - 14.dp,
-                                y = ((ann.y / 100.0) * 1000).dp - 14.dp
-                            )
+                            .offset(x = markerX, y = markerY)
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(if (idx == selectedAnnotationIdx) Color(0xFFF59E0B) else Color(0xFFEF4444))
-                            .border(2.dp, Color.White, CircleShape),
+                            .background(if (isSelected) Color(0xFFF59E0B) else Color(0xFFEF4444))
+                            .border(2.dp, Color.White, CircleShape)
+                            .clickable { selectedAnnotationIdx = idx },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -147,39 +124,64 @@ fun PhotoAnnotatorScreen(
                         )
                     }
 
-                    // Label
-                    val labelOffset = if (ann.x < 50) 32.dp else (-ann.label.length * 8).dp
+                    // Label tag
+                    if (ann.label.isNotBlank()) {
+                        val labelX = if (ann.x < 60) markerX + 32.dp else (markerX - 100.dp).coerceAtLeast(4.dp)
+                        Box(
+                            modifier = Modifier.offset(
+                                x = labelX,
+                                y = markerY
+                            )
+                        ) {
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = Color.Black.copy(alpha = 0.85f),
+                                shadowElevation = 4.dp
+                            ) {
+                                Text(
+                                    ann.label,
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Pending point marker
+                pendingPosition?.let { pos ->
+                    val markerX = (boxWidth * (pos.x / 100f)) - 14.dp
+                    val markerY = (boxHeight * (pos.y / 100f)) - 14.dp
                     Box(
                         modifier = Modifier
-                            .offset(
-                                x = ((ann.x / 100.0) * 1000).dp + labelOffset,
-                                y = ((ann.y / 100.0) * 1000).dp - 8.dp
-                            )
+                            .offset(x = markerX, y = markerY)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF3B82F6))
+                            .border(2.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = Color.Black.copy(alpha = 0.8f)
-                        ) {
-                            Text(
-                                ann.label,
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
+                        Text(
+                            "+",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black
+                        )
                     }
                 }
 
                 // Hint text
                 Text(
-                    "Toque na foto para marcar um ponto",
-                    color = Color.White.copy(alpha = 0.6f),
+                    if (pendingPosition != null) "Digite a descrição abaixo para salvar o ponto"
+                    else "Toque na foto para marcar um ponto de avaria",
+                    color = Color.White.copy(alpha = 0.8f),
                     fontSize = 12.sp,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), MaterialTheme.shapes.small)
+                        .background(Color.Black.copy(alpha = 0.65f), MaterialTheme.shapes.small)
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }
@@ -264,7 +266,7 @@ fun PhotoAnnotatorScreen(
 
                     // Annotations list
                     if (annotations.isNotEmpty()) {
-                        HorizontalDivider()
+                        Divider()
                         Spacer(Modifier.height(4.dp))
                         Text("${annotations.size} ponto(s) marcado(s)",
                             style = MaterialTheme.typography.labelSmall,

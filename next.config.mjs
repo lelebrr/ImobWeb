@@ -356,6 +356,21 @@ const nextConfig = {
         destination: "/insights/properties",
         permanent: false,
       },
+      {
+        source: "/settings/profile",
+        destination: "/settings?tab=profile",
+        permanent: false,
+      },
+      {
+        source: "/settings/organization",
+        destination: "/settings?tab=agency",
+        permanent: false,
+      },
+      {
+        source: "/settings/billing",
+        destination: "/finance",
+        permanent: false,
+      },
     ];
   },
 

@@ -43,7 +43,7 @@ object CepService {
 
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("Erro ao consultar CEP: ${response.code()}"))
+                return@withContext Result.failure(Exception("Erro ao consultar CEP: ${response.code}"))
             }
 
             val body = response.body?.string() ?: return@withContext Result.failure(Exception("Resposta vazia"))

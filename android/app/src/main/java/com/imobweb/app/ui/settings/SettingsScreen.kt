@@ -47,6 +47,7 @@ fun SettingsScreen(
     var estado by remember { mutableStateOf("SP") }
     var geminiKey by remember { mutableStateOf("") }
     var showGeminiKey by remember { mutableStateOf(false) }
+    var serverUrl by remember { mutableStateOf("") }
     var totalSaved by remember { mutableIntStateOf(0) }
 
     // Load settings
@@ -57,6 +58,7 @@ fun SettingsScreen(
         cidade = prefs[CIDADE_KEY] ?: "São Paulo"
         estado = prefs[ESTADO_KEY] ?: "SP"
         geminiKey = prefs[GEMINI_KEY] ?: ""
+        serverUrl = repository.getBaseUrl()
 
         val vistorias = repository.getAllVistorias().first()
         totalSaved = vistorias.size
@@ -70,6 +72,7 @@ fun SettingsScreen(
             it[ESTADO_KEY] = estado
             it[GEMINI_KEY] = geminiKey
         }
+        repository.setBaseUrl(serverUrl)
     }
 
     Scaffold(
@@ -97,6 +100,34 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            // Server / Cloudflare Connection
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Cloud, null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Servidor & Nuvem", style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Endereço do backend para sincronização e login (ex: Cloudflare / Domínio próprio):",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = serverUrl,
+                        onValueChange = { serverUrl = it },
+                        label = { Text("URL do Servidor") },
+                        placeholder = { Text("https://seu-dominio.com.br") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
             // Default values section
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {

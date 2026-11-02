@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.imobweb.app.data.repository.VistoriaRepository
+import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.ReportPdfExporter
 import com.imobweb.app.model.*
 import com.imobweb.app.ui.camera.CameraScreen
 import com.imobweb.app.util.ImageCompressor
@@ -93,6 +95,7 @@ fun VistoriaWizardScreen(
     var galleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var showPdfViewer by remember { mutableStateOf(false) }
     var pdfContent by remember { mutableStateOf<String?>(null) }
+    var pdfFileName by remember { mutableStateOf("Laudo_Vistoria.pdf") }
     var isUploading by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -170,16 +173,6 @@ fun VistoriaWizardScreen(
         else -> true
     }
 
-    // Auto-save every 30 seconds
-    LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(30_000)
-            if (savedId > 0 || condominio.isNotBlank() || locadora.isNotBlank()) {
-                saveCurrent()
-            }
-        }
-    }
-
     // Save current state to DB
     suspend fun saveCurrent() {
         val today = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date())
@@ -204,6 +197,16 @@ fun VistoriaWizardScreen(
         // Trigger immediate sync if online
         if (com.imobweb.app.util.NetworkUtil.isOnline(context)) {
             repository.syncPendingVistorias()
+        }
+    }
+
+    // Auto-save every 30 seconds (after saveCurrent is declared)
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            if (savedId > 0 || condominio.isNotBlank() || locadora.isNotBlank()) {
+                saveCurrent()
+            }
         }
     }
 
@@ -263,19 +266,18 @@ fun VistoriaWizardScreen(
                                 scope.launch {
                                     isSaving = true
                                     saveCurrent()
-                                    // Generate PDF
+                                    // Gera o laudo localmente (offline) e abre a pré-visualização
                                     val vistoria = repository.getVistoriaById(savedId)
                                     if (vistoria != null) {
-                                        val result = repository.generatePdf(vistoria)
-                                        result.fold(
-                                            onSuccess = { html ->
-                                                pdfContent = html
-                                                showPdfViewer = true
-                                            },
-                                            onFailure = { e ->
-                                                Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        )
+                                        runCatching {
+                                            pdfContent = LaudoHtmlBuilder.build(vistoria)
+                                            pdfFileName = ReportPdfExporter.fileNameFor(vistoria)
+                                            showPdfViewer = true
+                                        }.onFailure { e ->
+                                            Toast.makeText(context, "Erro ao gerar laudo: ${e.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Não foi possível salvar a vistoria", Toast.LENGTH_SHORT).show()
                                     }
                                     isSaving = false
                                 }
@@ -454,8 +456,8 @@ fun VistoriaWizardScreen(
         PdfPreviewScreen(
             htmlContent = pdfContent!!,
             title = "Laudo de Vistoria - $condominio",
-            onClose = { showPdfViewer = false; onSaved() },
-            onShare = { }
+            fileName = pdfFileName,
+            onClose = { showPdfViewer = false; onSaved() }
         )
     }
 }
@@ -687,7 +689,7 @@ private fun StepParties(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         Spacer(Modifier.height(12.dp))
 
-        HorizontalDivider()
+        Divider()
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(value = locatario, onValueChange = onLocatarioChange,
@@ -700,7 +702,7 @@ private fun StepParties(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         Spacer(Modifier.height(12.dp))
 
-        HorizontalDivider()
+        Divider()
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(value = vistoriadora, onValueChange = onVistoriadoraChange,
@@ -816,7 +818,7 @@ private fun StepRooms(
             }
 
             Spacer(Modifier.height(12.dp))
-            HorizontalDivider()
+            Divider()
             Spacer(Modifier.height(8.dp))
 
             Text("Ou adicione manualmente:",
@@ -906,7 +908,7 @@ private fun StepRooms(
 }
 
 // ===================== STEP 4: Inventory (per room) =====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun StepInventory(
     rooms: List<RoomData>, onRoomsChange: (List<RoomData>) -> Unit,
@@ -1501,6 +1503,7 @@ private fun StepReview(
     consideracoes: String, onConsideracoesChange: (String) -> Unit
 ) {
     val today = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date())
+    val context = LocalContext.current
 
     Column {
         Text("Revisão e Observações", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

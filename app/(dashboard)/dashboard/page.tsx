@@ -1207,9 +1207,9 @@ export default function DashboardPage() {
                       </div>
                       <div className="py-1">
                         {[
-                          { href: "/settings/profile", icon: Settings, label: "ConfiguraÃ§Ãµes da Conta" },
-                          { href: "/settings/organization", icon: Building2, label: "OrganizaÃ§Ã£o" },
-                          { href: "/settings/billing", icon: CreditCard, label: "Faturamento" },
+                          { href: "/settings?tab=profile", icon: Settings, label: "Configurações da Conta" },
+                          { href: "/settings?tab=agency", icon: Building2, label: "Organização" },
+                          { href: "/finance", icon: CreditCard, label: "Faturamento" },
                         ].map((item) => (
                           <Link key={item.href} href={item.href} onClick={() => setShowUserMenu(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
