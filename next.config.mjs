@@ -339,6 +339,23 @@ const nextConfig = {
         destination: "/register",
         permanent: true,
       },
+
+      // Dashboard feature redirects
+      {
+        source: "/proof-of-life",
+        destination: "/dashboard?tab=proof-of-life",
+        permanent: false,
+      },
+      {
+        source: "/franchise",
+        destination: "/dashboard?tab=franchise",
+        permanent: false,
+      },
+      {
+        source: "/insights",
+        destination: "/insights/properties",
+        permanent: false,
+      },
     ];
   },
 

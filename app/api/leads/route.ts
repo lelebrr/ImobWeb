@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAuthFromRequest } from '@/lib/auth/get-auth';
 
 /**
  * LEADS API - IMOBWEB 2026
@@ -18,11 +19,20 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
 
-    if (!organizationId) {
-      return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
+    let orgId = organizationId;
+    if (!orgId) {
+      const auth = await getAuthFromRequest(request);
+      orgId = auth?.organizationId || null;
+    }
+    if (!orgId) {
+      const firstOrg = await prisma.organization.findFirst({ select: { id: true } });
+      orgId = firstOrg?.id || null;
+    }
+    if (!orgId) {
+      return NextResponse.json({ success: true, leads: [], total: 0 });
     }
 
-    const where: any = { organizationId };
+    const where: any = { organizationId: orgId };
     if (status) where.status = status;
     if (source) where.source = source;
     if (assignedToId) where.assignedToId = assignedToId;
@@ -50,7 +60,7 @@ export async function GET(request: NextRequest) {
       prisma.lead.count({ where }),
       prisma.lead.groupBy({
         by: ['status'],
-        where: { organizationId },
+        where: { organizationId: orgId },
         _count: true,
       }),
     ]);

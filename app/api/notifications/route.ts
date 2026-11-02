@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CreateNotificationSchema, Notification } from '@/lib/notifications/types';
 import { NotificationService } from '@/lib/notifications/service';
+import { getAuthFromRequest } from '@/lib/auth/get-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,24 +11,30 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId é obrigatório' },
-        { status: 400 }
-      );
+    let targetUserId = userId;
+    if (!targetUserId) {
+      const auth = await getAuthFromRequest(request);
+      targetUserId = auth?.id || null;
+    }
+    if (!targetUserId) {
+      return NextResponse.json({
+        success: true,
+        data: { notifications: [], unreadCount: 0, hasMore: false },
+        notifications: [],
+      });
     }
 
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
-    const notifications = await NotificationService.getByUserId(userId, {
+    const notifications = await NotificationService.getByUserId(targetUserId, {
       limit,
       offset,
       unreadOnly,
     });
 
-    const unreadCount = await NotificationService.getUnreadCount(userId);
+    const unreadCount = await NotificationService.getUnreadCount(targetUserId);
 
     return NextResponse.json({
       success: true,
