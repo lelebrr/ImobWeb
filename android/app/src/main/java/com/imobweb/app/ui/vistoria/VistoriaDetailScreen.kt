@@ -1,5 +1,6 @@
 package com.imobweb.app.ui.vistoria
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imobweb.app.data.repository.VistoriaRepository
@@ -32,6 +34,7 @@ fun VistoriaDetailScreen(
     var pdfFileName by remember { mutableStateOf("Laudo_Vistoria.pdf") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(vistoriaId) {
         vistoria = repository.getVistoriaById(vistoriaId)
@@ -174,9 +177,9 @@ fun VistoriaDetailScreen(
                 // Parties info
                 DetailSection("Partes Envolvidas") {
                     DetailRow("Locadora", v.locadora)
-                    if (v.locadoraCpf.isNotBlank()) DetailRow("CPF Locadora", v.locadoraCpf)
+                    if (v.locadoraCpf.isNotBlank()) DetailRow("CPF/CNPJ Locadora", v.locadoraCpf)
                     DetailRow("Locatário", v.locatario)
-                    if (v.locatarioCpf.isNotBlank()) DetailRow("CPF Locatário", v.locatarioCpf)
+                    if (v.locatarioCpf.isNotBlank()) DetailRow("CPF/CNPJ Locatário", v.locatarioCpf)
                     if (v.vistoriadora.isNotBlank()) DetailRow("Vistoriadora", v.vistoriadora)
                     if (v.solicitante.isNotBlank()) DetailRow("Solicitante", v.solicitante)
                 }
@@ -254,8 +257,13 @@ fun VistoriaDetailScreen(
                     onClick = {
                         showDeleteConfirm = false
                         scope.launch {
-                            repository.deleteVistoria(target)
-                            onBack()
+                            try {
+                                repository.deleteVistoria(target)
+                                Toast.makeText(context, "Vistoria excluída com sucesso", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Erro ao excluir: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
                         }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)

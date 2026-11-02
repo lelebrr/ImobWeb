@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -19,6 +20,8 @@ class SessionManager(private val context: Context) {
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USER_ROLE_KEY = stringPreferencesKey("user_role")
         private val BASE_URL_KEY = stringPreferencesKey("base_url")
+        private val GEMINI_KEY = stringPreferencesKey("gemini_api_key")
+        private val DELETED_REMOTE_IDS_KEY = stringSetPreferencesKey("deleted_remote_ids")
     }
 
     val authToken: Flow<String?> = context.dataStore.data.map { it[TOKEN_KEY] }
@@ -51,8 +54,35 @@ class SessionManager(private val context: Context) {
         }
     }
 
+    suspend fun getGeminiKey(): String? = context.dataStore.data.first()[GEMINI_KEY]
+
+    suspend fun setGeminiKey(key: String) {
+        val clean = key.trim()
+        context.dataStore.edit {
+            if (clean.isNotBlank()) {
+                it[GEMINI_KEY] = clean
+            } else {
+                it.remove(GEMINI_KEY)
+            }
+        }
+    }
+
     suspend fun clearSession() {
         context.dataStore.edit { it.clear() }
+    }
+
+    suspend fun markRemoteIdDeleted(remoteId: String) {
+        if (remoteId.isBlank()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[DELETED_REMOTE_IDS_KEY] ?: emptySet()
+            prefs[DELETED_REMOTE_IDS_KEY] = current + remoteId
+        }
+    }
+
+    suspend fun isRemoteIdDeleted(remoteId: String): Boolean {
+        if (remoteId.isBlank()) return false
+        val deleted = context.dataStore.data.first()[DELETED_REMOTE_IDS_KEY] ?: emptySet()
+        return remoteId in deleted
     }
 
     suspend fun isLoggedIn(): Boolean {

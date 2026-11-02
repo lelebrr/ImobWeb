@@ -237,6 +237,63 @@ object FurnitureItems {
     )
 }
 
+object RoomFurnitureCatalog {
+    fun getRelevantFurniture(roomName: String): List<String> {
+        val upper = roomName.uppercase()
+        return when {
+            upper.contains("SALA") || upper.contains("ESTAR") || upper.contains("LIVING") || upper.contains("TV") -> listOf(
+                "Sofá", "Mesa de centro", "Mesa de jantar", "Cadeiras", "Painel para TV",
+                "TV", "Rack", "Aparador", "Cortinas", "Persianas", "Tapete",
+                "Lustre/Luminária", "Ar condicionado", "Ventilador de teto", "Poltrona"
+            )
+            upper.contains("COZINHA") || upper.contains("COPA") -> listOf(
+                "Armário planejado", "Fogão/Cooktop", "Geladeira", "Micro-ondas",
+                "Coifa/Depurador", "Forno elétrico", "Lava-louças", "Bancada",
+                "Gabinete de pia", "Mesa de apoio", "Banquetas", "Filtro/Purificador de água"
+            )
+            upper.contains("SUÍTE") || upper.contains("SUITE") -> listOf(
+                "Cama/Box", "Colchão", "Guarda-roupa/Closet", "Criado-mudo", "Cabeceira",
+                "Ar condicionado", "TV", "Cortinas", "Box blindex", "Espelho",
+                "Gabinete de banheiro", "Chuveiro/Ducha", "Ducha higiênica"
+            )
+            upper.contains("QUARTO") || upper.contains("DORMITÓRIO") || upper.contains("DORMITORIO") -> listOf(
+                "Cama/Box", "Colchão", "Guarda-roupa", "Criado-mudo", "Cabeceira",
+                "Painel para TV", "TV", "Ar condicionado", "Cortinas", "Persianas",
+                "Espelho", "Ventilador de teto", "Escrivaninha"
+            )
+            upper.contains("BANHEIRO") || upper.contains("LAVABO") || upper.contains("WC") || upper.contains("BANHO") -> listOf(
+                "Box blindex", "Espelho", "Gabinete de pia", "Chuveiro/Ducha",
+                "Ducha higiênica", "Porta-toalha", "Assento sanitário", "Papeleira",
+                "Prateleira", "Armário aéreo"
+            )
+            upper.contains("SERVIÇO") || upper.contains("SERVICO") || upper.contains("LAVANDERIA") -> listOf(
+                "Máquina de lavar", "Secadora", "Tanque", "Varal de teto",
+                "Armário de serviço", "Aquecedor a gás", "Tábua de passar"
+            )
+            upper.contains("VARANDA") || upper.contains("SACADA") || upper.contains("GOURMET") || upper.contains("TERRAÇO") || upper.contains("TERRACO") -> listOf(
+                "Mesa de varanda", "Cadeiras/Banquetas", "Churrasqueira", "Pia",
+                "Bancada de granito", "Fechamento de vidro", "Armário externo", "Sofá externo"
+            )
+            upper.contains("ESCRITÓRIO") || upper.contains("ESCRITORIO") || upper.contains("OFFICE") || upper.contains("ESTUDO") -> listOf(
+                "Mesa/Escrivaninha", "Cadeira de escritório", "Estante de livros",
+                "Gaveteiro", "Computador/Monitor", "Ar condicionado", "Cortinas"
+            )
+            upper.contains("ENTRADA") || upper.contains("HALL") || upper.contains("CORREDOR") || upper.contains("ACESSO") -> listOf(
+                "Aparador", "Espelho", "Interfone", "Campainha", "Fechadura digital",
+                "Sapateira", "Lustre/Luminária", "Cabideiro"
+            )
+            upper.contains("GARAGEM") || upper.contains("VAGA") || upper.contains("ESTACIONAMENTO") -> listOf(
+                "Controle do portão", "Armário de garagem", "Vaga demarcada",
+                "Tomada para carro elétrico", "Lixeira"
+            )
+            upper.contains("DEPÓSITO") || upper.contains("DEPOSITO") || upper.contains("DESPENSA") -> listOf(
+                "Prateleiras", "Armário multiuso", "Estante de aço"
+            )
+            else -> FurnitureItems.items
+        }
+    }
+}
+
 object ProblemsCatalog {
     data class ProblemCategory(val name: String, val problems: List<String>)
 

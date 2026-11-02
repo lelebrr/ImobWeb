@@ -123,3 +123,44 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id || body?.remoteId;
+      } catch (_) {}
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID da vistoria não informado" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.vistoria.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Vistoria excluída com sucesso",
+    });
+  } catch (err: any) {
+    console.error("[API Vistoria Delete] Erro:", err);
+    // Se o registro já não existia no banco, retorna sucesso mesmo assim
+    if (err.code === "P2025") {
+      return NextResponse.json({ success: true, message: "Vistoria já removida" });
+    }
+    return NextResponse.json(
+      { success: false, error: err.message || "Erro ao excluir vistoria" },
+      { status: 500 }
+    );
+  }
+}
+

@@ -57,7 +57,7 @@ fun SettingsScreen(
         solicitante = prefs[SOLICITANTE_KEY] ?: ""
         cidade = prefs[CIDADE_KEY] ?: "São Paulo"
         estado = prefs[ESTADO_KEY] ?: "SP"
-        geminiKey = prefs[GEMINI_KEY] ?: ""
+        geminiKey = repository.getGeminiKey() ?: prefs[GEMINI_KEY] ?: ""
         serverUrl = repository.getBaseUrl()
 
         val vistorias = repository.getAllVistorias().first()
@@ -72,6 +72,7 @@ fun SettingsScreen(
             it[ESTADO_KEY] = estado
             it[GEMINI_KEY] = geminiKey
         }
+        repository.setGeminiKey(geminiKey)
         repository.setBaseUrl(serverUrl)
     }
 

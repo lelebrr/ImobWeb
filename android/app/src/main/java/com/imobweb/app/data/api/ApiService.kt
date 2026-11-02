@@ -25,6 +25,9 @@ interface ApiService {
     @GET("/api/admin/vistoria/list")
     suspend fun listVistorias(): Response<SyncListResponse>
 
+    @DELETE("/api/admin/vistoria/sync")
+    suspend fun deleteVistoria(@Query("id") id: String): Response<okhttp3.ResponseBody>
+
     companion object {
         private var instances = mutableMapOf<String, ApiService>()
 

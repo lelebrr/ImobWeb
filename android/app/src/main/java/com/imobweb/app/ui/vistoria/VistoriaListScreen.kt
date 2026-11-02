@@ -1,5 +1,6 @@
 package com.imobweb.app.ui.vistoria
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ fun VistoriaListScreen(
 ) {
     val vistorias by repository.getAllVistorias().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var filterStatus by remember { mutableStateOf("all") }
     var searchQuery by remember { mutableStateOf("") }
     var reportVistoria by remember { mutableStateOf<Vistoria?>(null) }
@@ -154,11 +157,14 @@ fun VistoriaListScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val toDel = vistoriaToDelete
+                        val toDel = target
                         vistoriaToDelete = null
-                        if (toDel != null) {
-                            scope.launch {
+                        scope.launch {
+                            try {
                                 repository.deleteVistoria(toDel)
+                                Toast.makeText(context, "Vistoria excluída com sucesso", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Erro ao excluir: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                     },
@@ -195,48 +201,56 @@ private fun VistoriaListItem(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onView),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Home,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = vistoria.condominio.ifBlank { "Sem nome" },
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onView),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Home,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(40.dp)
                 )
-                Text(
-                    text = buildString {
-                        append(vistoria.endereco.ifBlank { "Sem endereço" })
-                        if (vistoria.numero.isNotBlank()) append(", ${vistoria.numero}")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${vistoria.rooms.size} cômodos · ${vistoria.rooms.sumOf { it.photos.size }} fotos",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = vistoria.condominio.ifBlank { "Sem nome" },
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(Modifier.width(8.dp))
-                    StatusBadge(vistoria.status)
+                    Text(
+                        text = buildString {
+                            append(vistoria.endereco.ifBlank { "Sem endereço" })
+                            if (vistoria.numero.isNotBlank()) append(", ${vistoria.numero}")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${vistoria.rooms.size} cômodos · ${vistoria.rooms.sumOf { it.photos.size }} fotos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        StatusBadge(vistoria.status)
+                    }
                 }
             }
+
             IconButton(onClick = onReport) {
                 Icon(Icons.Default.PictureAsPdf, contentDescription = "Gerar laudo em PDF",
                     tint = MaterialTheme.colorScheme.secondary)
@@ -246,8 +260,8 @@ private fun VistoriaListItem(
                     tint = MaterialTheme.colorScheme.primary)
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Excluir",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
+                Icon(Icons.Default.DeleteForever, contentDescription = "Excluir",
+                    tint = MaterialTheme.colorScheme.error)
             }
         }
     }

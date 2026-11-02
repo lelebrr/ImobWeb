@@ -24,6 +24,9 @@ interface VistoriaDao {
     @Delete
     suspend fun deleteVistoria(vistoria: Vistoria)
 
+    @Query("DELETE FROM vistorias WHERE id = :id")
+    suspend fun deleteVistoriaById(id: Long)
+
     @Query("SELECT * FROM vistorias WHERE status = 'pending_sync' ORDER BY updatedAt ASC")
     suspend fun getPendingSyncVistorias(): List<Vistoria>
 
