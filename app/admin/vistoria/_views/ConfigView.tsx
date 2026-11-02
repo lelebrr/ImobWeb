@@ -162,12 +162,16 @@ export function ConfigView({ v }: { v: VistoriaController }) {
                     type="password"
                     autoComplete="off"
                     placeholder="AIzaSy... (aistudio.google.com)"
-                    value={settings.geminiApiKey}
-                    onChange={e => setSettings({ ...settings, geminiApiKey: e.target.value })}
+                    value={settings.geminiApiKey || ''}
+                    onChange={e => {
+                      const next = { ...settings, geminiApiKey: e.target.value };
+                      setSettings(next);
+                      saveSettings(next);
+                    }}
                     className="w-full h-11 px-3 rounded-xl border border-white/5 bg-white/5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <p className="text-[11px] text-slate-600">Usada somente quando o servidor não possui GEMINI_API_KEY. Fica guardada apenas neste navegador.</p>
-                  <button type="button" onClick={() => refreshAiStatus()} className="text-[11px] text-indigo-300 hover:text-indigo-200 underline underline-offset-2 min-h-[32px]">Testar conexão</button>
+                  <button type="button" onClick={() => void refreshAiStatus(true)} className="text-[11px] text-indigo-300 hover:text-indigo-200 underline underline-offset-2 min-h-[32px]">Testar conexão</button>
                 </div>
 
                 {([

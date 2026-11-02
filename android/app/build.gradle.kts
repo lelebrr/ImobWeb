@@ -22,13 +22,14 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://imobweb.com.br\"")
+            buildConfigField("String", "BASE_URL", "\"https://imobweb.lelebrr.workers.dev\"")
             isMinifyEnabled = false
         }
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "BASE_URL", "\"https://imobweb.com.br\"")
+            buildConfigField("String", "BASE_URL", "\"https://imobweb.lelebrr.workers.dev\"")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

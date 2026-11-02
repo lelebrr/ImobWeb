@@ -276,6 +276,7 @@ model User {
   /// UsuÃ¡rio do sistema com diferentes nÃ­veis de permissÃ£o
   /// Suporta multi-tenant atravÃ©s da organizaÃ§Ã£o
   propertyVersions PropertyVersion[]
+  vistorias        Vistoria[]
 
   // Ã�ndices
   @@index([organizationId])
@@ -330,6 +331,7 @@ model Organization {
   onboardingProgresses OnboardingProgress[]
   adoptionMetrics      AdoptionMetrics[]
   resellerClient       ResellerClient?
+  vistorias            Vistoria[]
 
   // ComentÃ¡rios
   /// OrganizaÃ§Ã£o principal para suporte multi-tenant
@@ -2019,4 +2021,44 @@ model PropertyView {
 
   @@index([propertyId])
   @@index([createdAt])
+}
+
+
+model Vistoria {
+  id             String       @id @default(cuid())
+  condominio     String?
+  endereco       String
+  numero         String?
+  conjApto       String?
+  cep            String?
+  bairro         String?
+  cidade         String?
+  estado         String?
+  tipoImovel     String?
+  finalidade     String?
+  metragem       String?
+  mobiliado      String?
+  locadora       String?
+  locadoraCpf    String?
+  locatario      String?
+  locatarioCpf   String?
+  vistoriadora   String?
+  solicitante    String?
+  consideracoes  String?      @db.Text
+  dataFotografia String?
+  dataLaudo      String?
+  status         String       @default("COMPLETA")
+  data           Json?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
 }

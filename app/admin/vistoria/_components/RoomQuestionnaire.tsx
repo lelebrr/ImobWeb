@@ -29,6 +29,8 @@ export interface RoomQuestionnaireProps {
   propertyInfo: PropertyInfo;
   addRoom: () => void;
   removeRoom: (idx: number) => void;
+  roomsGenerated?: boolean;
+  setRoomsGenerated?: (v: boolean) => void;
 }
 
 // Questions per property type
@@ -98,10 +100,18 @@ export function getQuestionsForType(tipo: string) {
   }
 }
 
-export function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, removeRoom }: RoomQuestionnaireProps) {
+export function RoomQuestionnaire({
+  rooms,
+  setRooms,
+  propertyInfo,
+  addRoom,
+  removeRoom,
+  roomsGenerated = false,
+  setRoomsGenerated,
+}: RoomQuestionnaireProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [generated, setGenerated] = useState(false);
+  const [generated, setGenerated] = useState(roomsGenerated);
 
   const questions = React.useMemo(() => getQuestionsForType(propertyInfo.tipoImovel || 'APARTAMENTO'), [propertyInfo.tipoImovel]);
   const currentQ = questions[step];
@@ -178,6 +188,7 @@ export function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, remo
 
     setRooms(r);
     setGenerated(true);
+    setRoomsGenerated?.(true);
   };
 
   // After generation - show results
@@ -215,7 +226,7 @@ export function RoomQuestionnaire({ rooms, setRooms, propertyInfo, addRoom, remo
           <Button variant="ghost" size="sm" onClick={addRoom} className="rounded-xl text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 shrink-0"><Plus className="w-3.5 h-3.5 mr-1" /> Add</Button>
         </div>
 
-        <Button variant="ghost" size="sm" onClick={() => { setGenerated(false); setStep(0); }} className="rounded-xl text-xs text-slate-500 hover:text-white w-full">Refazer Questionário</Button>
+        <Button variant="ghost" size="sm" onClick={() => { setGenerated(false); setStep(0); setRoomsGenerated?.(false); }} className="rounded-xl text-xs text-slate-500 hover:text-white w-full">Refazer Questionário</Button>
       </div>
     );
   }

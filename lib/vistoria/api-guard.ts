@@ -1,21 +1,48 @@
 import { NextResponse } from 'next/server';
+import { cookies, headers } from 'next/headers';
+import { verifyToken } from '@/lib/auth/jwt';
 import { createClient } from '@/lib/supabase/server';
 
 /**
  * Exige usuário autenticado nas rotas /api/admin/vistoria/*.
- * (O middleware libera todo "/api" como público, então a verificação precisa ser feita aqui.)
  */
 export async function requireUser(): Promise<{ userId: string } | { response: NextResponse }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user) {
-      return { response: NextResponse.json({ success: false, error: 'Não autenticado' }, { status: 401 }) };
+    // 1. Tentar validar via token nativo (cookie ou header)
+    const cookieStore = await cookies();
+    let token = cookieStore.get('imobweb_token')?.value;
+
+    if (!token) {
+      const headerList = await headers();
+      const authHeader = headerList.get('authorization') || headerList.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7).trim();
+      }
     }
-    return { userId: data.user.id };
+
+    if (token) {
+      const payload = await verifyToken(token);
+      if (payload && payload.id) {
+        return { userId: payload.id };
+      }
+    }
+
+    // 2. Fallback opcional Supabase se configurado
+    const isSupabaseConfigured =
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
+
+    if (isSupabaseConfigured) {
+      const supabase = await createClient();
+      const { data, error } = await supabase.auth.getUser();
+      if (!error && data?.user) {
+        return { userId: data.user.id };
+      }
+    }
+
+    return { response: NextResponse.json({ success: false, error: 'Não autenticado' }, { status: 401 }) };
   } catch (err) {
     console.error('[vistoria] falha ao validar sessão:', err);
-    if (process.env.NODE_ENV !== 'production') return { userId: 'dev' };
     return { response: NextResponse.json({ success: false, error: 'Falha ao validar sessão' }, { status: 503 }) };
   }
 }

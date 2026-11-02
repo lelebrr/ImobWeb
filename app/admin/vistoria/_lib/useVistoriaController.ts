@@ -65,6 +65,7 @@ export function useVistoriaController() {
   const [repairsBusy, setRepairsBusy] = useState(false);
   const [inspectingIds, setInspectingIds] = useState<string[]>([]);
   const [reviewRoomIdx, setReviewRoomIdx] = useState<number | null>(null);
+  const [roomsGenerated, setRoomsGenerated] = useState(false);
 
   // Refs com o estado mais recente (evita closures velhas em timers/atalhos/async)
   const idRef = useRef<string | null>(null);
@@ -98,11 +99,28 @@ export function useVistoriaController() {
     return data;
   }, []);
 
-  const refreshAiStatus = useCallback(async () => {
+  const refreshAiStatus = useCallback(async (notify = false) => {
+    let toastId: any;
+    if (notify) {
+      toastId = toast.loading('Testando conexão com a API do Google Gemini...');
+    }
     try {
       const d = await aiFetch('/api/admin/vistoria/analyze');
-      setAiStatus({ configured: !!d.configured, model: d.model as string, source: d.source as string });
-    } catch { setAiStatus({ configured: false }); }
+      const isConfigured = Boolean(d.configured);
+      setAiStatus({ configured: isConfigured, model: d.model as string, source: d.source as string });
+      if (notify) {
+        if (isConfigured) {
+          toast.success(`Google Gemini conectado com sucesso! (${d.source === 'user' ? 'Chave do usuário' : 'Chave do servidor'})`, { id: toastId });
+        } else {
+          toast.error('Chave não detectada. Digite uma chave válida do Google AI Studio e salve.', { id: toastId });
+        }
+      }
+    } catch (err: any) {
+      setAiStatus({ configured: false });
+      if (notify) {
+        toast.error(`Falha ao conectar: ${err.message || 'Erro de autenticação'}`, { id: toastId });
+      }
+    }
   }, [aiFetch]);
 
   // ---------- Carga inicial ----------
@@ -230,6 +248,7 @@ export function useVistoriaController() {
   const openInWizard = (full: SavedLaudo) => {
     setPropertyInfo({ ...defaultPropertyInfo, ...full.propertyInfo });
     setRooms(full.rooms.map((r) => ({ ...r, analyzing: false })));
+    setRoomsGenerated(true);
     setSignatures(full.signatures || {});
     setLinkedId(full.linkedId);
     setEditingLaudoId(full.id);
@@ -345,9 +364,10 @@ export function useVistoriaController() {
     }
   };
 
-  const saveSettings = async () => {
-    await saveSettingsToDb(settings);
-    toast.success('Configurações salvas!');
+  const saveSettings = async (next?: VistoriaSettings) => {
+    const toSave = next || settings;
+    await saveSettingsToDb(toSave);
+    if (!next) toast.success('Configurações salvas!');
   };
 
   // ---------- Wizard ----------
@@ -367,6 +387,7 @@ export function useVistoriaController() {
       finalidade: t.finalidade || s.defaultFinalidade || 'RESIDENCIAL',
     });
     setRooms(t.rooms.filter(Boolean).map((name) => emptyRoom(name)));
+    setRoomsGenerated(false);
     setSignatures({});
     setLinkedId(undefined);
     setCurrentRoomIdx(0);
@@ -757,7 +778,31 @@ export function useVistoriaController() {
   const totalAnnotations = rooms.reduce((s, r) => s + r.photos.reduce((s2, p) => s2 + p.annotations.length, 0), 0);
   const analyzedRooms = rooms.filter((r) => r.analyzed).length;
   const currentRoom = rooms[currentRoomIdx];
-  const canProceed = () => (wizardStep === 2 ? rooms.length > 0 : true);
+  const canProceed = () => {
+    // Passo 0: Mínimo obrigatório do Imóvel (Endereço ou Condomínio + Tipo)
+    if (wizardStep === 0) {
+      const hasEnderecoOrCond =
+        (propertyInfo.endereco && propertyInfo.endereco.trim().length > 0) ||
+        (propertyInfo.condominio && propertyInfo.condominio.trim().length > 0);
+      const hasTipo = Boolean(propertyInfo.tipoImovel && propertyInfo.tipoImovel.trim().length > 0);
+      return Boolean(hasEnderecoOrCond && hasTipo);
+    }
+
+    // Passo 1: Partes Envolvidas mínimas (Locadora e Locatário)
+    if (wizardStep === 1) {
+      const hasLocadora = Boolean(propertyInfo.locadora && propertyInfo.locadora.trim().length > 0);
+      const hasLocatario = Boolean(propertyInfo.locatario && propertyInfo.locatario.trim().length > 0);
+      return Boolean(hasLocadora && hasLocatario);
+    }
+
+    // Passo 2: Questionário de Cômodos
+    // O botão próximo de baixo NÃO pode ser clicado enquanto os cômodos não forem gerados/confirmados!
+    if (wizardStep === 2) {
+      return rooms.length > 0 && roomsGenerated;
+    }
+
+    return true;
+  };
 
   const handleNext = () => {
     if (wizardStep === 0 && !propertyInfo.metragem.trim()) {
@@ -785,6 +830,7 @@ export function useVistoriaController() {
     handleDragStart, handleDragOver, handleDrop, analyzeRoom, analyzeAllRooms, generatePdf, exportHtml, openPdfInTab,
     shareWhatsApp, openLaudoHtml, downloadLaudoHtml,
     totalPhotos, totalAnnotations, analyzedRooms, currentRoom, canProceed, handleNext, goHome,
+    roomsGenerated, setRoomsGenerated,
   };
 }
 

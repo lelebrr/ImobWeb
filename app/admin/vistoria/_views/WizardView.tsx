@@ -55,6 +55,7 @@ export function WizardView({ v }: { v: VistoriaController }) {
     saveSettings, startWizard, addRoom, removeRoom, handlePhotoUpload, handleDragStart, handleDragOver, handleDrop,
     analyzeRoom, analyzeAllRooms, generatePdf, exportHtml, openPdfInTab, shareWhatsApp, openLaudoHtml, downloadLaudoHtml,
     totalPhotos, totalAnnotations, analyzedRooms, currentRoom, canProceed, handleNext, goHome,
+    roomsGenerated, setRoomsGenerated,
   } = v;
   const [cameraOpen, setCameraOpen] = React.useState(false);
   const audit = auditLaudo(propertyInfo, rooms, signatures, !!linkedId);
@@ -161,6 +162,8 @@ export function WizardView({ v }: { v: VistoriaController }) {
                   propertyInfo={propertyInfo}
                   addRoom={addRoom}
                   removeRoom={removeRoom}
+                  roomsGenerated={roomsGenerated}
+                  setRoomsGenerated={setRoomsGenerated}
                 />
               )}
 
@@ -405,11 +408,36 @@ export function WizardView({ v }: { v: VistoriaController }) {
           </AnimatePresence>
 
           {/* Navigation */}
-          {!canProceed() && wizardStep === 2 && <p className="mt-4 text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3" role="status">Adicione pelo menos um cômodo para continuar.</p>}
+          {wizardStep === 0 && !canProceed() && (
+            <p className="mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3" role="status">
+              Preencha ao menos o Endereço (ou Condomínio) e o Tipo de Imóvel para continuar.
+            </p>
+          )}
+          {wizardStep === 1 && !canProceed() && (
+            <p className="mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3" role="status">
+              Informe a Locadora e o Locatário(a) para avançar.
+            </p>
+          )}
+          {wizardStep === 2 && !canProceed() && (
+            <p className="mt-4 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3" role="status">
+              Responda às perguntas e clique em &quot;Gerar Cômodos&quot; para poder avançar para a próxima etapa.
+            </p>
+          )}
           <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-white/5 max-sm:sticky max-sm:bottom-0 max-sm:z-20 max-sm:-mx-4 max-sm:px-4 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:bg-[#0a0a0f]/90 max-sm:backdrop-blur-xl">
             <Button variant="ghost" onClick={() => setWizardStep(Math.max(0, wizardStep - 1))} disabled={wizardStep === 0} className="rounded-xl text-xs min-h-11 px-4 text-slate-400 hover:text-white"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Anterior</Button>
             {wizardStep < WIZARD_STEPS.length - 1 && (
-              <Button onClick={handleNext} disabled={!canProceed()} className="rounded-xl min-h-11 px-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20">Próximo <ArrowRight className="w-3.5 h-3.5 ml-1" /></Button>
+              <Button
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className={cn(
+                  "rounded-xl min-h-11 px-5 text-xs font-semibold shadow-lg transition-all",
+                  canProceed()
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-500/20 hover:opacity-95"
+                    : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/5 shadow-none"
+                )}
+              >
+                Próximo <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
             )}
           </div>
         </div>
