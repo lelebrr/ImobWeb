@@ -1,347 +1,414 @@
 package com.imobweb.app.data.repository
 
-import com.google.gson.Gson
+import android.content.Context
 import com.imobweb.app.data.api.ApiService
 import com.imobweb.app.data.local.AppDatabase
 import com.imobweb.app.model.*
+import com.imobweb.app.util.AiInspectionResult
+import com.imobweb.app.util.GeminiDirectService
+import com.imobweb.app.util.PhotoStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
+
+/** Erro de autenticação (token ausente, expirado ou recusado pelo servidor). */
+class AuthExpiredException : Exception("Sessão expirada. Entre novamente em Configurações ⚙️ para sincronizar e usar a IA do servidor.")
 
 class VistoriaRepository(
+    private val context: Context,
     private val database: AppDatabase,
     private val sessionManager: SessionManager
 ) {
     private val dao = database.vistoriaDao()
-    private val gson = Gson()
+
+    /** Serializa gravações locais (autosave, "Próximo", saída da tela). */
+    private val writeMutex = Mutex()
+
+    /** Evita duas sincronizações simultâneas (Worker + tela). */
+    private val syncMutex = Mutex()
+
+    // ------------------------------------------------------------------ leitura
 
     fun getAllVistorias(): Flow<List<Vistoria>> = dao.getAllVistorias()
-
-    suspend fun getBaseUrl(): String = sessionManager.getBaseUrl()
-
-    suspend fun setBaseUrl(url: String) = sessionManager.setBaseUrl(url)
-
-    suspend fun getGeminiKey(): String? = sessionManager.getGeminiKey()
-
-    suspend fun setGeminiKey(key: String) = sessionManager.setGeminiKey(key)
-
-    fun getVistoriasByStatus(status: String): Flow<List<Vistoria>> = dao.getVistoriasByStatus(status)
 
     fun getPendingSyncCount(): Flow<Int> = dao.getPendingSyncCount()
 
     suspend fun getVistoriaById(id: Long): Vistoria? = dao.getVistoriaById(id)
 
-    suspend fun saveVistoria(vistoria: Vistoria): Long = dao.insertVistoria(vistoria)
+    suspend fun getBaseUrl(): String = sessionManager.getBaseUrl()
 
-    suspend fun updateVistoria(vistoria: Vistoria) = dao.updateVistoria(vistoria)
+    suspend fun setBaseUrl(url: String) {
+        sessionManager.setBaseUrl(url)
+        ApiService.resetInstance()
+    }
+
+    suspend fun getGeminiKey(): String? = sessionManager.getGeminiKey()
+
+    suspend fun setGeminiKey(key: String) = sessionManager.setGeminiKey(key)
+
+    suspend fun isLoggedIn(): Boolean = sessionManager.isLoggedIn()
+
+    suspend fun getUserEmail(): String? = sessionManager.getEmail()
+
+    // ------------------------------------------------------------------ gravação
+
+    /**
+     * Grava a vistoria vinda do editor. Preserva o que o editor não controla
+     * (remoteId, createdAt, syncedAt) e marca como pendente de sincronização.
+     * Retorna o id local.
+     */
+    suspend fun saveFromEditor(draft: Vistoria, draftKey: String? = null): Long = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            val rooms = PhotoStore.persisted(context, draft.rooms).map { it.copy(analyzing = false) }
+            // Um rascunho novo gravado duas vezes (autosave + saída) não pode virar dois registros
+            val knownId = if (draft.id > 0) draft.id else draftKey?.let { draftIds[it] } ?: 0L
+            val existing = if (knownId > 0) dao.getVistoriaById(knownId) else null
+            val now = System.currentTimeMillis()
+            if (existing != null) {
+                val updated = draft.copy(
+                    id = existing.id,
+                    remoteId = existing.remoteId,
+                    createdAt = existing.createdAt,
+                    syncedAt = existing.syncedAt,
+                    rooms = rooms,
+                    status = "pending_sync",
+                    updatedAt = now
+                )
+                if (updated.copy(updatedAt = existing.updatedAt, status = existing.status) == existing) {
+                    existing.id // nada mudou: não marca como pendente nem reenvia
+                } else {
+                    dao.updateVistoria(updated)
+                    // Fotos que saíram da vistoria
+                    PhotoStore.deleteFiles(existing, keep = rooms.flatMap { r -> r.photos.mapNotNull { it.filePath } }.toSet())
+                    existing.id
+                }
+            } else {
+                val id = dao.insertVistoria(
+                    draft.copy(id = 0, rooms = rooms, status = "pending_sync", createdAt = now, updatedAt = now)
+                )
+                if (draftKey != null) draftIds[draftKey] = id
+                id
+            }
+        }
+    }
+
+    /** Rascunhos novos já gravados nesta execução: chave do editor → id local. */
+    private val draftIds = mutableMapOf<String, Long>()
 
     suspend fun deleteVistoria(vistoria: Vistoria) = withContext(Dispatchers.IO) {
         val remoteId = vistoria.remoteId
         if (!remoteId.isNullOrBlank()) {
+            // Fica registrado: não volta no próximo pull e a exclusão no servidor é refeita se falhar agora
             sessionManager.markRemoteIdDeleted(remoteId)
-            try {
-                val baseUrl = sessionManager.getBaseUrl()
-                val token = sessionManager.getToken()
-                val api = ApiService.getInstance(baseUrl, token)
-                api.deleteVistoria(remoteId)
-            } catch (_: Exception) { }
+            runCatching { deleteRemote(remoteId) }
         }
-        if (vistoria.id > 0) {
+        writeMutex.withLock {
+            val current = dao.getVistoriaById(vistoria.id) ?: vistoria
             dao.deleteVistoriaById(vistoria.id)
-        }
-        dao.deleteVistoria(vistoria)
-    }
-
-    suspend fun deleteVistoriaById(id: Long) = withContext(Dispatchers.IO) {
-        val v = dao.getVistoriaById(id)
-        if (v != null) {
-            deleteVistoria(v)
-        } else {
-            dao.deleteVistoriaById(id)
+            PhotoStore.deleteFiles(current)
         }
     }
 
-    suspend fun login(email: String, password: String): Result<LoginResponse> {
-        return try {
-            val baseUrl = sessionManager.getBaseUrl()
-            val api = ApiService.getInstance(baseUrl)
+    suspend fun deleteVistoriaById(id: Long) {
+        dao.getVistoriaById(id)?.let { deleteVistoria(it) }
+    }
+
+    /** Apaga todos os laudos do aparelho (não mexe no servidor). */
+    suspend fun deleteAllLocal() = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            dao.deleteAll()
+            PhotoStore.deleteAll(context)
+        }
+    }
+
+    /** Remove arquivos de foto que não pertencem a nenhuma vistoria (fotos descartadas no editor). */
+    suspend fun cleanupOrphanPhotos() = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            val used = dao.getAllOnce().flatMap { v -> v.rooms.flatMap { r -> r.photos.mapNotNull { it.filePath } } }.toSet()
+            val cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+            PhotoStore.dir(context).listFiles()?.forEach { f ->
+                if (f.absolutePath !in used && f.lastModified() < cutoff) f.delete()
+            }
+            // Temporários de câmera esquecidos
+            File(context.cacheDir, "photos").listFiles()?.forEach { f -> if (f.lastModified() < cutoff) f.delete() }
+        }
+    }
+
+    // ------------------------------------------------------------------ sessão
+
+    suspend fun login(email: String, password: String): Result<LoginResponse> = withContext(Dispatchers.IO) {
+        try {
+            val api = ApiService.getInstance(sessionManager.getBaseUrl())
             val response = api.login(LoginRequest(email, password))
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null && body.success) {
-                    val token = body.user?.id ?: ""
-                    sessionManager.saveSession(
-                        token = token,
-                        email = email,
-                        userId = body.user?.id ?: "",
-                        role = body.role ?: "BROKER"
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success) {
+                val token = body.token
+                if (token.isNullOrBlank()) {
+                    return@withContext Result.failure(
+                        Exception("O servidor não devolveu o token de acesso. Atualize o servidor (rota /api/auth/login).")
                     )
-                    Result.success(body)
-                } else {
-                    Result.failure(Exception(body?.error ?: "Erro ao fazer login"))
                 }
+                sessionManager.saveSession(
+                    token = token,
+                    email = email,
+                    userId = body.user?.id ?: "",
+                    role = body.role ?: "BROKER"
+                )
+                Result.success(body)
             } else {
-                Result.failure(Exception("Erro ${response.code()}: ${response.errorBody()?.string()}"))
+                val message = when (response.code()) {
+                    401 -> "E-mail ou senha incorretos"
+                    403 -> "Conta inativa ou bloqueada"
+                    else -> body?.error ?: "Erro ${response.code()} ao entrar"
+                }
+                Result.failure(Exception(message))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Não foi possível conectar ao servidor: ${e.message}"))
         }
     }
 
-    suspend fun analyzeRoom(roomName: String, photos: List<String>, propertyType: String, finality: String): Result<AnalyzeResponse> {
-        val geminiKey = sessionManager.getGeminiKey()
+    suspend fun logout() {
+        sessionManager.clearSession()
+        ApiService.resetInstance()
+    }
 
-        // 1. Tentar via servidor backend se autenticado
+    private suspend fun authedApi(): ApiService {
         val token = sessionManager.getToken()
-        if (!token.isNullOrBlank()) {
-            try {
-                val baseUrl = sessionManager.getBaseUrl()
-                val api = ApiService.getInstance(baseUrl, token)
-                val response = api.analyze(
-                    AnalyzeRequest(
-                        rooms = listOf(AnalyzeRoomInput(name = roomName, photos = photos)),
-                        propertyType = propertyType,
-                        finality = finality
-                    )
-                )
-                if (response.isSuccessful && response.body()?.success == true) {
-                    return Result.success(response.body()!!)
-                }
-            } catch (_: Exception) { }
-        }
-
-        // 2. Se estiver no modo offline/sem token mas com chave Gemini própria
-        if (!geminiKey.isNullOrBlank()) {
-            val direct = com.imobweb.app.util.GeminiDirectService.analyzeRoomDirect(
-                apiKey = geminiKey,
-                roomName = roomName,
-                photosBase64 = photos,
-                propertyType = propertyType,
-                finality = finality
-            )
-            return direct.map { items ->
-                AnalyzeResponse(
-                    success = true,
-                    results = mapOf(roomName to items),
-                    error = null
-                )
-            }
-        }
-
-        return Result.failure(
-            Exception("IA não configurada: faça login no servidor ou adicione sua chave Gemini em Configurações ⚙️")
-        )
+        if (token.isNullOrBlank()) throw AuthExpiredException()
+        return ApiService.getInstance(sessionManager.getBaseUrl(), token)
     }
 
-    suspend fun analyzeRoomStructured(
+    private suspend fun onUnauthorized(): Nothing {
+        sessionManager.clearToken()
+        ApiService.resetInstance()
+        throw AuthExpiredException()
+    }
+
+    // ------------------------------------------------------------------ IA
+
+    private suspend fun photoPayload(photos: List<PhotoData>, max: Int): List<String> =
+        withContext(Dispatchers.IO) { photos.asSequence().mapNotNull { PhotoStore.toDataUrl(it) }.take(max).toList() }
+
+    /** Análise pelo servidor (Gemini do backend). Null quando não há login. */
+    private suspend fun analyzeOnServer(
         roomName: String,
         photos: List<String>,
-        propertyType: String = "Imóvel",
-        finality: String = "Residencial"
-    ): Result<com.imobweb.app.util.AiInspectionResult> {
-        val geminiKey = sessionManager.getGeminiKey()
-        if (!geminiKey.isNullOrBlank()) {
-            val direct = com.imobweb.app.util.GeminiDirectService.analyzeRoomStructuredDirect(
-                apiKey = geminiKey,
-                roomName = roomName,
-                photosBase64 = photos,
+        propertyType: String,
+        finality: String,
+        knownFurniture: List<String>,
+        knownDamages: List<String>
+    ): AnalyzeRoomResult? {
+        if (!sessionManager.isLoggedIn()) return null
+        val api = authedApi()
+        val response = api.analyze(
+            AnalyzeRequest(
+                rooms = listOf(AnalyzeRoomInput(roomName, photos, knownFurniture, knownDamages)),
                 propertyType = propertyType,
                 finality = finality
             )
-            if (direct.isSuccess) return direct
-        }
-
-        // Tentar via backend se autenticado
-        val token = sessionManager.getToken()
-        if (!token.isNullOrBlank()) {
-            val result = analyzeRoom(roomName, photos, propertyType, finality)
-            if (result.isSuccess) {
-                val lines = result.getOrNull()?.results?.get(roomName) ?: emptyList()
-                return Result.success(
-                    com.imobweb.app.util.AiInspectionResult(
-                        furniture = lines.filter { it.contains("móvel", ignoreCase = true) || it.contains("armário", ignoreCase = true) || it.contains("mesa", ignoreCase = true) || it.contains("sofá", ignoreCase = true) },
-                        damages = lines.filter { it.contains("risco", ignoreCase = true) || it.contains("arranhão", ignoreCase = true) || it.contains("descasc", ignoreCase = true) || it.contains("avaria", ignoreCase = true) },
-                        problems = lines.filter { it.contains("umidade", ignoreCase = true) || it.contains("infiltração", ignoreCase = true) || it.contains("vazamento", ignoreCase = true) || it.contains("defeito", ignoreCase = true) },
-                        observations = lines
-                    )
-                )
-            }
-        }
-
-        // Fallback inteligente para demonstração offline
-        val relevant = RoomFurnitureCatalog.getRelevantFurniture(roomName)
-        val sampleMoveis = relevant.take(minOf(4, relevant.size))
-        val sampleAvarias = listOf("Pintura em bom estado", "Piso conservado")
-        return Result.success(
-            com.imobweb.app.util.AiInspectionResult(
-                furniture = sampleMoveis,
-                damages = sampleAvarias,
-                problems = emptyList(),
-                observations = listOf("✓ Análise visual do cômodo $roomName concluída")
-            )
         )
+        if (response.code() == 401) onUnauthorized()
+        val body = response.body()
+        if (!response.isSuccessful || body == null || !body.success) {
+            val detail = body?.error ?: runCatching { response.errorBody()?.string() }.getOrNull()?.take(200)
+            throw Exception("IA do servidor indisponível (${response.code()})${detail?.let { ": $it" } ?: ""}")
+        }
+        // O servidor normaliza o nome do cômodo; se não bater, usa o único resultado
+        return body.results?.get(roomName) ?: body.results?.values?.firstOrNull()
     }
 
-    suspend fun generatePdf(data: Vistoria): Result<String> {
-        return try {
-            val baseUrl = sessionManager.getBaseUrl()
-            val api = ApiService.getInstance(baseUrl, sessionManager.getToken())
-            val request = PdfGenerateRequest(
-                condominio = data.condominio, endereco = data.endereco,
-                numero = data.numero, conjApto = data.conjApto,
-                cep = data.cep, bairro = data.bairro,
-                cidade = data.cidade, estado = data.estado,
-                tipoImovel = data.tipoImovel, finalidade = data.finalidade,
-                metragem = data.metragem, mobiliado = data.mobiliado,
-                locadora = data.locadora, locadoraCpf = data.locadoraCpf,
-                locatario = data.locatario, locatarioCpf = data.locatarioCpf,
-                vistoriadora = data.vistoriadora, dataFotografia = data.dataFotografia,
-                dataLaudo = data.dataLaudo, solicitante = data.solicitante,
-                consideracoes = data.consideracoes,
-                rooms = data.rooms.map { room ->
-                    val inventoryItems = mutableListOf<String>()
-                    if (room.furniture.isNotEmpty()) {
-                        inventoryItems.add("Móveis: ${room.furniture.joinToString(", ")}")
-                    }
-                    if (room.damages.isNotEmpty()) {
-                        inventoryItems.addAll(room.damages.map { "Avarias: $it" })
-                    }
-                    if (room.problems.isNotEmpty()) {
-                        inventoryItems.addAll(room.problems)
-                    }
-                    PdfRoomData(
-                        name = room.name,
-                        items = (room.items + inventoryItems).ifEmpty {
-                            listOf("✓ Cômodo \"${room.name}\" - sem análise automática")
-                        },
-                        furniture = room.furniture,
-                        damages = room.damages,
-                        problems = room.problems,
-                        photos = room.photos.map { photo ->
-                            PdfPhotoData(
-                                dataUrl = photo.dataUrl,
-                                name = photo.name,
-                                annotations = photo.annotations
-                            )
-                        }
-                    )
-                }
-            )
-            val response = api.generatePdf(request)
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null && body.success && body.html != null) {
-                    Result.success(body.html)
-                } else {
-                    Result.failure(Exception(body?.error ?: "Erro ao gerar PDF"))
-                }
-            } else {
-                Result.failure(Exception("Erro ${response.code()}"))
+    /**
+     * Constatações (linhas "✓ ...") para o cômodo. Usa a IA do servidor quando há login
+     * e, sem login ou se o servidor falhar, a chave Gemini própria. Nunca inventa resultado.
+     */
+    suspend fun analyzeRoom(
+        roomName: String,
+        photos: List<PhotoData>,
+        propertyType: String,
+        finality: String
+    ): Result<List<String>> = runCatching {
+        val payload = photoPayload(photos, 8)
+        if (payload.isEmpty()) throw Exception("As fotos deste cômodo não foram encontradas no aparelho")
+
+        var serverError: Exception? = null
+        try {
+            analyzeOnServer(roomName, payload, propertyType, finality, emptyList(), emptyList())
+                ?.items?.takeIf { it.isNotEmpty() }?.let { return@runCatching it }
+        } catch (e: AuthExpiredException) {
+            serverError = e
+        } catch (e: Exception) {
+            serverError = e
+        }
+
+        val key = sessionManager.getGeminiKey()
+        if (!key.isNullOrBlank()) {
+            return@runCatching GeminiDirectService.analyzeRoomDirect(key, roomName, payload, propertyType, finality).getOrThrow()
+        }
+        throw serverError ?: Exception("IA não configurada: entre com sua conta ou informe uma chave Gemini em Configurações ⚙️")
+    }
+
+    /** Sugestões de móveis, avarias e problemas para o cômodo. Nunca inventa resultado. */
+    suspend fun analyzeRoomStructured(
+        roomName: String,
+        photos: List<PhotoData>,
+        propertyType: String,
+        finality: String,
+        knownFurniture: List<String> = emptyList(),
+        knownDamages: List<String> = emptyList()
+    ): Result<AiInspectionResult> = runCatching {
+        val payload = photoPayload(photos, 8)
+        if (payload.isEmpty()) throw Exception("As fotos deste cômodo não foram encontradas no aparelho")
+
+        var serverError: Exception? = null
+        try {
+            val server = analyzeOnServer(roomName, payload, propertyType, finality, knownFurniture, knownDamages)
+            if (server != null) {
+                return@runCatching AiInspectionResult(
+                    furniture = server.suggestedFurniture.orEmpty(),
+                    damages = server.suggestedDamages.orEmpty(),
+                    problems = emptyList(),
+                    observations = server.items.orEmpty()
+                )
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            serverError = e
+        }
+
+        val key = sessionManager.getGeminiKey()
+        if (!key.isNullOrBlank()) {
+            return@runCatching GeminiDirectService.analyzeRoomStructuredDirect(key, roomName, payload, propertyType, finality).getOrThrow()
+        }
+        throw serverError ?: Exception("IA não configurada: entre com sua conta ou informe uma chave Gemini em Configurações ⚙️")
+    }
+
+    // ------------------------------------------------------------------ sincronização
+
+    data class SyncReport(val pushed: Int, val pulled: Int, val deleted: Int, val errors: List<String>)
+
+    /** Exclusões pendentes → envio das pendentes → importação das novas do servidor. */
+    suspend fun syncAll(): SyncReport = withContext(Dispatchers.IO) {
+        syncMutex.withLock {
+            if (!sessionManager.isLoggedIn()) return@withLock SyncReport(0, 0, 0, emptyList())
+            val errors = mutableListOf<String>()
+            val deleted = runCatching { pushDeletes() }.getOrElse { errors += it.message.orEmpty(); 0 }
+            val pushed = runCatching { pushPending(errors) }.getOrElse { errors += it.message.orEmpty(); 0 }
+            val pulled = runCatching { pullNew() }.getOrElse { errors += it.message.orEmpty(); 0 }
+            SyncReport(pushed, pulled, deleted, errors)
         }
     }
 
-    suspend fun syncPendingVistorias(): Int {
-        val pending = dao.getPendingSyncVistorias()
+    private suspend fun deleteRemote(remoteId: String) {
+        val response = authedApi().deleteVistoria(remoteId)
+        if (response.code() == 401) onUnauthorized()
+        if (response.isSuccessful) sessionManager.removePendingDelete(remoteId)
+    }
+
+    private suspend fun pushDeletes(): Int {
+        var count = 0
+        for (rid in sessionManager.getPendingDeletes()) {
+            deleteRemote(rid)
+            count++
+        }
+        return count
+    }
+
+    private suspend fun pushPending(errors: MutableList<String>): Int {
+        val api = authedApi()
         var synced = 0
-        for (vistoria in pending) {
-            try {
-                val baseUrl = sessionManager.getBaseUrl()
-                val token = sessionManager.getToken() ?: continue
-                val api = ApiService.getInstance(baseUrl, token)
-                val userId = sessionManager.getToken() ?: ""
-                val request = SyncRequest(
-                    vistoria = vistoria.toSyncData(),
-                    userId = userId
+        for (vistoria in dao.getPendingSyncVistorias()) {
+            val response = try {
+                api.syncVistoria(SyncRequest(vistoria = vistoria.toSyncData()))
+            } catch (e: OutOfMemoryError) {
+                errors += "Vistoria ${vistoria.id}: fotos demais para enviar de uma vez"
+                continue
+            }
+            if (response.code() == 401) onUnauthorized()
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true && !body.remoteId.isNullOrBlank()) {
+                val marked = dao.markSyncedIfUnchanged(
+                    id = vistoria.id,
+                    remoteId = body.remoteId,
+                    updatedAt = vistoria.updatedAt,
+                    syncedAt = System.currentTimeMillis()
                 )
-                val response = api.syncVistoria(request)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.success == true) {
-                        val remoteId = body.remoteId
-                        val updated = vistoria.copy(
-                            remoteId = remoteId ?: vistoria.remoteId,
-                            status = "synced",
-                            syncedAt = System.currentTimeMillis()
-                        )
-                        dao.updateVistoria(updated)
-                        synced++
-                    }
-                }
-            } catch (_: Exception) { }
+                // Editada durante o envio: guarda o remoteId para o próximo envio não duplicar
+                if (marked == 0) dao.setRemoteId(vistoria.id, body.remoteId)
+                synced++
+            } else {
+                errors += "Vistoria ${vistoria.id}: ${body?.error ?: "HTTP ${response.code()}"}"
+            }
         }
         return synced
     }
 
-    suspend fun pullVistoriasFromServer(): Int {
-        return try {
-            val baseUrl = sessionManager.getBaseUrl()
-            val token = sessionManager.getToken() ?: return 0
-            val api = ApiService.getInstance(baseUrl, token)
-            val response = api.listVistorias()
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body?.success == true && body.vistorias != null) {
-                    var imported = 0
-                    val localIds = dao.getAllVistorias().first().map { it.remoteId }.toSet()
-                    for (sv in body.vistorias) {
-                        val rid = sv.remoteId
-                        if (rid != null && sessionManager.isRemoteIdDeleted(rid)) continue
-                        if (rid in localIds) continue
-                        val vistoria = sv.toVistoria()
-                        dao.insertVistoria(vistoria)
-                        imported++
-                    }
-                    imported
-                } else 0
-            } else 0
-        } catch (_: Exception) { 0 }
+    /** Importa só as vistorias que ainda não existem no aparelho (resumo primeiro, depois uma a uma). */
+    private suspend fun pullNew(): Int {
+        val api = authedApi()
+        val response = api.listVistorias()
+        if (response.code() == 401) onUnauthorized()
+        val summaries = response.body()?.takeIf { response.isSuccessful && it.success }?.vistorias ?: return 0
+
+        val local = dao.getRemoteIds().toSet()
+        var imported = 0
+        for (summary in summaries) {
+            val rid = summary.remoteId ?: continue
+            if (rid in local || sessionManager.isRemoteIdDeleted(rid)) continue
+            val full = api.listVistorias(rid)
+            if (full.code() == 401) onUnauthorized()
+            val sv = full.body()?.vistorias?.firstOrNull() ?: continue
+            writeMutex.withLock {
+                if (rid !in dao.getRemoteIds()) {
+                    dao.insertVistoria(sv.toVistoria())
+                    imported++
+                }
+            }
+        }
+        return imported
     }
 
-    private suspend fun SyncVistoriaData.toVistoria(): Vistoria {
-        return Vistoria(
-            remoteId = remoteId,
-            condominio = condominio, endereco = endereco, numero = numero,
-            conjApto = conjApto, cep = cep, bairro = bairro,
-            cidade = cidade, estado = estado, tipoImovel = tipoImovel,
-            finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
-            locadora = locadora, locadoraCpf = locadoraCpf,
-            locatario = locatario, locatarioCpf = locatarioCpf,
-            vistoriadora = vistoriadora, dataFotografia = dataFotografia,
-            dataLaudo = dataLaudo, solicitante = solicitante,
-            consideracoes = consideracoes,
-            rooms = rooms.map { room ->
-                RoomData(
-                    id = room.id.ifBlank { java.util.UUID.randomUUID().toString() },
-                    name = room.name,
-                    furniture = room.furniture,
-                    damages = room.damages,
-                    problems = room.problems,
-                    items = room.items,
-                    photos = room.photos.map { photo ->
+    private fun SyncVistoriaData.toVistoria(): Vistoria = Vistoria(
+        remoteId = remoteId,
+        condominio = condominio, endereco = endereco, numero = numero,
+        conjApto = conjApto, cep = cep, bairro = bairro,
+        cidade = cidade, estado = estado, tipoImovel = tipoImovel,
+        finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+        locadora = locadora, locadoraCpf = locadoraCpf,
+        locatario = locatario, locatarioCpf = locatarioCpf,
+        vistoriadora = vistoriadora, dataFotografia = dataFotografia,
+        dataLaudo = dataLaudo, solicitante = solicitante,
+        consideracoes = consideracoes,
+        rooms = rooms.map { room ->
+            RoomData(
+                id = room.id.ifBlank { java.util.UUID.randomUUID().toString() },
+                name = room.name,
+                furniture = room.furniture.orEmpty(),
+                damages = room.damages.orEmpty(),
+                problems = room.problems.orEmpty(),
+                items = room.items.orEmpty(),
+                photos = room.photos.orEmpty().map { photo ->
+                    PhotoStore.persisted(
+                        context,
                         PhotoData(
-                            dataUrl = photo.dataUrl,
-                            name = photo.name,
-                            annotations = photo.annotations.map { ann ->
-                                PhotoAnnotation(x = ann.x, y = ann.y, label = ann.label)
-                            },
-                            filePath = photo.filePath
+                            dataUrl = photo.dataUrl.orEmpty(),
+                            name = photo.name.orEmpty(),
+                            annotations = photo.annotations.orEmpty().map { PhotoAnnotation(it.x, it.y, it.label) },
+                            filePath = null
                         )
-                    }
-                )
-            },
-            status = "synced",
-            createdAt = createdAt,
-            updatedAt = updatedAt
-        )
-    }
-}
+                    )
+                }
+            )
+        },
+        status = "synced",
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        syncedAt = System.currentTimeMillis()
+    )
 
-private fun Vistoria.toSyncData(): SyncVistoriaData {
-    return SyncVistoriaData(
+    private fun Vistoria.toSyncData(): SyncVistoriaData = SyncVistoriaData(
         id = id, remoteId = remoteId,
         condominio = condominio, endereco = endereco, numero = numero,
         conjApto = conjApto, cep = cep, bairro = bairro,
@@ -361,12 +428,10 @@ private fun Vistoria.toSyncData(): SyncVistoriaData {
                 items = room.items,
                 photos = room.photos.map { photo ->
                     SyncPhotoData(
-                        dataUrl = photo.dataUrl,
+                        dataUrl = PhotoStore.toDataUrl(photo).orEmpty(),
                         name = photo.name,
-                        annotations = photo.annotations.map { ann ->
-                            SyncAnnotationData(x = ann.x, y = ann.y, label = ann.label)
-                        },
-                        filePath = photo.filePath
+                        annotations = photo.annotations.map { SyncAnnotationData(it.x, it.y, it.label) },
+                        filePath = null
                     )
                 }
             )

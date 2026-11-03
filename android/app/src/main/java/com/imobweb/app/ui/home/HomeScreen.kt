@@ -1,5 +1,8 @@
 package com.imobweb.app.ui.home
 
+import android.widget.Toast
+import com.imobweb.app.data.repository.AuthExpiredException
+
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.imobweb.app.data.repository.SyncWorker
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.ConnectivityObserver
@@ -33,6 +35,7 @@ fun HomeScreen(
     repository: VistoriaRepository,
     onNewVistoria: () -> Unit,
     onViewVistorias: () -> Unit,
+    onOpenVistoria: (Long) -> Unit = { onViewVistorias() },
     onSettings: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
@@ -40,7 +43,6 @@ fun HomeScreen(
     val vistorias by repository.getAllVistorias().collectAsState(initial = emptyList())
     val pendingSyncCount by repository.getPendingSyncCount().collectAsState(initial = 0)
     var isSyncing by remember { mutableStateOf(false) }
-    var showSyncAnimation by remember { mutableStateOf(false) }
 
     // Connectivity observer
     val connectivityObserver = remember { ConnectivityObserver(context) }
@@ -52,21 +54,39 @@ fun HomeScreen(
 
     val isOnline = connectivityStatus == ConnectivityStatus.Available
 
-    // Pull data from server on first load
-    LaunchedEffect(Unit) {
-        if (isOnline) {
-            repository.pullVistoriasFromServer()
+    var isLoggedIn by remember { mutableStateOf(true) }
+
+    /** Sincronização real (envia pendentes, importa novas) com retorno para o usuário. */
+    fun runSync(silent: Boolean) {
+        if (isSyncing) return
+        scope.launch {
+            isLoggedIn = repository.isLoggedIn()
+            if (!isLoggedIn) {
+                if (!silent) Toast.makeText(context, "Entre com sua conta em Configurações para sincronizar", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            isSyncing = true
+            val result = runCatching { repository.syncAll() }
+            isSyncing = false
+            isLoggedIn = repository.isLoggedIn()
+            result.onSuccess { r ->
+                if (!silent || r.errors.isNotEmpty()) {
+                    val msg = when {
+                        r.errors.isNotEmpty() -> "Sincronização com falhas: ${r.errors.first()}"
+                        r.pushed == 0 && r.pulled == 0 -> "Tudo sincronizado"
+                        else -> "Sincronizado: ${r.pushed} enviada(s), ${r.pulled} recebida(s)"
+                    }
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                }
+            }.onFailure { e ->
+                if (!silent || e is AuthExpiredException) Toast.makeText(context, e.message ?: "Erro ao sincronizar", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
-    // Auto-sync when connectivity restored
+    // Sincroniza ao abrir e quando a conexão volta
     LaunchedEffect(isOnline) {
-        if (isOnline && pendingSyncCount > 0) {
-            isSyncing = true
-            showSyncAnimation = true
-            val synced = repository.syncPendingVistorias()
-            isSyncing = false
-        }
+        if (isOnline) runSync(silent = true) else isLoggedIn = repository.isLoggedIn()
     }
 
     val totalRooms = vistorias.sumOf { it.rooms.size }
@@ -134,13 +154,7 @@ fun HomeScreen(
                             Text("$pendingSyncCount", fontSize = 9.sp)
                         }
                     }
-                    IconButton(onClick = {
-                        scope.launch {
-                            isSyncing = true
-                            SyncWorker.syncNow(context)
-                            isSyncing = false
-                        }
-                    }) {
+                    IconButton(onClick = { runSync(silent = false) }, enabled = !isSyncing) {
                         Icon(
                             Icons.Default.Sync,
                             contentDescription = "Sincronizar",
@@ -167,6 +181,26 @@ fun HomeScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // Sem login: nada é enviado ao servidor
+            AnimatedVisibility(visible = !isLoggedIn) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onSettings),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Login, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Modo offline: as vistorias ficam só neste aparelho. Toque para entrar e sincronizar.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
             // Offline banner
             AnimatedVisibility(visible = !isOnline && vistorias.isNotEmpty()) {
                 Surface(
@@ -234,15 +268,7 @@ fun HomeScreen(
                     icon = if (pendingSyncCount > 0) Icons.Default.CloudOff else Icons.Default.CloudDone,
                     color = if (pendingSyncCount > 0) Color(0xFFF59E0B) else Color(0xFF34D399),
                     modifier = Modifier.weight(1f),
-                    onClick = {
-                        if (pendingSyncCount > 0) {
-                            scope.launch {
-                                isSyncing = true
-                                SyncWorker.syncNow(context)
-                                isSyncing = false
-                            }
-                        }
-                    }
+                    onClick = { runSync(silent = false) }
                 )
             }
 
@@ -352,7 +378,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(vistorias.take(10), key = { it.id }) { vistoria ->
-                        VistoriaHomeCard(vistoria = vistoria, onClick = onViewVistorias)
+                        VistoriaHomeCard(vistoria = vistoria, onClick = { onOpenVistoria(vistoria.id) })
                     }
                 }
             }

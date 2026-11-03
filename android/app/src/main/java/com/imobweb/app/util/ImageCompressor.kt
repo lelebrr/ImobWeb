@@ -10,87 +10,74 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Base64
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+/**
+ * Compressão de fotos da vistoria: corrige a orientação (EXIF), reduz para no
+ * máximo [DEFAULT_MAX_DIMENSION] px e grava JPEG em disco. A decodificação usa
+ * inSampleSize para não carregar fotos de 12–50 MP inteiras na memória.
+ */
 object ImageCompressor {
 
-    data class CompressedImage(
-        val bitmap: Bitmap,
-        val filePath: String?,
-        val base64: String,
-        val width: Int,
-        val height: Int,
-        val sizeBytes: Long
-    )
+    const val DEFAULT_MAX_DIMENSION = 1600
+    const val DEFAULT_QUALITY = 82
+    private const val MAX_SIZE_BYTES = 1_500_000L
 
-    suspend fun compress(
+    /** Lê [uri], comprime e grava em [target]. Retorna o arquivo ou null se a imagem for inválida. */
+    fun compressToFile(
         context: Context,
         uri: Uri,
-        maxDimension: Int = 1200,
-        quality: Int = 80,
-        maxSizeBytes: Long = 2_000_000 // 2MB
-    ): CompressedImage? {
+        target: File,
+        maxDimension: Int = DEFAULT_MAX_DIMENSION,
+        quality: Int = DEFAULT_QUALITY
+    ): File? {
         return try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
+            // 1) Só as dimensões, para escolher o fator de amostragem
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
-            if (originalBitmap == null) return null
+            var sample = 1
+            while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxDimension) sample *= 2
 
-            // Fix orientation from EXIF
-            val correctedBitmap = fixOrientation(context, uri, originalBitmap)
+            val options = BitmapFactory.Options().apply { inSampleSize = sample }
+            val decoded = context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            } ?: return null
 
-            // Scale down
-            val scaled = scaleToFit(correctedBitmap, maxDimension)
+            val oriented = fixOrientation(context, uri, decoded)
+            val scaled = scaleToFit(oriented, maxDimension)
 
-            // Compress to JPEG
-            val outputStream = ByteArrayOutputStream()
-            var currentQuality = quality
-            scaled.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream)
-
-            // Reduce quality until under maxSizeBytes
-            while (outputStream.size() > maxSizeBytes && currentQuality > 20) {
-                outputStream.reset()
-                currentQuality -= 10
-                scaled.compress(Bitmap.CompressFormat.JPEG, currentQuality, outputStream)
+            val output = ByteArrayOutputStream()
+            var q = quality
+            scaled.compress(Bitmap.CompressFormat.JPEG, q, output)
+            while (output.size() > MAX_SIZE_BYTES && q > 40) {
+                output.reset()
+                q -= 10
+                scaled.compress(Bitmap.CompressFormat.JPEG, q, output)
             }
 
-            val byteArray = outputStream.toByteArray()
-            val base64 = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(byteArray)
+            target.parentFile?.mkdirs()
+            FileOutputStream(target).use { it.write(output.toByteArray()) }
 
-            // Save to cache
-            val fileName = "photo_${System.currentTimeMillis()}_${(Math.random() * 1000).toInt()}.jpg"
-            val cacheFile = File(context.cacheDir, "photos/$fileName")
-            cacheFile.parentFile?.mkdirs()
-            FileOutputStream(cacheFile).use { it.write(byteArray) }
-
-            if (originalBitmap != correctedBitmap) correctedBitmap.recycle()
-            originalBitmap.recycle()
-
-            CompressedImage(
-                bitmap = scaled,
-                filePath = cacheFile.absolutePath,
-                base64 = base64,
-                width = scaled.width,
-                height = scaled.height,
-                sizeBytes = byteArray.size.toLong()
-            )
+            if (scaled !== oriented) scaled.recycle()
+            if (oriented !== decoded) oriented.recycle()
+            decoded.recycle()
+            target
         } catch (e: Exception) {
+            null
+        } catch (e: OutOfMemoryError) {
             null
         }
     }
 
     private fun fixOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri) ?: return bitmap
-            val exif = ExifInterface(inputStream)
-            inputStream.close()
-
-            val orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL
-            )
+        return try {
+            val orientation = context.contentResolver.openInputStream(uri)?.use {
+                ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            } ?: ExifInterface.ORIENTATION_NORMAL
             val matrix = Matrix()
             when (orientation) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
@@ -100,51 +87,36 @@ object ImageCompressor {
                 ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
                 else -> return bitmap
             }
-            return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         } catch (_: Exception) {
-            return bitmap
+            bitmap
         }
     }
 
     private fun scaleToFit(bitmap: Bitmap, maxDimension: Int): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-        val ratio = min(maxDimension.toFloat() / width, maxDimension.toFloat() / height)
+        val ratio = min(maxDimension.toFloat() / bitmap.width, maxDimension.toFloat() / bitmap.height)
         if (ratio >= 1f) return bitmap
-        val newWidth = (width * ratio).roundToInt()
-        val newHeight = (height * ratio).roundToInt()
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            (bitmap.width * ratio).roundToInt(),
+            (bitmap.height * ratio).roundToInt(),
+            true
+        )
     }
 
-    fun base64FromFile(filePath: String, maxDimension: Int = 1200, quality: Int = 80): String? {
+    /**
+     * Data URL de um JPEG já comprimido em disco. Não decodifica a imagem:
+     * os bytes do arquivo são codificados direto em base64.
+     */
+    fun base64FromFile(filePath: String): String? {
         return try {
-            val bitmap = BitmapFactory.decodeFile(filePath) ?: return null
-            val scaled = scaleToFit(bitmap, maxDimension)
-            val outputStream = ByteArrayOutputStream()
-            scaled.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-            val byteArray = outputStream.toByteArray()
-            bitmap.recycle()
-            if (scaled != bitmap) scaled.recycle()
-            "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(byteArray)
-        } catch (_: Exception) { null }
-    }
-
-    fun saveBitmapToCache(context: Context, bitmap: Bitmap, fileName: String): String? {
-        return try {
-            val cacheDir = File(context.cacheDir, "photos")
-            if (!cacheDir.exists()) cacheDir.mkdirs()
-            val file = File(cacheDir, fileName)
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
-            }
-            file.absolutePath
-        } catch (e: Exception) { null }
-    }
-
-    fun cleanCache(context: Context) {
-        val cacheDir = File(context.cacheDir, "photos")
-        if (cacheDir.exists()) {
-            cacheDir.listFiles()?.forEach { it.delete() }
+            val file = File(filePath)
+            if (!file.exists() || file.length() == 0L) return null
+            "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(file.readBytes())
+        } catch (_: Exception) {
+            null
+        } catch (_: OutOfMemoryError) {
+            null
         }
     }
 }

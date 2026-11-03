@@ -47,8 +47,11 @@ import java.util.concurrent.Executors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraScreen(
-    onPhotoCaptured: (Bitmap, String) -> Unit,
-    onClose: () -> Unit
+    /** Recebe o caminho do JPEG original (com EXIF). A câmera continua aberta para a próxima foto. */
+    onPhotoCaptured: (String) -> Unit,
+    onClose: () -> Unit,
+    title: String = "Tirar Foto",
+    photoCount: Int = 0
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -82,13 +85,9 @@ fun CameraScreen(
     val systemCameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && systemPhotoFile != null && systemPhotoFile!!.exists()) {
-            val file = systemPhotoFile!!
-            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-            if (bitmap != null) {
-                val rotated = fixCameraOrientation(file.absolutePath, bitmap)
-                onPhotoCaptured(rotated ?: bitmap, file.absolutePath)
-            }
+        val file = systemPhotoFile
+        if (success && file != null && file.exists() && file.length() > 0) {
+            onPhotoCaptured(file.absolutePath)
         }
     }
 
@@ -153,7 +152,14 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tirar Foto", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text(title, fontWeight = FontWeight.Bold)
+                        if (photoCount > 0) {
+                            Text("$photoCount foto(s) neste cômodo", fontSize = 12.sp, color = LocalContentColor.current.copy(alpha = 0.7f))
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -293,11 +299,10 @@ fun CameraScreen(
                                 cameraExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                        val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
-                                        if (bitmap != null) {
-                                            val rotated = fixCameraOrientation(photoFile.absolutePath, bitmap)
+                                        // Sem decodificar aqui: a rotação (EXIF) e a redução são feitas ao importar
+                                        if (photoFile.exists() && photoFile.length() > 0) {
                                             scope.launch(Dispatchers.Main) {
-                                                onPhotoCaptured(rotated ?: bitmap, photoFile.absolutePath)
+                                                onPhotoCaptured(photoFile.absolutePath)
                                                 isCapturing = false
                                             }
                                         } else {
@@ -349,24 +354,4 @@ fun CameraScreen(
             }
         }
     }
-}
-
-private fun fixCameraOrientation(filePath: String, bitmap: Bitmap): Bitmap? {
-    return try {
-        val exif = ExifInterface(filePath)
-        val orientation = exif.getAttributeInt(
-            ExifInterface.TAG_ORIENTATION,
-            ExifInterface.ORIENTATION_NORMAL
-        )
-        val matrix = Matrix()
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
-            else -> return null
-        }
-        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    } catch (_: Exception) { null }
 }

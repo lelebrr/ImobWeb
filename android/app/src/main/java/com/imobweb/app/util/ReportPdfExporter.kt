@@ -76,17 +76,20 @@ object ReportPdfExporter {
         return exportHtml(context, html, "Laudo_${slug(vistoria)}.pdf")
     }
 
+    /** Altura total medida e os pontos de quebra de página (px físicos, começando em 0). */
+    private data class PageLayout(val heightPx: Int, val breaksPx: List<Int>)
+
     suspend fun exportHtml(context: Context, html: String, fileName: String): File =
         withContext(Dispatchers.Main) {
             val spec = renderSpec(context.resources.displayMetrics.density)
             val webView = createWebView(context, spec.widthPx)
             try {
-                val contentHeight = loadAndMeasure(
+                val layout = loadAndMeasure(
                     webView,
-                    injectReadyScript(html),
+                    injectReadyScript(html, spec.pageHeightPx),
                     spec.pageHeightPx
                 )
-                renderPdf(webView, contentHeight, spec, context, fileName)
+                renderPdf(webView, layout, spec, context, fileName)
             } finally {
                 webView.removeJavascriptInterface(BRIDGE_NAME)
                 webView.stopLoading()
@@ -119,11 +122,12 @@ object ReportPdfExporter {
 
     private suspend fun renderPdf(
         webView: WebView,
-        contentHeightPx: Int,
+        layout: PageLayout,
         spec: RenderSpec,
         context: Context,
         fileName: String
     ): File {
+        val contentHeightPx = layout.heightPx
         webView.measure(
             View.MeasureSpec.makeMeasureSpec(spec.widthPx, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(contentHeightPx, View.MeasureSpec.EXACTLY)
@@ -133,21 +137,37 @@ object ReportPdfExporter {
         // Dá tempo para o Chromium pintar a camada de software antes de desenhar.
         kotlinx.coroutines.delay(300)
 
+        // Quebras calculadas no HTML (não cortam fotos, linhas nem cabeçalhos e respeitam
+        // .page-break). Sem elas, cai no fatiamento por altura fixa de A4.
+        val starts = layout.breaksPx
+            .filter { it in 0 until contentHeightPx }
+            .distinct()
+            .sorted()
+            .ifEmpty {
+                val pages = ceil(contentHeightPx.toDouble() / spec.pageHeightPx).toInt().coerceAtLeast(1)
+                (0 until pages).map { it * spec.pageHeightPx }
+            }
+            .let { if (it.first() != 0) listOf(0) + it else it }
+
         val document = PdfDocument()
         try {
-            val pages = ceil(contentHeightPx.toDouble() / spec.pageHeightPx).toInt().coerceAtLeast(1)
-            for (index in 0 until pages) {
+            starts.forEachIndexed { index, start ->
+                val end = (starts.getOrNull(index + 1) ?: contentHeightPx)
+                    .coerceAtMost(start + spec.pageHeightPx)
+                val sliceHeightPt = ((end - start) * spec.scale).coerceIn(1f, PAGE_HEIGHT_PT.toFloat())
                 val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH_PT, PAGE_HEIGHT_PT, index + 1).create()
                 val page = document.startPage(pageInfo)
                 val canvas = page.canvas
+                canvas.drawColor(Color.WHITE)
                 canvas.save()
-                canvas.clipRect(0, 0, PAGE_WIDTH_PT, PAGE_HEIGHT_PT)
+                canvas.clipRect(0f, 0f, PAGE_WIDTH_PT.toFloat(), sliceHeightPt)
                 canvas.scale(spec.scale, spec.scale)
-                canvas.translate(0f, -(index * spec.pageHeightPx).toFloat())
+                canvas.translate(0f, -start.toFloat())
                 webView.draw(canvas)
                 canvas.restore()
                 document.finishPage(page)
             }
+            val pages = starts.size
 
             val dir = File(context.cacheDir, "share").apply { mkdirs() }
             val file = File(dir, safeFileName(fileName))
@@ -159,29 +179,35 @@ object ReportPdfExporter {
         }
     }
 
-    private suspend fun loadAndMeasure(webView: WebView, html: String, minHeightPx: Int): Int =
+    private suspend fun loadAndMeasure(webView: WebView, html: String, minHeightPx: Int): PageLayout =
         suspendCancellableCoroutine { continuation ->
             val mainHandler = Handler(Looper.getMainLooper())
             val finished = AtomicBoolean(false)
 
-            fun finish(heightCss: Int, pixelRatio: Double = 1.0) {
+            fun finish(heightCss: Int, pixelRatio: Double = 1.0, breaksCss: List<Double> = emptyList()) {
                 val height = (heightCss * pixelRatio).roundToInt()
                 if (finished.compareAndSet(false, true) && continuation.isActive) {
-                    Log.d(TAG, "Conteúdo medido: ${height}px físicos (${heightCss}px CSS @ ${pixelRatio}x)")
-                    continuation.resume(height.coerceAtLeast(minHeightPx))
+                    Log.d(TAG, "Conteúdo medido: ${height}px físicos (${heightCss}px CSS @ ${pixelRatio}x), ${breaksCss.size} página(s)")
+                    continuation.resume(
+                        PageLayout(
+                            heightPx = height.coerceAtLeast(minHeightPx),
+                            breaksPx = breaksCss.map { (it * pixelRatio).roundToInt() }
+                        )
+                    )
                 }
             }
 
             val bridge = object {
                 @JavascriptInterface
                 fun onReady(height: Double, viewportWidth: Double, pixelRatio: Double) {
-                    Log.d(
-                        TAG,
-                        "JS onReady: altura=$height viewport=$viewportWidth dpr=$pixelRatio " +
-                            "webView=${webView.width}x${webView.height} scale=${webView.scale} " +
-                            "contentHeight=${webView.contentHeight}"
-                    )
                     mainHandler.post { finish(height.toInt(), pixelRatio) }
+                }
+
+                @JavascriptInterface
+                fun onLayout(height: Double, pixelRatio: Double, breaksCsv: String) {
+                    val breaks = breaksCsv.split(",").mapNotNull { it.trim().toDoubleOrNull() }
+                    Log.d(TAG, "JS onLayout: altura=$height dpr=$pixelRatio quebras=${breaks.size}")
+                    mainHandler.post { finish(height.toInt(), pixelRatio, breaks) }
                 }
 
                 @JavascriptInterface
@@ -249,17 +275,57 @@ object ReportPdfExporter {
         }
     }
 
-    private fun injectReadyScript(html: String): String {
+    private fun injectReadyScript(html: String, pageHeightPx: Int): String {
         val script = """
             <script>
             (function () {
+                var PAGE_PX = $pageHeightPx;
+                // Blocos que não devem ser cortados entre duas páginas
+                var KEEP = '.photo, .room-head, .block, .sig, .stat, .chip, li, tr, p, h1, h2, h3, h4, img';
+                var KEEP_WITH_NEXT = '.room, .room-head, h2, h3';
+                var ORPHAN_PX = 160;
+                function docTop(el) { return el.getBoundingClientRect().top + window.scrollY; }
+                function breaks(total, page) {
+                    var forced = Array.prototype.map.call(document.querySelectorAll('.page-break'), docTop);
+                    var blocks = Array.prototype.map.call(document.querySelectorAll(KEEP), function (el) {
+                        var r = el.getBoundingClientRect();
+                        return [r.top + window.scrollY, r.bottom + window.scrollY];
+                    }).filter(function (b) { return b[1] - b[0] < page * 0.9; });
+                    // Títulos e início de cômodo não ficam sozinhos no pé da página
+                    var heads = Array.prototype.map.call(document.querySelectorAll(KEEP_WITH_NEXT), docTop);
+                    var out = [0], start = 0, guard = 0;
+                    while (start + page < total - 1 && guard++ < 500) {
+                        var limit = start + page, cut = limit;
+                        forced.forEach(function (f) { if (f > start + 20 && f < cut) cut = f; });
+                        if (cut === limit) {
+                            for (var pass = 0; pass < 25; pass++) {
+                                var moved = false;
+                                blocks.forEach(function (b) {
+                                    if (b[0] < cut && b[1] > cut && b[0] > start + page * 0.3) { cut = b[0]; moved = true; }
+                                });
+                                if (!moved) break;
+                            }
+                            heads.forEach(function (t) {
+                                if (t > start + page * 0.3 && t < cut && cut - t < ORPHAN_PX) cut = t;
+                            });
+                        }
+                        out.push(cut);
+                        start = cut;
+                    }
+                    return out;
+                }
                 function notify() {
                     try {
                         var h = Math.max(
                             document.body.scrollHeight, document.body.offsetHeight,
                             document.documentElement.scrollHeight, document.documentElement.offsetHeight
                         );
-                        AndroidBridge.onReady(h, window.innerWidth, window.devicePixelRatio || 1);
+                        var dpr = window.devicePixelRatio || 1;
+                        try {
+                            AndroidBridge.onLayout(h, dpr, breaks(h, PAGE_PX / dpr).join(','));
+                        } catch (e) {
+                            AndroidBridge.onReady(h, window.innerWidth, dpr);
+                        }
                         try {
                             var b = document.body.getBoundingClientRect();
                             AndroidBridge.debug(JSON.stringify({

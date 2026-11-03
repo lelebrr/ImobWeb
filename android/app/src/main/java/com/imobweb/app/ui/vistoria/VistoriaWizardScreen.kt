@@ -9,7 +9,13 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.imobweb.app.ImobWebApp
+import com.imobweb.app.data.repository.SyncWorker
+import com.imobweb.app.ui.settings.loadVistoriaDefaults
+import com.imobweb.app.util.PhotoStore
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -44,7 +50,6 @@ import com.imobweb.app.util.LaudoHtmlBuilder
 import com.imobweb.app.util.ReportPdfExporter
 import com.imobweb.app.model.*
 import com.imobweb.app.ui.camera.CameraScreen
-import com.imobweb.app.util.ImageCompressor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -65,9 +70,16 @@ fun VistoriaWizardScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var currentStep by remember { mutableIntStateOf(0) }
+    val app = context.applicationContext as ImobWebApp
+
+    // Sobrevivem à rotação/recriação: com o id, o rascunho é recarregado do banco
+    var currentStep by rememberSaveable { mutableIntStateOf(0) }
+    var savedId by rememberSaveable { mutableLongStateOf(vistoriaId ?: 0L) }
+    val draftKey = rememberSaveable { UUID.randomUUID().toString() }
+    var currentRoomIdx by rememberSaveable { mutableIntStateOf(0) }
     var isSaving by remember { mutableStateOf(false) }
-    var savedId by remember { mutableLongStateOf(vistoriaId ?: 0L) }
+    /** Só grava depois de carregar o rascunho/valores padrão (evita salvar um formulário vazio por cima). */
+    var loaded by remember { mutableStateOf(false) }
 
     // Vistoria data state
     var condominio by remember { mutableStateOf("") }
@@ -89,8 +101,20 @@ fun VistoriaWizardScreen(
     var vistoriadora by remember { mutableStateOf("") }
     var solicitante by remember { mutableStateOf("") }
     var consideracoes by remember { mutableStateOf("") }
+    val hoje = remember { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date()) }
+    var dataFotografia by remember { mutableStateOf(hoje) }
+    var dataLaudo by remember { mutableStateOf(hoje) }
     var rooms by remember { mutableStateOf<List<RoomData>>(emptyList()) }
-    var currentRoomIdx by remember { mutableIntStateOf(0) }
+
+    /** Atualiza um cômodo pelo id, sempre sobre o estado mais recente (seguro em corrotinas). */
+    val updateRoom: (String, (RoomData) -> RoomData) -> Unit = { id, transform ->
+        rooms = rooms.map { if (it.id == id) transform(it) else it }
+    }
+
+    fun addPhotoToRoom(roomId: String?, photo: PhotoData) {
+        val target = roomId ?: return
+        updateRoom(target) { it.copy(photos = it.photos + photo) }
+    }
 
     // Guard room index when rooms change
     LaunchedEffect(rooms.size) {
@@ -98,12 +122,9 @@ fun VistoriaWizardScreen(
             currentRoomIdx = rooms.size - 1
         }
     }
-    var generatingPdf by remember { mutableStateOf(false) }
-    var pdfHtml by remember { mutableStateOf<String?>(null) }
-    var showPdfPreview by remember { mutableStateOf(false) }
     var showCamera by remember { mutableStateOf(false) }
-    var annotatingPhoto by remember { mutableStateOf<Triple<Int, Int, String>?>(null) }
-    var galleryUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var cameraRoomId by remember { mutableStateOf<String?>(null) }
+    var annotatingPhoto by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var showPdfViewer by remember { mutableStateOf(false) }
     var pdfContent by remember { mutableStateOf<String?>(null) }
     var pdfFileName by remember { mutableStateOf("Laudo_Vistoria.pdf") }
@@ -112,57 +133,26 @@ fun VistoriaWizardScreen(
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        galleryUris = uris
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        // O cômodo é fixado no momento da escolha (o usuário pode trocar de aba durante a importação)
+        val roomId = rooms.getOrNull(currentRoomIdx)?.id
         scope.launch {
             isUploading = true
+            var failed = 0
             for (uri in uris) {
-                val compressed = ImageCompressor.compress(context, uri)
-                if (compressed != null) {
-                    val photo = PhotoData(
-                        dataUrl = compressed.base64,
-                        name = "photo_${System.currentTimeMillis()}.jpg",
-                        filePath = compressed.filePath
-                    )
-                    if (currentRoomIdx in rooms.indices) {
-                        val mutable = rooms.toMutableList()
-                        val room = mutable[currentRoomIdx]
-                        mutable[currentRoomIdx] = room.copy(photos = room.photos + photo)
-                        rooms = mutable
-                    }
-                }
+                val photo = PhotoStore.importUri(context, uri)
+                if (photo != null) addPhotoToRoom(roomId, photo) else failed++
             }
             isUploading = false
+            if (failed > 0) Toast.makeText(context, "$failed foto(s) não puderam ser lidas", Toast.LENGTH_SHORT).show()
         }
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            scope.launch {
-                val filePath = ImageCompressor.saveBitmapToCache(context, bitmap,
-                    "camera_${System.currentTimeMillis()}.jpg")
-                val base64 = ImageCompressor.compress(context,
-                    Uri.fromFile(File(filePath ?: "")), 1200)?.base64 ?: ""
-                val photo = PhotoData(
-                    dataUrl = base64,
-                    name = "camera_${System.currentTimeMillis()}.jpg",
-                    filePath = filePath
-                )
-                if (currentRoomIdx in rooms.indices) {
-                    val mutable = rooms.toMutableList()
-                    val room = mutable[currentRoomIdx]
-                    mutable[currentRoomIdx] = room.copy(photos = room.photos + photo)
-                    rooms = mutable
-                }
-            }
-        }
-    }
-
-    // Load existing vistoria
-    LaunchedEffect(vistoriaId) {
-        if (vistoriaId != null && vistoriaId > 0) {
-            repository.getVistoriaById(vistoriaId)?.let { v ->
+    // Carrega o rascunho existente ou os valores padrão de Configurações
+    LaunchedEffect(Unit) {
+        val existing = if (savedId > 0) repository.getVistoriaById(savedId) else null
+        if (existing != null) {
+            existing.let { v ->
                 condominio = v.condominio; endereco = v.endereco; numero = v.numero
                 conjApto = v.conjApto; cep = v.cep; bairro = v.bairro
                 cidade = v.cidade; estado = v.estado; tipoImovel = v.tipoImovel
@@ -170,75 +160,104 @@ fun VistoriaWizardScreen(
                 locadora = v.locadora; locadoraCpf = v.locadoraCpf
                 locatario = v.locatario; locatarioCpf = v.locatarioCpf
                 vistoriadora = v.vistoriadora; solicitante = v.solicitante
-                consideracoes = v.consideracoes; rooms = v.rooms
+                consideracoes = v.consideracoes
+                dataFotografia = v.dataFotografia.ifBlank { hoje }
+                dataLaudo = v.dataLaudo.ifBlank { hoje }
+                rooms = v.rooms.map { it.copy(analyzing = false) }
             }
+        } else {
+            savedId = 0L
+            val defaults = loadVistoriaDefaults(context)
+            if (defaults.vistoriadora.isNotBlank()) vistoriadora = defaults.vistoriadora
+            if (defaults.solicitante.isNotBlank()) solicitante = defaults.solicitante
+            if (defaults.cidade.isNotBlank()) cidade = defaults.cidade
+            if (defaults.estado.isNotBlank()) estado = defaults.estado
         }
+        loaded = true
     }
 
     val totalSteps = 6
     val canProceed = when (currentStep) {
-        0 -> {
-            val isCondominio = tipoImovel.uppercase() in listOf("APARTAMENTO", "COBERTURA", "LOFT", "STUDIO/FLAT", "FLAT")
-            if (isCondominio) {
-                // Apartamento/Cobertura: requer condomínio OU endereço preenchido
-                condominio.isNotBlank() || endereco.isNotBlank()
-            } else {
-                // Casa, Sala, Comercial, Galpão, etc.: condomínio NÃO é obrigatório; precisa de endereço (ou nome se houver)
-                endereco.isNotBlank() || condominio.isNotBlank()
-            }
-        }
+        0 -> endereco.isNotBlank() || condominio.isNotBlank()
         1 -> locadora.isNotBlank() && locatario.isNotBlank()
         2 -> rooms.isNotEmpty()
-        3 -> true
         else -> true
     }
 
-    // Save current state to DB
-    suspend fun saveCurrent() {
-        val today = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date())
-        val vistoria = Vistoria(
-            id = if (savedId > 0) savedId else 0,
-            condominio = condominio, endereco = endereco, numero = numero,
-            conjApto = conjApto, cep = cep, bairro = bairro,
-            cidade = cidade, estado = estado, tipoImovel = tipoImovel,
-            finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
-            locadora = locadora, locadoraCpf = locadoraCpf,
-            locatario = locatario, locatarioCpf = locatarioCpf,
-            vistoriadora = vistoriadora, dataFotografia = today,
-            dataLaudo = today, solicitante = solicitante,
-            consideracoes = consideracoes, rooms = rooms,
-            status = "pending_sync"
-        )
-        if (savedId > 0) {
-            repository.updateVistoria(vistoria.copy(id = savedId))
-        } else {
-            savedId = repository.saveVistoria(vistoria)
-        }
-        // Trigger immediate sync if online
-        if (com.imobweb.app.util.NetworkUtil.isOnline(context)) {
-            repository.syncPendingVistorias()
-        }
+    /** Foto do estado atual do formulário (lido na thread da UI). */
+    fun snapshot(): Vistoria = Vistoria(
+        id = savedId,
+        condominio = condominio, endereco = endereco, numero = numero,
+        conjApto = conjApto, cep = cep, bairro = bairro,
+        cidade = cidade, estado = estado, tipoImovel = tipoImovel,
+        finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+        locadora = locadora, locadoraCpf = locadoraCpf,
+        locatario = locatario, locatarioCpf = locatarioCpf,
+        vistoriadora = vistoriadora, dataFotografia = dataFotografia,
+        dataLaudo = dataLaudo, solicitante = solicitante,
+        consideracoes = consideracoes, rooms = rooms
+    )
+
+    fun hasContent(): Boolean =
+        savedId > 0 || condominio.isNotBlank() || endereco.isNotBlank() || locadora.isNotBlank() || rooms.isNotEmpty()
+
+    /** Grava o rascunho. As gravações são serializadas no repositório (sem duplicar registros). */
+    suspend fun saveCurrent(): Long {
+        if (!loaded || !hasContent()) return savedId
+        val id = repository.saveFromEditor(snapshot(), draftKey)
+        savedId = id
+        return id
     }
 
-    // Auto-save every 30 seconds (after saveCurrent is declared)
+    /** Grava num escopo que sobrevive à saída da tela e então volta. */
+    fun exit() {
+        if (loaded && hasContent()) {
+            val draft = snapshot()
+            app.appScope.launch {
+                runCatching { repository.saveFromEditor(draft, draftKey) }
+                SyncWorker.syncNow(app)
+            }
+        }
+        onBack()
+    }
+
+    BackHandler(enabled = !showCamera && annotatingPhoto == null && !showPdfViewer) { exit() }
+    BackHandler(enabled = showCamera) { showCamera = false }
+    BackHandler(enabled = annotatingPhoto != null) { annotatingPhoto = null }
+    BackHandler(enabled = showPdfViewer) { showPdfViewer = false; onSaved() }
+
+    // Auto-save a cada 30 s
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(30_000)
-            if (savedId > 0 || condominio.isNotBlank() || locadora.isNotBlank()) {
-                saveCurrent()
+            if (!isSaving) runCatching { saveCurrent() }
+        }
+    }
+
+    // Grava quando o app vai para segundo plano (ligação, troca de app, rotação)
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && loaded && hasContent()) {
+                val draft = snapshot()
+                app.appScope.launch {
+                    runCatching {
+                        val id = repository.saveFromEditor(draft, draftKey)
+                        if (savedId == 0L) savedId = id
+                    }
+                }
             }
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nova Vistoria", fontWeight = FontWeight.Bold) },
+                title = { Text(if (vistoriaId != null && vistoriaId > 0) "Editar Vistoria" else "Nova Vistoria", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        scope.launch { saveCurrent() }
-                        onBack()
-                    }) {
+                    IconButton(onClick = { exit() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
                     }
                 },
@@ -288,12 +307,15 @@ fun VistoriaWizardScreen(
                             } else {
                                 scope.launch {
                                     isSaving = true
-                                    saveCurrent()
-                                    // Gera o laudo localmente (offline) e abre a pré-visualização
-                                    val vistoria = repository.getVistoriaById(savedId)
+                                    val id = runCatching { saveCurrent() }.getOrDefault(0L)
+                                    SyncWorker.syncNow(context)
+                                    // Gera o laudo localmente (offline) e abre a pré-visualização.
+                                    // Montar o HTML lê e codifica todas as fotos: fora da thread da UI.
+                                    val vistoria = if (id > 0) repository.getVistoriaById(id) else null
                                     if (vistoria != null) {
                                         runCatching {
-                                            pdfContent = LaudoHtmlBuilder.build(vistoria)
+                                            val html = withContext(Dispatchers.Default) { LaudoHtmlBuilder.build(vistoria) }
+                                            pdfContent = html
                                             pdfFileName = ReportPdfExporter.fileNameFor(vistoria)
                                             showPdfViewer = true
                                         }.onFailure { e ->
@@ -393,13 +415,14 @@ fun VistoriaWizardScreen(
                 3 -> StepInventory(
                     rooms = rooms,
                     onRoomsChange = { rooms = it },
+                    onUpdateRoom = updateRoom,
                     currentRoomIdx = currentRoomIdx,
                     onCurrentRoomIdxChange = { currentRoomIdx = it },
                     repository = repository,
                     tipoImovel = tipoImovel,
                     finalidade = finalidade,
                     context = context,
-                    onTakePhoto = { showCamera = true },
+                    onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
                     onPickFromGallery = { galleryLauncher.launch("image/*") },
                     isUploading = isUploading
                 )
@@ -413,11 +436,12 @@ fun VistoriaWizardScreen(
                     tipoImovel = tipoImovel,
                     finalidade = finalidade,
                     context = context,
-                    onTakePhoto = { showCamera = true },
+                    onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
                     onPickFromGallery = { galleryLauncher.launch("image/*") },
-                    onAnnotatePhoto = { roomIdx, photoIdx, dataUrl ->
-                        annotatingPhoto = Triple(roomIdx, photoIdx, dataUrl)
+                    onAnnotatePhoto = { roomIdx, photoIdx ->
+                        annotatingPhoto = roomIdx to photoIdx
                     },
+                    onUpdateRoom = updateRoom,
                     isUploading = isUploading
                 )
 
@@ -429,55 +453,51 @@ fun VistoriaWizardScreen(
                     locadora = locadora, locatario = locatario,
                     vistoriadora = vistoriadora, solicitante = solicitante,
                     rooms = rooms, consideracoes = consideracoes,
-                    onConsideracoesChange = { consideracoes = it }
+                    onConsideracoesChange = { consideracoes = it },
+                    locadoraCpf = locadoraCpf, locatarioCpf = locatarioCpf,
+                    dataVistoria = dataFotografia,
+                    onDataVistoriaChange = { dataFotografia = it; dataLaudo = it }
                 )
             }
         }
     }
 
-    // Camera screen
+    // Câmera: fica aberta para várias fotos seguidas do mesmo cômodo
     if (showCamera) {
+        val cameraRoom = rooms.firstOrNull { it.id == cameraRoomId }
         CameraScreen(
-            onPhotoCaptured = { bitmap, filePath ->
+            onPhotoCaptured = { filePath ->
+                val roomId = cameraRoomId
                 scope.launch {
-                    val base64 = ImageCompressor.base64FromFile(filePath) ?: ""
-                    val photo = PhotoData(
-                        dataUrl = base64,
-                        name = "camera_${System.currentTimeMillis()}.jpg",
-                        filePath = filePath
-                    )
-                    if (currentRoomIdx in rooms.indices) {
-                        val mutable = rooms.toMutableList()
-                        val room = mutable[currentRoomIdx]
-                        mutable[currentRoomIdx] = room.copy(photos = room.photos + photo)
-                        rooms = mutable
-                    }
-                    showCamera = false
+                    val photo = PhotoStore.importFile(context, filePath)
+                    if (photo != null) addPhotoToRoom(roomId, photo)
+                    else Toast.makeText(context, "Não foi possível salvar a foto", Toast.LENGTH_SHORT).show()
                 }
             },
-            onClose = { showCamera = false }
+            onClose = { showCamera = false },
+            title = cameraRoom?.name?.ifBlank { null } ?: "Tirar Foto",
+            photoCount = cameraRoom?.photos?.size ?: 0
         )
     }
 
     // Photo annotator
-    annotatingPhoto?.let { (roomIdx, photoIdx, dataUrl) ->
+    annotatingPhoto?.let { (roomIdx, photoIdx) ->
         val room = rooms.getOrNull(roomIdx)
         val photo = room?.photos?.getOrNull(photoIdx)
-        if (photo != null) {
+        if (room != null && photo != null) {
             PhotoAnnotatorScreen(
-                imageDataUrl = dataUrl,
+                image = PhotoStore.model(photo),
                 initialAnnotations = photo.annotations,
                 onSave = { annotations ->
-                    val mutable = rooms.toMutableList()
-                    val r = mutable[roomIdx]
-                    val newPhotos = r.photos.toMutableList()
-                    newPhotos[photoIdx] = photo.copy(annotations = annotations)
-                    mutable[roomIdx] = r.copy(photos = newPhotos)
-                    rooms = mutable
+                    updateRoom(room.id) { r ->
+                        r.copy(photos = r.photos.map { if (it === photo || it == photo) it.copy(annotations = annotations) else it })
+                    }
                     annotatingPhoto = null
                 },
                 onClose = { annotatingPhoto = null }
             )
+        } else {
+            annotatingPhoto = null
         }
     }
 
@@ -1949,6 +1969,7 @@ private fun StepRooms(
 @Composable
 private fun StepInventory(
     rooms: List<RoomData>, onRoomsChange: (List<RoomData>) -> Unit,
+    onUpdateRoom: (roomId: String, (RoomData) -> RoomData) -> Unit,
     currentRoomIdx: Int, onCurrentRoomIdxChange: (Int) -> Unit,
     repository: VistoriaRepository,
     tipoImovel: String,
@@ -1963,6 +1984,7 @@ private fun StepInventory(
 
     // Dialog state for AI confirmation
     var pendingAiResult by remember { mutableStateOf<AiInspectionResult?>(null) }
+    var pendingAiRoomId by remember { mutableStateOf<String?>(null) }
     var selectedMoveis by remember { mutableStateOf<Set<String>>(emptySet()) }
     var selectedAvarias by remember { mutableStateOf<Set<String>>(emptySet()) }
     var selectedProblemas by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -2132,24 +2154,30 @@ private fun StepInventory(
                                     return@Button
                                 }
                                 scope.launch {
-                                    val idx = currentRoomIdx
-                                    val mutable = rooms.toMutableList()
-                                    mutable[idx] = mutable[idx].copy(analyzing = true)
-                                    onRoomsChange(mutable)
+                                    // Atualiza pelo id do cômodo (o estado pode mudar enquanto a IA responde)
+                                    val roomId = currentRoom.id
+                                    onUpdateRoom(roomId) { it.copy(analyzing = true) }
 
                                     val result = repository.analyzeRoomStructured(
                                         roomName = currentRoom.name,
-                                        photos = currentRoom.photos.map { it.dataUrl },
+                                        photos = currentRoom.photos,
                                         propertyType = tipoImovel,
-                                        finality = finalidade
+                                        finality = finalidade,
+                                        knownFurniture = currentRoom.furniture,
+                                        knownDamages = currentRoom.damages
                                     )
 
-                                    val doneMutable = rooms.toMutableList()
-                                    doneMutable[idx] = doneMutable[idx].copy(analyzing = false)
-                                    onRoomsChange(doneMutable)
+                                    onUpdateRoom(roomId) { it.copy(analyzing = false) }
 
                                     result.fold(
                                         onSuccess = { inspection ->
+                                            if (inspection.furniture.isEmpty() && inspection.damages.isEmpty() &&
+                                                inspection.problems.isEmpty() && inspection.observations.isEmpty()
+                                            ) {
+                                                Toast.makeText(context, "A IA não identificou itens nestas fotos", Toast.LENGTH_LONG).show()
+                                                return@fold
+                                            }
+                                            pendingAiRoomId = roomId
                                             pendingAiResult = inspection
                                             selectedMoveis = inspection.furniture.toSet()
                                             selectedAvarias = inspection.damages.toSet()
@@ -2246,7 +2274,7 @@ private fun StepInventory(
                                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                                 ) {
                                     AsyncImage(
-                                        model = photo.filePath?.let { File(it) } ?: photo.dataUrl,
+                                        model = PhotoStore.model(photo),
                                         contentDescription = "Foto ${pIdx + 1}",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -2701,22 +2729,20 @@ private fun StepInventory(
             confirmButton = {
                 Button(
                     onClick = {
-                        val current = rooms[currentRoomIdx]
-                        val newFurniture = (current.furniture + selectedMoveis).distinct()
-                        val newDamages = (current.damages + selectedAvarias).distinct()
-                        val newProblems = (current.problems + selectedProblemas).distinct()
-                        val newItems = (current.items + aiResult.observations).distinct()
-
-                        val updated = rooms.toMutableList()
-                        updated[currentRoomIdx] = current.copy(
-                            furniture = newFurniture,
-                            damages = newDamages,
-                            problems = newProblems,
-                            items = newItems,
-                            analyzed = true
-                        )
-                        onRoomsChange(updated)
+                        val targetId = pendingAiRoomId ?: rooms.getOrNull(currentRoomIdx)?.id
+                        if (targetId != null) {
+                            onUpdateRoom(targetId) { current ->
+                                current.copy(
+                                    furniture = (current.furniture + selectedMoveis).distinct(),
+                                    damages = (current.damages + selectedAvarias).distinct(),
+                                    problems = (current.problems + selectedProblemas).distinct(),
+                                    items = (current.items + aiResult.observations).distinct(),
+                                    analyzed = true
+                                )
+                            }
+                        }
                         pendingAiResult = null
+                        pendingAiRoomId = null
                         val count = selectedMoveis.size + selectedAvarias.size + selectedProblemas.size
                         Toast.makeText(context, "$count itens adicionados ao cômodo!", Toast.LENGTH_SHORT).show()
                     }
@@ -2762,7 +2788,8 @@ private fun StepPhotos(
     context: Context,
     onTakePhoto: () -> Unit = {},
     onPickFromGallery: () -> Unit = {},
-    onAnnotatePhoto: (roomIdx: Int, photoIdx: Int, dataUrl: String) -> Unit = { _, _, _ -> },
+    onAnnotatePhoto: (roomIdx: Int, photoIdx: Int) -> Unit = { _, _ -> },
+    onUpdateRoom: (roomId: String, (RoomData) -> RoomData) -> Unit = { _, _ -> },
     isUploading: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
@@ -2885,33 +2912,24 @@ private fun StepPhotos(
                         onClick = {
                             scope.launch {
                                 val idx = currentRoomIdx
-                                onRoomsChange(rooms.toMutableList().apply {
-                                    this[idx] = this[idx].copy(analyzing = true)
-                                })
+                                val roomId = currentRoom.id
+                                onUpdateRoom(roomId) { it.copy(analyzing = true) }
                                 val result = repository.analyzeRoom(
                                     roomName = currentRoom.name.ifBlank { "Cômodo ${idx + 1}" },
-                                    photos = currentRoom.photos.map { it.dataUrl },
+                                    photos = currentRoom.photos,
                                     propertyType = tipoImovel,
                                     finality = finalidade
                                 )
                                 result.fold(
-                                    onSuccess = { response ->
-                                        val roomName = currentRoom.name.ifBlank { "Cômodo ${idx + 1}" }
-                                        val items = response.results?.get(roomName) ?: emptyList()
-                                        onRoomsChange(rooms.toMutableList().apply {
-                                            this[idx] = this[idx].copy(
-                                                items = items,
-                                                analyzing = false,
-                                                analyzed = true
-                                            )
-                                        })
-                                        Toast.makeText(context, "Análise concluída!", Toast.LENGTH_SHORT).show()
+                                    onSuccess = { items ->
+                                        onUpdateRoom(roomId) {
+                                            it.copy(items = items, analyzing = false, analyzed = true)
+                                        }
+                                        Toast.makeText(context, "Análise concluída: ${items.size} constatações", Toast.LENGTH_SHORT).show()
                                     },
                                     onFailure = { e ->
-                                        onRoomsChange(rooms.toMutableList().apply {
-                                            this[idx] = this[idx].copy(analyzing = false)
-                                        })
-                                        Toast.makeText(context, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        onUpdateRoom(roomId) { it.copy(analyzing = false) }
+                                        Toast.makeText(context, "Erro na análise: ${e.message}", Toast.LENGTH_LONG).show()
                                     }
                                 )
                             }
@@ -2961,7 +2979,7 @@ private fun StepPhotos(
                                             .weight(1f)
                                             .aspectRatio(1f)
                                             .clickable {
-                                                onAnnotatePhoto(currentRoomIdx, photoIdx, photo.dataUrl)
+                                                onAnnotatePhoto(currentRoomIdx, photoIdx)
                                             },
                                         border = if (photo.annotations.isNotEmpty())
                                             BorderStroke(2.dp, MaterialTheme.colorScheme.error)
@@ -2969,7 +2987,7 @@ private fun StepPhotos(
                                     ) {
                                         Box(modifier = Modifier.fillMaxSize()) {
                                             AsyncImage(
-                                                model = photo.dataUrl,
+                                                model = PhotoStore.model(photo),
                                                 contentDescription = null,
                                                 modifier = Modifier.fillMaxSize(),
                                                 contentScale = ContentScale.Crop
@@ -3081,10 +3099,36 @@ private fun StepReview(
     locadora: String, locatario: String,
     vistoriadora: String, solicitante: String,
     rooms: List<RoomData>,
-    consideracoes: String, onConsideracoesChange: (String) -> Unit
+    consideracoes: String, onConsideracoesChange: (String) -> Unit,
+    locadoraCpf: String = "", locatarioCpf: String = "",
+    dataVistoria: String = "", onDataVistoriaChange: (String) -> Unit = {}
 ) {
-    val today = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date())
     val context = LocalContext.current
+
+    fun pickDate() {
+        val cal = Calendar.getInstance()
+        runCatching {
+            SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).parse(dataVistoria)
+        }.getOrNull()?.let { cal.time = it }
+        android.app.DatePickerDialog(
+            context,
+            { _, y, m, d -> onDataVistoriaChange(String.format(Locale.US, "%02d/%02d/%04d", d, m + 1, y)) },
+            cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    // Pendências que deixam o laudo frágil (conferência antes de gerar o PDF)
+    val warnings = buildList {
+        val semFoto = rooms.filter { it.photos.isEmpty() }.map { it.name }
+        if (semFoto.isNotEmpty()) add("Cômodos sem foto: ${semFoto.joinToString(", ")}")
+        val semFotoArquivo = rooms.sumOf { r -> r.photos.count { !com.imobweb.app.util.PhotoStore.exists(it) } }
+        if (semFotoArquivo > 0) add("$semFotoArquivo foto(s) não encontradas no aparelho")
+        if (locadoraCpf.isBlank()) add("CPF/CNPJ da locadora não informado")
+        if (locatarioCpf.isBlank()) add("CPF/CNPJ do locatário não informado")
+        if (vistoriadora.isBlank()) add("Nome da vistoriadora não informado")
+        val vazios = rooms.filter { it.items.isEmpty() && it.furniture.isEmpty() && it.damages.isEmpty() && it.problems.isEmpty() }
+        if (vazios.isNotEmpty()) add("Cômodos sem nenhuma descrição: ${vazios.joinToString(", ") { it.name }}")
+    }
 
     Column {
         Text("Revisão e Observações", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -3092,6 +3136,27 @@ private fun StepReview(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
+
+        if (warnings.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF59E0B).copy(alpha = 0.12f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Confira antes de finalizar", style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold, color = Color(0xFFF59E0B))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    warnings.forEach { w ->
+                        Text("• $w", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
 
         // Summary cards
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -3208,22 +3273,25 @@ private fun StepReview(
         Spacer(Modifier.height(8.dp))
 
         Card(
+            onClick = { pickDate() },
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
             )
         ) {
-            Row(modifier = Modifier.padding(12.dp)) {
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.DateRange, contentDescription = null,
                     tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Column {
-                    Text("Data da vistoria: $today",
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Data da vistoria: ${dataVistoria.ifBlank { "—" }}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold)
                     Text("Ao finalizar, o laudo será gerado e salvo no dispositivo.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                Icon(Icons.Default.Edit, contentDescription = "Alterar data",
+                    tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
             }
         }
 

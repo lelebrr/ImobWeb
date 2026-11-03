@@ -9,11 +9,14 @@ interface VistoriaDao {
     @Query("SELECT * FROM vistorias ORDER BY updatedAt DESC")
     fun getAllVistorias(): Flow<List<Vistoria>>
 
+    @Query("SELECT * FROM vistorias")
+    suspend fun getAllOnce(): List<Vistoria>
+
     @Query("SELECT * FROM vistorias WHERE id = :id")
     suspend fun getVistoriaById(id: Long): Vistoria?
 
-    @Query("SELECT * FROM vistorias WHERE status = :status ORDER BY updatedAt DESC")
-    fun getVistoriasByStatus(status: String): Flow<List<Vistoria>>
+    @Query("SELECT remoteId FROM vistorias WHERE remoteId IS NOT NULL")
+    suspend fun getRemoteIds(): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVistoria(vistoria: Vistoria): Long
@@ -21,17 +24,27 @@ interface VistoriaDao {
     @Update
     suspend fun updateVistoria(vistoria: Vistoria)
 
-    @Delete
-    suspend fun deleteVistoria(vistoria: Vistoria)
-
     @Query("DELETE FROM vistorias WHERE id = :id")
     suspend fun deleteVistoriaById(id: Long)
+
+    @Query("DELETE FROM vistorias")
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM vistorias WHERE status = 'pending_sync' ORDER BY updatedAt ASC")
     suspend fun getPendingSyncVistorias(): List<Vistoria>
 
-    @Query("UPDATE vistorias SET status = :status, syncedAt = :syncedAt WHERE id = :id")
-    suspend fun markSynced(id: Long, status: String = "synced", syncedAt: Long = System.currentTimeMillis())
+    /**
+     * Marca como sincronizada só se a vistoria não foi editada durante o envio
+     * (mesmo updatedAt). Se foi, ela continua pendente e sobe de novo depois.
+     */
+    @Query(
+        "UPDATE vistorias SET status = 'synced', syncedAt = :syncedAt, remoteId = :remoteId " +
+            "WHERE id = :id AND updatedAt = :updatedAt"
+    )
+    suspend fun markSyncedIfUnchanged(id: Long, remoteId: String, updatedAt: Long, syncedAt: Long): Int
+
+    @Query("UPDATE vistorias SET remoteId = :remoteId WHERE id = :id")
+    suspend fun setRemoteId(id: Long, remoteId: String)
 
     @Query("SELECT COUNT(*) FROM vistorias WHERE status = 'pending_sync'")
     fun getPendingSyncCount(): Flow<Int>

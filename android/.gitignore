@@ -9,3 +9,8 @@
 .cxx
 local.properties
 /app/build
+
+# Assinatura de release (não versionar)
+keystore.properties
+*.jks
+*.keystore

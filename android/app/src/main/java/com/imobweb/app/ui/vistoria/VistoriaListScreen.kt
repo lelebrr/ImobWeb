@@ -1,6 +1,7 @@
 package com.imobweb.app.ui.vistoria
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -183,12 +184,28 @@ fun VistoriaListScreen(
 
     val report = reportVistoria
     if (report != null) {
-        PdfPreviewScreen(
-            htmlContent = remember(report.id) { LaudoHtmlBuilder.build(report) },
-            title = "Laudo - ${report.condominio.ifBlank { "Vistoria" }}",
-            fileName = remember(report.id) { ReportPdfExporter.fileNameFor(report) },
-            onClose = { reportVistoria = null }
-        )
+        androidx.activity.compose.BackHandler { reportVistoria = null }
+        // Montar o laudo lê e codifica todas as fotos: fora da thread da UI
+        val html by produceState<String?>(initialValue = null, report.id, report.updatedAt) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                runCatching { LaudoHtmlBuilder.build(report) }.getOrElse { e ->
+                    "<html><body><p>Erro ao montar o laudo: ${e.message}</p></body></html>"
+                }
+            }
+        }
+        val content = html
+        if (content == null) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            PdfPreviewScreen(
+                htmlContent = content,
+                title = "Laudo - ${report.condominio.ifBlank { "Vistoria" }}",
+                fileName = remember(report.id) { ReportPdfExporter.fileNameFor(report) },
+                onClose = { reportVistoria = null }
+            )
+        }
     }
 }
 

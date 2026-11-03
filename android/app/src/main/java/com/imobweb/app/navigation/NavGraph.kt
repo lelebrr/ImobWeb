@@ -50,6 +50,7 @@ fun AppNavGraph(
                 repository = repository,
                 onNewVistoria = { navController.navigate(Routes.WIZARD) },
                 onViewVistorias = { navController.navigate(Routes.VISTORIA_LIST) },
+                onOpenVistoria = { id -> navController.navigate(Routes.vistoriaDetail(id)) },
                 onSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
@@ -57,7 +58,12 @@ fun AppNavGraph(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 repository = repository,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onLoggedOut = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 

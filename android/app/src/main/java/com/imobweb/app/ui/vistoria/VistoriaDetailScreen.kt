@@ -33,6 +33,7 @@ fun VistoriaDetailScreen(
     var pdfContent by remember { mutableStateOf("") }
     var pdfFileName by remember { mutableStateOf("Laudo_Vistoria.pdf") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var buildingPdf by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -85,13 +86,26 @@ fun VistoriaDetailScreen(
                         Button(
                             onClick = {
                                 val v = vistoria ?: return@Button
-                                pdfContent = LaudoHtmlBuilder.build(v)
-                                pdfFileName = ReportPdfExporter.fileNameFor(v)
-                                showPdfViewer = true
+                                scope.launch {
+                                    buildingPdf = true
+                                    // Lê e codifica todas as fotos: fora da thread da UI
+                                    runCatching {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LaudoHtmlBuilder.build(v) }
+                                    }.onSuccess {
+                                        pdfContent = it
+                                        pdfFileName = ReportPdfExporter.fileNameFor(v)
+                                        showPdfViewer = true
+                                    }.onFailure { e ->
+                                        Toast.makeText(context, "Erro ao gerar laudo: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                    buildingPdf = false
+                                }
                             },
+                            enabled = !buildingPdf,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                            if (buildingPdf) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Gerar Laudo")
                         }
@@ -280,6 +294,7 @@ fun VistoriaDetailScreen(
     }
 
     if (showPdfViewer) {
+        androidx.activity.compose.BackHandler { showPdfViewer = false }
         PdfPreviewScreen(
             htmlContent = pdfContent,
             title = "Laudo - ${vistoria?.condominio.orEmpty().ifBlank { "Vistoria" }}",

@@ -65,37 +65,40 @@ data class PhotoAnnotation(
 
 // API Models
 data class LoginRequest(val email: String, val password: String)
-data class LoginResponse(val success: Boolean, val user: UserData?, val role: String?, val redirectTo: String?, val error: String?)
-data class UserData(val id: String, val email: String?)
+data class LoginResponse(
+    val success: Boolean,
+    val token: String?,
+    val user: UserData?,
+    val role: String?,
+    val redirectTo: String?,
+    val error: String?
+)
+data class UserData(val id: String, val email: String?, val name: String?)
 
 data class AnalyzeRequest(
     val rooms: List<AnalyzeRoomInput>,
     val propertyType: String,
     val finality: String
 )
-data class AnalyzeRoomInput(val name: String, val photos: List<String>)
-data class AnalyzeResponse(val success: Boolean, val results: Map<String, List<String>>?, val error: String?)
-
-data class PdfGenerateRequest(
-    val condominio: String, val endereco: String, val numero: String,
-    val conjApto: String, val cep: String, val bairro: String,
-    val cidade: String, val estado: String, val tipoImovel: String,
-    val finalidade: String, val metragem: String, val mobiliado: String,
-    val locadora: String, val locadoraCpf: String, val locatario: String,
-    val locatarioCpf: String, val vistoriadora: String, val dataFotografia: String,
-    val dataLaudo: String, val solicitante: String, val consideracoes: String,
-    val rooms: List<PdfRoomData>
-)
-data class PdfRoomData(
+data class AnalyzeRoomInput(
     val name: String,
-    val items: List<String>,
-    val furniture: List<String> = emptyList(),
-    val damages: List<String> = emptyList(),
-    val problems: List<String> = emptyList(),
-    val photos: List<PdfPhotoData>
+    val photos: List<String>,
+    val knownFurniture: List<String> = emptyList(),
+    val knownDamages: List<String> = emptyList()
 )
-data class PdfPhotoData(val dataUrl: String, val name: String, val annotations: List<PhotoAnnotation>)
-data class PdfGenerateResponse(val success: Boolean, val html: String?, val error: String?)
+
+/** Resultado por cômodo devolvido por POST /api/admin/vistoria/analyze. */
+data class AnalyzeRoomResult(
+    val items: List<String>? = null,
+    val suggestedFurniture: List<String>? = null,
+    val suggestedDamages: List<String>? = null,
+    val missingShots: List<String>? = null
+)
+data class AnalyzeResponse(
+    val success: Boolean,
+    val results: Map<String, AnalyzeRoomResult>?,
+    val error: String?
+)
 
 // Sync models
 data class SyncRequest(

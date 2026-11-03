@@ -22,6 +22,7 @@ class SessionManager(private val context: Context) {
         private val BASE_URL_KEY = stringPreferencesKey("base_url")
         private val GEMINI_KEY = stringPreferencesKey("gemini_api_key")
         private val DELETED_REMOTE_IDS_KEY = stringSetPreferencesKey("deleted_remote_ids")
+        private val PENDING_DELETES_KEY = stringSetPreferencesKey("pending_remote_deletes")
     }
 
     val authToken: Flow<String?> = context.dataStore.data.map { it[TOKEN_KEY] }
@@ -40,7 +41,7 @@ class SessionManager(private val context: Context) {
     suspend fun getToken(): String? = context.dataStore.data.first()[TOKEN_KEY]
 
     suspend fun getBaseUrl(): String {
-        return context.dataStore.data.first()[BASE_URL_KEY] ?: "https://imobweb.lelebrr.workers.dev"
+        return context.dataStore.data.first()[BASE_URL_KEY] ?: com.imobweb.app.BuildConfig.BASE_URL
     }
 
     suspend fun setBaseUrl(url: String) {
@@ -67,8 +68,28 @@ class SessionManager(private val context: Context) {
         }
     }
 
+    /** Sai da conta: remove credenciais, mas mantém servidor, chave Gemini e controle de exclusões. */
     suspend fun clearSession() {
-        context.dataStore.edit { it.clear() }
+        context.dataStore.edit {
+            it.remove(TOKEN_KEY)
+            it.remove(EMAIL_KEY)
+            it.remove(USER_ID_KEY)
+            it.remove(USER_ROLE_KEY)
+        }
+    }
+
+    /** Token expirado/recusado pelo servidor (401). */
+    suspend fun clearToken() {
+        context.dataStore.edit { it.remove(TOKEN_KEY) }
+    }
+
+    suspend fun getPendingDeletes(): Set<String> =
+        context.dataStore.data.first()[PENDING_DELETES_KEY] ?: emptySet()
+
+    suspend fun removePendingDelete(remoteId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PENDING_DELETES_KEY] = (prefs[PENDING_DELETES_KEY] ?: emptySet()) - remoteId
+        }
     }
 
     suspend fun markRemoteIdDeleted(remoteId: String) {
@@ -76,6 +97,7 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             val current = prefs[DELETED_REMOTE_IDS_KEY] ?: emptySet()
             prefs[DELETED_REMOTE_IDS_KEY] = current + remoteId
+            prefs[PENDING_DELETES_KEY] = (prefs[PENDING_DELETES_KEY] ?: emptySet()) + remoteId
         }
     }
 
@@ -86,6 +108,8 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun isLoggedIn(): Boolean {
-        return context.dataStore.data.first()[TOKEN_KEY] != null
+        return !context.dataStore.data.first()[TOKEN_KEY].isNullOrBlank()
     }
+
+    suspend fun getEmail(): String? = context.dataStore.data.first()[EMAIL_KEY]
 }

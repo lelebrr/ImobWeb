@@ -25,7 +25,8 @@ import com.imobweb.app.model.PhotoAnnotation
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoAnnotatorScreen(
-    imageDataUrl: String,
+    /** Arquivo local (File) ou data URL. */
+    image: Any,
     initialAnnotations: List<PhotoAnnotation>,
     onSave: (List<PhotoAnnotation>) -> Unit,
     onClose: () -> Unit
@@ -82,7 +83,7 @@ fun PhotoAnnotatorScreen(
 
                 // The image
                 AsyncImage(
-                    model = imageDataUrl,
+                    model = image,
                     contentDescription = "Foto",
                     modifier = Modifier
                         .fillMaxSize()

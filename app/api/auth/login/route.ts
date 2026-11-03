@@ -66,6 +66,10 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
           success: true,
+          // Token também no corpo: clientes nativos (app Android) não usam o cookie
+          // e enviam este valor em "Authorization: Bearer <token>".
+          token,
+          expiresIn: 60 * 60 * 24 * 7,
           user: {
             id: user.id,
             email: user.email,

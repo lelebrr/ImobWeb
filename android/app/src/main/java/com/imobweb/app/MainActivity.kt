@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.imobweb.app.data.repository.SyncWorker
 import com.imobweb.app.navigation.AppNavGraph
 import com.imobweb.app.navigation.Routes
 import com.imobweb.app.ui.splash.SplashScreen
@@ -35,18 +34,11 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(Unit) {
                         val isLoggedIn = app.sessionManager.isLoggedIn()
-                        startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
+                        // Quem já usa o app (mesmo sem login) vai direto para a Home
+                        val hasLocalData = app.database.vistoriaDao().getAllOnce().isNotEmpty()
+                        startDestination = if (isLoggedIn || hasLocalData) Routes.HOME else Routes.LOGIN
                         isCheckingSession = false
-
-                        // Schedule periodic sync
-                        SyncWorker.schedule(this@MainActivity)
-
-                        // Trigger immediate sync if online
-                        if (isLoggedIn) {
-                            // Pull server data first, then push pending
-                            app.repository.pullVistoriasFromServer()
-                            SyncWorker.syncNow(this@MainActivity)
-                        }
+                        // A sincronização acontece na Home e pelo SyncWorker (agendado no Application)
                     }
 
                     var splashFinished by remember { mutableStateOf(false) }
