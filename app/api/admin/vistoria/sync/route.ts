@@ -14,6 +14,8 @@ const str = (v: unknown, max = 500): string | null => {
   return t ? t.slice(0, max) : null;
 };
 
+const obj = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
+
 function unauthorized() {
   return NextResponse.json(
     { success: false, remoteId: null, error: "Não autenticado" },
@@ -45,7 +47,16 @@ function fieldsFrom(v: Record<string, unknown>) {
     dataFotografia: str(v.dataFotografia, 20),
     dataLaudo: str(v.dataLaudo, 20),
     status: "COMPLETA",
-    data: (Array.isArray(v.rooms) ? v.rooms : Array.isArray(v.data) ? v.data : []) as Prisma.InputJsonValue,
+    // Cômodos + dados extras da vistoria (tipo, vínculo entrada/saída, medidores, chaves, assinaturas)
+    data: {
+      rooms: Array.isArray(v.rooms) ? v.rooms : Array.isArray(v.data) ? v.data : [],
+      tipoVistoria: ["ENTRADA", "SAIDA", "PERIODICA"].includes(String(v.tipoVistoria)) ? v.tipoVistoria : "ENTRADA",
+      linkedRemoteId: str(v.linkedRemoteId, 64),
+      medidores: obj(v.medidores),
+      medidoresEntrada: obj(v.medidoresEntrada),
+      chaves: Array.isArray(v.chaves) ? v.chaves.slice(0, 60) : [],
+      signatures: obj(v.signatures),
+    } as Prisma.InputJsonValue,
   };
 }
 

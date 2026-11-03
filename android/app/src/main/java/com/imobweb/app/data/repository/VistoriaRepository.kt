@@ -73,6 +73,10 @@ class VistoriaRepository(
                     remoteId = existing.remoteId,
                     createdAt = existing.createdAt,
                     syncedAt = existing.syncedAt,
+                    // vínculo entrada/saída não é editado no formulário
+                    linkedId = existing.linkedId,
+                    linkedRemoteId = existing.linkedRemoteId,
+                    medidoresEntrada = existing.medidoresEntrada,
                     rooms = rooms,
                     status = "pending_sync",
                     updatedAt = now
@@ -97,6 +101,52 @@ class VistoriaRepository(
 
     /** Rascunhos novos já gravados nesta execução: chave do editor → id local. */
     private val draftIds = mutableMapOf<String, Long>()
+
+    // ------------------------------------------------------------------ entrada × saída
+
+    /**
+     * Cria a vistoria de SAÍDA a partir de uma ENTRADA: copia imóvel, partes, cômodos,
+     * móveis e chaves; começa sem fotos, avarias, checklist e assinaturas; guarda as
+     * leituras dos medidores da entrada para calcular o consumo. Retorna o id local.
+     */
+    suspend fun createExitFrom(entradaId: Long): Long = withContext(Dispatchers.IO) {
+        val entrada = dao.getVistoriaById(entradaId) ?: throw IllegalArgumentException("Vistoria de entrada não encontrada")
+        val hoje = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("pt", "BR")).format(java.util.Date())
+        val now = System.currentTimeMillis()
+        val saida = entrada.copy(
+            id = 0,
+            remoteId = null,
+            tipoVistoria = TipoVistoria.SAIDA,
+            linkedId = entrada.id,
+            linkedRemoteId = entrada.remoteId,
+            dataFotografia = hoje,
+            dataLaudo = hoje,
+            consideracoes = "",
+            medidoresEntrada = entrada.medidores.takeIf { it.hasAnyReading() } ?: entrada.medidoresEntrada,
+            medidores = Medidores(),
+            signatures = Signatures(),
+            rooms = entrada.rooms.map { r ->
+                RoomData(
+                    name = r.name,
+                    furniture = r.furniture
+                )
+            },
+            status = "pending_sync",
+            createdAt = now,
+            updatedAt = now,
+            syncedAt = null
+        )
+        writeMutex.withLock { dao.insertVistoria(saida) }
+    }
+
+    /** Entrada vinculada a uma saída (pelo id local ou, se veio do servidor, pelo remoteId). */
+    suspend fun getEntradaFor(saida: Vistoria): Vistoria? {
+        saida.linkedId?.let { id -> dao.getVistoriaById(id)?.let { return it } }
+        saida.linkedRemoteId?.let { rid -> dao.getByRemoteId(rid)?.let { return it } }
+        return null
+    }
+
+    suspend fun getExitsFor(entradaId: Long): List<Vistoria> = dao.getExitsFor(entradaId)
 
     suspend fun deleteVistoria(vistoria: Vistoria) = withContext(Dispatchers.IO) {
         val remoteId = vistoria.remoteId
@@ -319,7 +369,11 @@ class VistoriaRepository(
     private suspend fun pushPending(errors: MutableList<String>): Int {
         val api = authedApi()
         var synced = 0
-        for (vistoria in dao.getPendingSyncVistorias()) {
+        for (pending in dao.getPendingSyncVistorias()) {
+            // Saída criada antes de a entrada subir: resolve o vínculo agora
+            val vistoria = if (pending.linkedId != null && pending.linkedRemoteId == null) {
+                pending.copy(linkedRemoteId = dao.getVistoriaById(pending.linkedId)?.remoteId)
+            } else pending
             val response = try {
                 api.syncVistoria(SyncRequest(vistoria = vistoria.toSyncData()))
             } catch (e: OutOfMemoryError) {
@@ -362,7 +416,8 @@ class VistoriaRepository(
             val sv = full.body()?.vistorias?.firstOrNull() ?: continue
             writeMutex.withLock {
                 if (rid !in dao.getRemoteIds()) {
-                    dao.insertVistoria(sv.toVistoria())
+                    val linkedLocal = sv.linkedRemoteId?.let { dao.getByRemoteId(it)?.id }
+                    dao.insertVistoria(sv.toVistoria().copy(linkedId = linkedLocal))
                     imported++
                 }
             }
@@ -370,6 +425,7 @@ class VistoriaRepository(
         return imported
     }
 
+    @Suppress("USELESS_ELVIS")
     private fun SyncVistoriaData.toVistoria(): Vistoria = Vistoria(
         remoteId = remoteId,
         condominio = condominio, endereco = endereco, numero = numero,
@@ -389,6 +445,8 @@ class VistoriaRepository(
                 damages = room.damages.orEmpty(),
                 problems = room.problems.orEmpty(),
                 items = room.items.orEmpty(),
+                checklist = room.checklist.orEmpty(),
+                observations = room.observations.orEmpty(),
                 photos = room.photos.orEmpty().map { photo ->
                     PhotoStore.persisted(
                         context,
@@ -405,7 +463,13 @@ class VistoriaRepository(
         status = "synced",
         createdAt = createdAt,
         updatedAt = updatedAt,
-        syncedAt = System.currentTimeMillis()
+        syncedAt = System.currentTimeMillis(),
+        tipoVistoria = tipoVistoria?.takeIf { it in TipoVistoria.ALL } ?: TipoVistoria.ENTRADA,
+        linkedRemoteId = linkedRemoteId,
+        medidores = com.imobweb.app.data.local.ModelSanitizer.medidores(medidores),
+        medidoresEntrada = medidoresEntrada?.let { com.imobweb.app.data.local.ModelSanitizer.medidores(it) },
+        chaves = chaves.orEmpty().map { com.imobweb.app.data.local.ModelSanitizer.chave(it) },
+        signatures = signatures ?: Signatures()
     )
 
     private fun Vistoria.toSyncData(): SyncVistoriaData = SyncVistoriaData(
@@ -426,6 +490,8 @@ class VistoriaRepository(
                 damages = room.damages,
                 problems = room.problems,
                 items = room.items,
+                checklist = room.checklist,
+                observations = room.observations,
                 photos = room.photos.map { photo ->
                     SyncPhotoData(
                         dataUrl = PhotoStore.toDataUrl(photo).orEmpty(),
@@ -436,6 +502,12 @@ class VistoriaRepository(
                 }
             )
         },
-        status = status, createdAt = createdAt, updatedAt = updatedAt
+        status = status, createdAt = createdAt, updatedAt = updatedAt,
+        tipoVistoria = tipoVistoria,
+        linkedRemoteId = linkedRemoteId,
+        medidores = medidores,
+        medidoresEntrada = medidoresEntrada,
+        chaves = chaves,
+        signatures = signatures
     )
 }

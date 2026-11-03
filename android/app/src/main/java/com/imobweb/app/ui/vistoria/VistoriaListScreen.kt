@@ -240,11 +240,17 @@ private fun VistoriaListItem(
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = vistoria.condominio.ifBlank { "Sem nome" },
+                        text = vistoria.condominio.ifBlank { vistoria.endereco.ifBlank { "Sem nome" } },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Vistoria de ${com.imobweb.app.model.TipoVistoria.label(vistoria.tipoVistoria).lowercase()} · ${vistoria.dataLaudo}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (vistoria.tipoVistoria == com.imobweb.app.model.TipoVistoria.SAIDA) MaterialTheme.colorScheme.tertiary
+                            else MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = buildString {

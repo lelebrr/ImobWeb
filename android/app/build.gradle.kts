@@ -63,6 +63,8 @@ android {
         buildConfig = true
     }
 
+    testOptions { unitTests { isIncludeAndroidResources = true } }
+
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 }
 
@@ -130,6 +132,9 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    // Testes de migração do banco (Room + SQLite reais na JVM)
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test:core-ktx:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))

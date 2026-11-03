@@ -105,6 +105,12 @@ fun VistoriaWizardScreen(
     var dataFotografia by remember { mutableStateOf(hoje) }
     var dataLaudo by remember { mutableStateOf(hoje) }
     var rooms by remember { mutableStateOf<List<RoomData>>(emptyList()) }
+    var tipoVistoria by remember { mutableStateOf(TipoVistoria.ENTRADA) }
+    var medidores by remember { mutableStateOf(Medidores()) }
+    var medidoresEntrada by remember { mutableStateOf<Medidores?>(null) }
+    var chaves by remember { mutableStateOf<List<ChaveItem>>(emptyList()) }
+    var signatures by remember { mutableStateOf(Signatures()) }
+    var linkedId by remember { mutableStateOf<Long?>(null) }
 
     /** Atualiza um cômodo pelo id, sempre sobre o estado mais recente (seguro em corrotinas). */
     val updateRoom: (String, (RoomData) -> RoomData) -> Unit = { id, transform ->
@@ -164,6 +170,12 @@ fun VistoriaWizardScreen(
                 dataFotografia = v.dataFotografia.ifBlank { hoje }
                 dataLaudo = v.dataLaudo.ifBlank { hoje }
                 rooms = v.rooms.map { it.copy(analyzing = false) }
+                tipoVistoria = v.tipoVistoria
+                medidores = v.medidores
+                medidoresEntrada = v.medidoresEntrada
+                chaves = v.chaves
+                signatures = v.signatures
+                linkedId = v.linkedId
             }
         } else {
             savedId = 0L
@@ -195,7 +207,9 @@ fun VistoriaWizardScreen(
         locatario = locatario, locatarioCpf = locatarioCpf,
         vistoriadora = vistoriadora, dataFotografia = dataFotografia,
         dataLaudo = dataLaudo, solicitante = solicitante,
-        consideracoes = consideracoes, rooms = rooms
+        consideracoes = consideracoes, rooms = rooms,
+        tipoVistoria = tipoVistoria, medidores = medidores, chaves = chaves, signatures = signatures,
+        linkedId = linkedId, medidoresEntrada = medidoresEntrada
     )
 
     fun hasContent(): Boolean =
@@ -255,7 +269,13 @@ fun VistoriaWizardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (vistoriaId != null && vistoriaId > 0) "Editar Vistoria" else "Nova Vistoria", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text(if (vistoriaId != null && vistoriaId > 0) "Editar Vistoria" else "Nova Vistoria", fontWeight = FontWeight.Bold)
+                        Text("Vistoria de ${TipoVistoria.label(tipoVistoria).lowercase()}", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { exit() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -378,30 +398,46 @@ fun VistoriaWizardScreen(
 
             // Step content
             when (currentStep) {
-                0 -> StepPropertyInfo(
-                    condominio = condominio, onCondominioChange = { condominio = it },
-                    endereco = endereco, onEnderecoChange = { endereco = it },
-                    numero = numero, onNumeroChange = { numero = it },
-                    conjApto = conjApto, onConjAptoChange = { conjApto = it },
-                    cep = cep, onCepChange = { cep = it },
-                    bairro = bairro, onBairroChange = { bairro = it },
-                    cidade = cidade, onCidadeChange = { cidade = it },
-                    estado = estado, onEstadoChange = { estado = it },
-                    tipoImovel = tipoImovel, onTipoImovelChange = { tipoImovel = it },
-                    finalidade = finalidade, onFinalidadeChange = { finalidade = it },
-                    metragem = metragem, onMetragemChange = { metragem = it },
-                    mobiliado = mobiliado, onMobiliadoChange = { mobiliado = it },
-                    context = context
-                )
+                0 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TipoVistoriaSelector(
+                        tipo = tipoVistoria,
+                        onChange = { tipoVistoria = it },
+                        isLinkedExit = linkedId != null
+                    )
+                    StepPropertyInfo(
+                        condominio = condominio, onCondominioChange = { condominio = it },
+                        endereco = endereco, onEnderecoChange = { endereco = it },
+                        numero = numero, onNumeroChange = { numero = it },
+                        conjApto = conjApto, onConjAptoChange = { conjApto = it },
+                        cep = cep, onCepChange = { cep = it },
+                        bairro = bairro, onBairroChange = { bairro = it },
+                        cidade = cidade, onCidadeChange = { cidade = it },
+                        estado = estado, onEstadoChange = { estado = it },
+                        tipoImovel = tipoImovel, onTipoImovelChange = { tipoImovel = it },
+                        finalidade = finalidade, onFinalidadeChange = { finalidade = it },
+                        metragem = metragem, onMetragemChange = { metragem = it },
+                        mobiliado = mobiliado, onMobiliadoChange = { mobiliado = it },
+                        context = context
+                    )
+                }
 
-                1 -> StepParties(
-                    locadora = locadora, onLocadoraChange = { locadora = it },
-                    locadoraCpf = locadoraCpf, onLocadoraCpfChange = { locadoraCpf = it },
-                    locatario = locatario, onLocatarioChange = { locatario = it },
-                    locatarioCpf = locatarioCpf, onLocatarioCpfChange = { locatarioCpf = it },
-                    vistoriadora = vistoriadora, onVistoriadoraChange = { vistoriadora = it },
-                    solicitante = solicitante, onSolicitanteChange = { solicitante = it }
-                )
+                1 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StepParties(
+                        locadora = locadora, onLocadoraChange = { locadora = it },
+                        locadoraCpf = locadoraCpf, onLocadoraCpfChange = { locadoraCpf = it },
+                        locatario = locatario, onLocatarioChange = { locatario = it },
+                        locatarioCpf = locatarioCpf, onLocatarioCpfChange = { locatarioCpf = it },
+                        vistoriadora = vistoriadora, onVistoriadoraChange = { vistoriadora = it },
+                        solicitante = solicitante, onSolicitanteChange = { solicitante = it }
+                    )
+                    MetersKeysCard(
+                        medidores = medidores,
+                        medidoresEntrada = medidoresEntrada,
+                        chaves = chaves,
+                        onMedidoresChange = { medidores = it },
+                        onChavesChange = { chaves = it }
+                    )
+                }
 
                 2 -> StepRooms(
                     rooms = rooms,
@@ -412,20 +448,25 @@ fun VistoriaWizardScreen(
                     context = context
                 )
 
-                3 -> StepInventory(
-                    rooms = rooms,
-                    onRoomsChange = { rooms = it },
-                    onUpdateRoom = updateRoom,
-                    currentRoomIdx = currentRoomIdx,
-                    onCurrentRoomIdxChange = { currentRoomIdx = it },
-                    repository = repository,
-                    tipoImovel = tipoImovel,
-                    finalidade = finalidade,
-                    context = context,
-                    onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
-                    onPickFromGallery = { galleryLauncher.launch("image/*") },
-                    isUploading = isUploading
-                )
+                3 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StepInventory(
+                        rooms = rooms,
+                        onRoomsChange = { rooms = it },
+                        onUpdateRoom = updateRoom,
+                        currentRoomIdx = currentRoomIdx,
+                        onCurrentRoomIdxChange = { currentRoomIdx = it },
+                        repository = repository,
+                        tipoImovel = tipoImovel,
+                        finalidade = finalidade,
+                        context = context,
+                        onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
+                        onPickFromGallery = { galleryLauncher.launch("image/*") },
+                        isUploading = isUploading
+                    )
+                    rooms.getOrNull(currentRoomIdx)?.let { room ->
+                        RoomConditionCard(room = room, onChange = { updated -> updateRoom(updated.id) { updated } })
+                    }
+                }
 
                 4 -> StepPhotos(
                     rooms = rooms,
@@ -445,19 +486,26 @@ fun VistoriaWizardScreen(
                     isUploading = isUploading
                 )
 
-                5 -> StepReview(
-                    condominio = condominio, endereco = endereco, numero = numero,
-                    conjApto = conjApto, cep = cep, bairro = bairro,
-                    cidade = cidade, estado = estado, tipoImovel = tipoImovel,
-                    finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
-                    locadora = locadora, locatario = locatario,
-                    vistoriadora = vistoriadora, solicitante = solicitante,
-                    rooms = rooms, consideracoes = consideracoes,
-                    onConsideracoesChange = { consideracoes = it },
-                    locadoraCpf = locadoraCpf, locatarioCpf = locatarioCpf,
-                    dataVistoria = dataFotografia,
-                    onDataVistoriaChange = { dataFotografia = it; dataLaudo = it }
-                )
+                5 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StepReview(
+                        condominio = condominio, endereco = endereco, numero = numero,
+                        conjApto = conjApto, cep = cep, bairro = bairro,
+                        cidade = cidade, estado = estado, tipoImovel = tipoImovel,
+                        finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+                        locadora = locadora, locatario = locatario,
+                        vistoriadora = vistoriadora, solicitante = solicitante,
+                        rooms = rooms, consideracoes = consideracoes,
+                        onConsideracoesChange = { consideracoes = it },
+                        locadoraCpf = locadoraCpf, locatarioCpf = locatarioCpf,
+                        dataVistoria = dataFotografia,
+                        onDataVistoriaChange = { dataFotografia = it; dataLaudo = it }
+                    )
+                    SignaturesCard(
+                        signatures = signatures,
+                        locadora = locadora, locatario = locatario, vistoriadora = vistoriadora,
+                        onChange = { signatures = it }
+                    )
+                }
             }
         }
     }
@@ -3128,6 +3176,8 @@ private fun StepReview(
         if (vistoriadora.isBlank()) add("Nome da vistoriadora não informado")
         val vazios = rooms.filter { it.items.isEmpty() && it.furniture.isEmpty() && it.damages.isEmpty() && it.problems.isEmpty() }
         if (vazios.isNotEmpty()) add("Cômodos sem nenhuma descrição: ${vazios.joinToString(", ") { it.name }}")
+        val semChecklist = rooms.filter { it.checklist.isEmpty() }
+        if (semChecklist.isNotEmpty()) add("Cômodos sem checklist de conservação: ${semChecklist.joinToString(", ") { it.name }}")
     }
 
     Column {

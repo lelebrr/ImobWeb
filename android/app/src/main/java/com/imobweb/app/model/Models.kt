@@ -1,5 +1,6 @@
 package com.imobweb.app.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
@@ -35,8 +36,109 @@ data class Vistoria(
     val status: String = "draft", // draft, synced, pending_sync
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val syncedAt: Long? = null
+    val syncedAt: Long? = null,
+    /** ENTRADA, SAIDA ou PERIODICA */
+    @ColumnInfo(defaultValue = "ENTRADA") val tipoVistoria: String = TipoVistoria.ENTRADA,
+    /** Vistoria de saída: id local da vistoria de entrada que a originou */
+    val linkedId: Long? = null,
+    /** Vistoria de saída: id no servidor da vistoria de entrada */
+    val linkedRemoteId: String? = null,
+    @ColumnInfo(defaultValue = "{}") val medidores: Medidores = Medidores(),
+    /** Leituras da vistoria de entrada (copiadas ao criar a saída) para calcular o consumo */
+    val medidoresEntrada: Medidores? = null,
+    @ColumnInfo(defaultValue = "[]") val chaves: List<ChaveItem> = emptyList(),
+    @ColumnInfo(defaultValue = "{}") val signatures: Signatures = Signatures()
 )
+
+// ---------------------------------------------------------------- vistoria: extras
+
+object TipoVistoria {
+    const val ENTRADA = "ENTRADA"
+    const val SAIDA = "SAIDA"
+    const val PERIODICA = "PERIODICA"
+    val ALL = listOf(ENTRADA, SAIDA, PERIODICA)
+
+    fun label(tipo: String): String = when (tipo) {
+        SAIDA -> "Saída"
+        PERIODICA -> "Periódica"
+        else -> "Entrada"
+    }
+}
+
+/** Leitura de um medidor (texto livre, aceita "1.234,5" ou "1234.5"). */
+data class Medidor(val numero: String = "", val leitura: String = "")
+
+data class Medidores(
+    val agua: Medidor = Medidor(),
+    val luz: Medidor = Medidor(),
+    val gas: Medidor = Medidor()
+) {
+    fun get(key: String): Medidor = when (key) { "agua" -> agua; "luz" -> luz; else -> gas }
+    fun with(key: String, m: Medidor): Medidores = when (key) {
+        "agua" -> copy(agua = m); "luz" -> copy(luz = m); else -> copy(gas = m)
+    }
+    fun hasAnyReading(): Boolean = listOf(agua, luz, gas).any { (it.leitura ?: "").isNotBlank() || (it.numero ?: "").isNotBlank() }
+
+    companion object {
+        /** chave, rótulo, unidade */
+        val DEFS = listOf(Triple("agua", "Água", "m³"), Triple("luz", "Energia", "kWh"), Triple("gas", "Gás", "m³"))
+
+        /** "1.234,5" ou "1234.5" → número; vazio/ inválido → null */
+        fun parseReading(v: String?): Double? {
+            val t = v?.trim()?.replace(Regex("\\s"), "") ?: return null
+            if (t.isEmpty()) return null
+            val br = Regex("^\\d{1,3}(\\.\\d{3})*(,\\d+)?$")
+            val plain = Regex("^\\d+([.,]\\d+)?$")
+            if (!br.matches(t) && !plain.matches(t)) return null
+            // "1.260" é mil duzentos e sessenta (ponto de milhar), não 1,26
+            val thousands = Regex("^\\d{1,3}(\\.\\d{3})+(,\\d+)?$")
+            val n = if (t.contains(',') || thousands.matches(t)) t.replace(".", "").replace(',', '.').toDoubleOrNull() else t.toDoubleOrNull()
+            return n?.takeIf { it.isFinite() }
+        }
+
+        /** consumo = saída − entrada (null se faltar leitura ou se a saída for menor) */
+        fun consumption(entrada: String?, saida: String?): Double? {
+            val a = parseReading(entrada) ?: return null
+            val b = parseReading(saida) ?: return null
+            if (b < a) return null
+            return Math.round((b - a) * 1000) / 1000.0
+        }
+    }
+}
+
+data class ChaveItem(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val descricao: String = "",
+    val quantidade: Int = 1
+) {
+    companion object {
+        val PRESETS = listOf(
+            "Chave da porta principal", "Chave de serviço", "Controle do portão", "Tag / cartão de acesso",
+            "Chave da caixa de correio", "Controle do ar-condicionado", "Chave do portão da garagem"
+        )
+    }
+}
+
+/** Assinaturas desenhadas na tela, como data URL PNG. */
+data class Signatures(
+    val locadora: String? = null,
+    val locatario: String? = null,
+    val vistoriadora: String? = null
+) {
+    fun count(): Int = listOf(locadora, locatario, vistoriadora).count { !it.isNullOrBlank() }
+}
+
+/** Estado de conservação por elemento do cômodo (mesmos itens e estados do sistema web). */
+object Checklist {
+    val ITEMS = listOf(
+        "Paredes", "Pintura", "Teto", "Piso", "Rodapé", "Portas", "Janelas", "Elétrica (tomadas/interruptores)",
+        "Iluminação", "Hidráulica (torneiras/registros)", "Louças e metais", "Armários / bancadas"
+    )
+    /** id → rótulo */
+    val STATES = listOf("ok" to "Bom", "regular" to "Regular", "ruim" to "Ruim", "na" to "N/A")
+    fun label(state: String?): String = STATES.firstOrNull { it.first == state }?.second ?: "—"
+    fun rank(state: String?): Int = when (state) { "ok" -> 0; "regular" -> 1; "ruim" -> 2; else -> -1 }
+}
 
 data class RoomData(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -47,7 +149,11 @@ data class RoomData(
     val items: List<String> = emptyList(),
     val photos: List<PhotoData> = emptyList(),
     val analyzing: Boolean = false,
-    val analyzed: Boolean = false
+    val analyzed: Boolean = false,
+    /** elemento (Checklist.ITEMS) → ok | regular | ruim | na */
+    val checklist: Map<String, String> = emptyMap(),
+    /** observações livres do cômodo */
+    val observations: String = ""
 )
 
 data class PhotoData(
@@ -132,7 +238,13 @@ data class SyncVistoriaData(
     val rooms: List<SyncRoomData>,
     val status: String = "synced",
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val tipoVistoria: String? = null,
+    val linkedRemoteId: String? = null,
+    val medidores: Medidores? = null,
+    val medidoresEntrada: Medidores? = null,
+    val chaves: List<ChaveItem>? = null,
+    val signatures: Signatures? = null
 )
 data class SyncRoomData(
     val id: String = "",
@@ -141,7 +253,9 @@ data class SyncRoomData(
     val damages: List<String> = emptyList(),
     val problems: List<String> = emptyList(),
     val items: List<String> = emptyList(),
-    val photos: List<SyncPhotoData> = emptyList()
+    val photos: List<SyncPhotoData> = emptyList(),
+    val checklist: Map<String, String>? = null,
+    val observations: String? = null
 )
 data class SyncPhotoData(
     val dataUrl: String = "",

@@ -1,6 +1,9 @@
 package com.imobweb.app.util
 
+import com.imobweb.app.model.Checklist
+import com.imobweb.app.model.Medidores
 import com.imobweb.app.model.PhotoData
+import com.imobweb.app.model.TipoVistoria
 import com.imobweb.app.model.RoomData
 import com.imobweb.app.model.Vistoria
 import java.text.SimpleDateFormat
@@ -35,7 +38,7 @@ object LaudoHtmlBuilder {
             // ---------- CAPA ----------
             append("<section class=\"cover\">")
             append("<div class=\"brand\"><span class=\"brand-mark\">iW</span><span class=\"brand-name\">imob<b>Web</b></span><span class=\"brand-tag\">VISTORIA</span></div>")
-            append("<div class=\"cover-kicker\">DOCUMENTO TÉCNICO</div>")
+            append("<div class=\"cover-kicker\">TERMO DE VISTORIA DE ${esc(TipoVistoria.label(vistoria.tipoVistoria).uppercase())}</div>")
             append("<h1 class=\"cover-title\">Laudo de<br>Vistoria</h1>")
             append("<div class=\"cover-rule\"></div>")
             append("<div class=\"cover-property\">${esc(vistoria.condominio.ifBlank { vistoria.tipoImovel.ifBlank { "Imóvel" } })}</div>")
@@ -43,6 +46,7 @@ object LaudoHtmlBuilder {
             append("<div class=\"cover-date\">${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
 
             append("<div class=\"cover-chips\">")
+            append(chip("Vistoria", TipoVistoria.label(vistoria.tipoVistoria)))
             append(chip("Tipo", vistoria.tipoImovel.ifBlank { "—" }))
             append(chip("Finalidade", vistoria.finalidade.ifBlank { "—" }))
             append(chip("Área", vistoria.metragem.ifBlank { "—" }))
@@ -62,8 +66,11 @@ object LaudoHtmlBuilder {
             append("</div>")
             append("</section>")
 
+            var n = 0
+            fun next(title: String) = "${++n}. $title"
+
             // ---------- DADOS DO IMÓVEL ----------
-            append(section("1. Dados do imóvel") {
+            append(section(next("Dados do imóvel")) {
                 table(
                     row("Condomínio / Edifício", vistoria.condominio) +
                     row("Endereço", vistoria.endereco) +
@@ -80,7 +87,7 @@ object LaudoHtmlBuilder {
             })
 
             // ---------- PARTES ----------
-            append(section("2. Partes envolvidas") {
+            append(section(next("Partes envolvidas")) {
                 table(
                     row("Locadora", vistoria.locadora) +
                     row("CPF/CNPJ da locadora", vistoria.locadoraCpf) +
@@ -88,12 +95,31 @@ object LaudoHtmlBuilder {
                     row("CPF/CNPJ do locatário", vistoria.locatarioCpf) +
                     row("Vistoriadora", vistoria.vistoriadora) +
                     row("Solicitante", vistoria.solicitante) +
+                    row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
                     row("Data da vistoria", vistoria.dataLaudo.ifBlank { hoje() })
                 )
             })
+            // ---------- MEDIDORES E CHAVES ----------
+            val medidoresHtml = medidoresTable(vistoria)
+            val chaves = vistoria.chaves.filter { it.descricao.isNotBlank() }
+            if (medidoresHtml.isNotEmpty() || chaves.isNotEmpty()) {
+                append(section(next("Medidores, chaves e acessos")) {
+                    buildString {
+                        append(medidoresHtml)
+                        if (chaves.isNotEmpty()) {
+                            append("<h4 class=\"sub-h\">Chaves, controles e acessos entregues</h4>")
+                            append("<table class=\"data-table grid\"><thead><tr><th>Item</th><th style=\"width:70px\">Qtd.</th></tr></thead><tbody>")
+                            chaves.forEach { append("<tr><td>${esc(it.descricao)}</td><td>${it.quantidade.coerceIn(1, 99)}</td></tr>") }
+                            append("<tr><td><b>Total</b></td><td><b>${chaves.sumOf { it.quantidade.coerceIn(1, 99) }}</b></td></tr>")
+                            append("</tbody></table>")
+                        }
+                    }
+                })
+            }
+
             // ---------- CÔMODOS ----------
             append("<section class=\"section page-break\">")
-            append("<h2><span>3.</span> Cômodos e constatações</h2>")
+            append("<h2>${esc(next("Cômodos e constatações"))}</h2>")
             if (vistoria.rooms.isEmpty()) {
                 append("<p class=\"empty\">Nenhum cômodo registrado nesta vistoria.</p>")
             } else {
@@ -109,7 +135,7 @@ object LaudoHtmlBuilder {
                     .map { (tipo, texto) -> Triple(room.name, tipo, texto) }
             }
             if (problemas.isNotEmpty()) {
-                append(section("4. Resumo de não conformidades") {
+                append(section(next("Resumo de não conformidades")) {
                     buildString {
                         append("<table class=\"data-table\"><thead><tr><th>Cômodo</th><th>Tipo</th><th>Constatação</th></tr></thead><tbody>")
                         problemas.forEach { (comodo, tipo, texto) ->
@@ -121,7 +147,7 @@ object LaudoHtmlBuilder {
             }
 
             // ---------- CONSIDERAÇÕES ----------
-            append(section("5. Considerações finais") {
+            append(section(next("Considerações finais")) {
                 if (vistoria.consideracoes.isBlank()) {
                     "<p class=\"empty\">Sem considerações adicionais.</p>"
                 } else {
@@ -131,12 +157,12 @@ object LaudoHtmlBuilder {
 
             // ---------- ASSINATURAS ----------
             append("<section class=\"section signatures page-break\">")
-            append("<h2><span>6.</span> Assinaturas</h2>")
+            append("<h2>${esc(next("Assinaturas"))}</h2>")
             append("<p class=\"sig-intro\">As partes declaram ter recebido o presente laudo e concordam com as constatações registradas.</p>")
             append("<div class=\"sig-grid\">")
-            append(signature(vistoria.locadora, "Locadora"))
-            append(signature(vistoria.locatario, "Locatário(a)"))
-            append(signature(vistoria.vistoriadora, "Vistoriadora"))
+            append(signature(vistoria.locadora, "Locadora", vistoria.signatures.locadora))
+            append(signature(vistoria.locatario, "Locatário(a)", vistoria.signatures.locatario))
+            append(signature(vistoria.vistoriadora, "Vistoriadora", vistoria.signatures.vistoriadora))
             append("</div>")
             append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "—" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
             append("</section>")
@@ -166,6 +192,19 @@ object LaudoHtmlBuilder {
             room.damages.forEach { append("<li><span class=\"tag\">Avaria</span> ${esc(it)}</li>") }
             room.problems.forEach { append("<li><span class=\"tag\">Problema</span> ${esc(it)}</li>") }
             append("</ul></div>")
+        }
+
+        val avaliados = Checklist.ITEMS.mapNotNull { item -> room.checklist[item]?.let { item to it } }
+        if (avaliados.isNotEmpty()) {
+            append("<div class=\"block\"><h4>Estado de conservação</h4><div class=\"cl-grid\">")
+            avaliados.forEach { (item, state) ->
+                append("<div class=\"cl-item\"><span>${esc(item)}</span><b class=\"cl-${esc(state)}\">${esc(Checklist.label(state))}</b></div>")
+            }
+            append("</div></div>")
+        }
+
+        if (room.observations.isNotBlank()) {
+            append("<div class=\"block room-obs\"><h4>Observações</h4><p>${esc(room.observations).replace("\n", "<br>")}</p></div>")
         }
 
         if (room.photos.isNotEmpty()) {
@@ -216,8 +255,45 @@ object LaudoHtmlBuilder {
     private fun stat(value: String, label: String): String =
         "<div class=\"stat\"><b>${esc(value)}</b><span>${esc(label)}</span></div>"
 
-    private fun signature(name: String, role: String): String =
-        "<div class=\"sig\"><div class=\"sig-line\"></div><b>${esc(name.ifBlank { "____________________" })}</b><span>${esc(role)}</span></div>"
+    private val SAFE_SIG = Regex("^data:image/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$")
+
+    private fun signature(name: String, role: String, image: String? = null): String {
+        val img = image?.takeIf { SAFE_SIG.matches(it) }?.let { "<img class=\"sig-img\" src=\"$it\" alt=\"Assinatura\">" }
+            ?: "<div class=\"sig-space\"></div>"
+        return "<div class=\"sig\">$img<div class=\"sig-line\"></div><b>${esc(name.ifBlank { "____________________" })}</b><span>${esc(role)}</span></div>"
+    }
+
+    private fun fmtNum(n: Double): String =
+        if (n % 1.0 == 0.0) String.format(Locale("pt", "BR"), "%,.0f", n)
+        else String.format(Locale("pt", "BR"), "%,.3f", n).trimEnd('0').trimEnd(',')
+
+    /** Leituras; numa vistoria de saída mostra também entrada e consumo. */
+    private fun medidoresTable(v: Vistoria): String {
+        val prev = v.medidoresEntrada?.takeIf { it.hasAnyReading() }
+        val rows = Medidores.DEFS.mapNotNull { (key, label, unit) ->
+            val m = v.medidores.get(key)
+            val e = prev?.get(key)
+            if (m.numero.isBlank() && m.leitura.isBlank() && (e == null || e.leitura.isBlank())) return@mapNotNull null
+            buildString {
+                append("<tr><td>${esc(label)}</td><td>${esc(m.numero.ifBlank { e?.numero ?: "" }.ifBlank { "—" })}</td>")
+                if (prev != null) append("<td>${esc(e?.leitura?.ifBlank { "—" } ?: "—")}</td>")
+                append("<td>${esc(m.leitura.ifBlank { "—" })}${if (m.leitura.isNotBlank()) " $unit" else ""}</td>")
+                if (prev != null) {
+                    val c = Medidores.consumption(e?.leitura, m.leitura)
+                    append("<td>${if (c != null) esc("${fmtNum(c)} $unit") else "—"}</td>")
+                }
+                append("</tr>")
+            }
+        }
+        if (rows.isEmpty()) return ""
+        return buildString {
+            append("<h4 class=\"sub-h\">Leitura dos medidores</h4><table class=\"data-table grid\"><thead><tr><th>Medidor</th><th>Nº</th>")
+            if (prev != null) append("<th>Entrada</th><th>Saída</th><th>Consumo</th>") else append("<th>Leitura</th>")
+            append("</tr></thead><tbody>")
+            rows.forEach { append(it) }
+            append("</tbody></table>")
+        }
+    }
 
     private fun fullAddress(v: Vistoria): String = buildString {
         append(v.endereco.ifBlank { "Endereço não informado" })
@@ -363,6 +439,16 @@ object LaudoHtmlBuilder {
             .sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
             .sig { text-align: center; padding-top: 34px; }
             .sig-line { border-top: 1px solid #94a3b8; margin-bottom: 6px; }
+            .sig-img { display: block; height: 56px; max-width: 100%; margin: 0 auto 4px; object-fit: contain; }
+            .sig-space { height: 60px; }
+            .sig { padding-top: 0 !important; }
+            .sub-h { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #475569; margin: 12px 0 6px; }
+            .data-table.grid th { width: auto; }
+            .cl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 16px; }
+            .cl-item { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px dashed #e2e8f0; padding: 2px 0; }
+            .cl-item b { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; }
+            .cl-ok { color: #047857; } .cl-regular { color: #b45309; } .cl-ruim { color: #b91c1c; } .cl-na { color: #64748b; }
+            .room-obs p { font-size: 11px; color: #334155; background: #f1f5f9; border-radius: 8px; padding: 8px 10px; }
             .sig b { display: block; font-size: 10px; color: #0f172a; }
             .sig span { display: block; margin-top: 2px; font-size: 9px; color: #64748b; }
             .sig-place { margin-top: 30px; text-align: right; font-size: 11px; color: #475569; }

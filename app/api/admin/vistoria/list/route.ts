@@ -6,6 +6,20 @@ export const dynamic = "force-dynamic";
 
 type Row = Awaited<ReturnType<typeof prisma.vistoria.findFirst>> & {};
 
+/** Dados extras gravados junto dos cômodos (formato novo: data = { rooms, ...extras }). */
+function extrasFrom(data: unknown) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  const d = data as Record<string, any>;
+  return {
+    tipoVistoria: typeof d.tipoVistoria === "string" ? d.tipoVistoria : "ENTRADA",
+    linkedRemoteId: typeof d.linkedRemoteId === "string" ? d.linkedRemoteId : null,
+    medidores: d.medidores ?? null,
+    medidoresEntrada: d.medidoresEntrada ?? null,
+    chaves: Array.isArray(d.chaves) ? d.chaves : [],
+    signatures: d.signatures ?? null,
+  };
+}
+
 function toDto(r: NonNullable<Row>, withRooms: boolean) {
   return {
     id: 0,
@@ -33,6 +47,7 @@ function toDto(r: NonNullable<Row>, withRooms: boolean) {
     dataLaudo: r.dataLaudo || "",
     status: r.status,
     rooms: withRooms ? (Array.isArray(r.data) ? r.data : (r.data as any)?.rooms || []) : [],
+    ...(withRooms ? extrasFrom(r.data) : {}),
     createdAt: r.createdAt.getTime(),
     updatedAt: r.updatedAt.getTime(),
   };

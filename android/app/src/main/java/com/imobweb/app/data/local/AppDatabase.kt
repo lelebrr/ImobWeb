@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.PhotoStore
 
-@Database(entities = [Vistoria::class], version = 2, exportSchema = false)
+@Database(entities = [Vistoria::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun vistoriaDao(): VistoriaDao
@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     // Nunca apagar os laudos do usuário numa atualização do app:
                     // toda mudança de schema precisa de uma Migration explícita.
-                    .addMigrations(PhotosToFilesMigration(context.applicationContext))
+                    .addMigrations(PhotosToFilesMigration(context.applicationContext), ExtrasMigration)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -49,6 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
 class PhotosToFilesMigration(private val context: Context) : Migration(1, 2) {
 
     private val converters = Converters()
+    private val MAX_ROW_CHARS = 1_500_000
 
     override fun migrate(db: SupportSQLiteDatabase) {
         val rows = mutableListOf<Pair<Long, Long>>()
@@ -59,10 +60,20 @@ class PhotosToFilesMigration(private val context: Context) : Migration(1, 2) {
             try {
                 val json = readInChunks(db, id, length)
                 val rooms = converters.toRoomList(json)
-                val migrated = rooms.map { room ->
+                var migrated = rooms.map { room ->
                     room.copy(analyzing = false, photos = room.photos.map { PhotoStore.persisted(context, it) })
                 }
-                val values = ContentValues().apply { put("rooms", converters.fromRoomList(migrated)) }
+                var out = converters.fromRoomList(migrated)
+                if (out.length > MAX_ROW_CHARS) {
+                    // Sobrou base64 que não pôde ser convertido em arquivo (imagem corrompida):
+                    // sem remover, a linha continuaria grande demais e o app não abriria a lista.
+                    Log.w("PhotosToFilesMigration", "Vistoria $id: removendo fotos ilegíveis que não couberam no banco")
+                    migrated = migrated.map { room ->
+                        room.copy(photos = room.photos.map { p -> if (p.dataUrl.isNotEmpty()) p.copy(dataUrl = "") else p })
+                    }
+                    out = converters.fromRoomList(migrated)
+                }
+                val values = ContentValues().apply { put("rooms", out) }
                 db.update("vistorias", SQLiteDatabase.CONFLICT_NONE, values, "id = ?", arrayOf(id))
             } catch (e: Throwable) {
                 Log.e("PhotosToFilesMigration", "Falha ao migrar vistoria $id", e)
@@ -81,5 +92,21 @@ class PhotosToFilesMigration(private val context: Context) : Migration(1, 2) {
             start += chunk
         }
         return sb.toString()
+    }
+}
+
+/**
+ * v2 → v3: tipo de vistoria, vínculo entrada/saída, medidores, chaves e assinaturas.
+ * Os padrões das colunas precisam ser iguais aos @ColumnInfo(defaultValue) da entidade.
+ */
+object ExtrasMigration : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN tipoVistoria TEXT NOT NULL DEFAULT 'ENTRADA'")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN linkedId INTEGER")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN linkedRemoteId TEXT")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN medidores TEXT NOT NULL DEFAULT '{}'")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN medidoresEntrada TEXT")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN chaves TEXT NOT NULL DEFAULT '[]'")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN signatures TEXT NOT NULL DEFAULT '{}'")
     }
 }

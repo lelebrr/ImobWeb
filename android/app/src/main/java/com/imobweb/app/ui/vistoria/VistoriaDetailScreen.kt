@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imobweb.app.data.repository.VistoriaRepository
+import com.imobweb.app.model.TipoVistoria
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.LaudoHtmlBuilder
 import com.imobweb.app.util.ReportPdfExporter
@@ -25,7 +26,9 @@ fun VistoriaDetailScreen(
     repository: VistoriaRepository,
     vistoriaId: Long,
     onBack: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onOpenExit: (Long) -> Unit = {},
+    onCompare: (saidaId: Long) -> Unit = {}
 ) {
     var vistoria by remember { mutableStateOf<Vistoria?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -37,8 +40,17 @@ fun VistoriaDetailScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    var exits by remember { mutableStateOf<List<Vistoria>>(emptyList()) }
+    var entrada by remember { mutableStateOf<Vistoria?>(null) }
+    var creatingExit by remember { mutableStateOf(false) }
+
     LaunchedEffect(vistoriaId) {
-        vistoria = repository.getVistoriaById(vistoriaId)
+        val v = repository.getVistoriaById(vistoriaId)
+        vistoria = v
+        if (v != null) {
+            exits = repository.getExitsFor(v.id)
+            entrada = if (v.tipoVistoria == TipoVistoria.SAIDA) repository.getEntradaFor(v) else null
+        }
         isLoading = false
     }
 
@@ -131,6 +143,29 @@ fun VistoriaDetailScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                // Entrada × saída
+                EntradaSaidaCard(
+                    vistoria = v,
+                    exits = exits,
+                    entrada = entrada,
+                    creating = creatingExit,
+                    onCreateExit = {
+                        scope.launch {
+                            creatingExit = true
+                            runCatching { repository.createExitFrom(v.id) }
+                                .onSuccess { id ->
+                                    Toast.makeText(context, "Vistoria de saída criada. Fotografe os cômodos e preencha o checklist.", Toast.LENGTH_LONG).show()
+                                    onOpenExit(id)
+                                }
+                                .onFailure { Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_LONG).show() }
+                            creatingExit = false
+                        }
+                    },
+                    onOpen = onOpenExit,
+                    onCompare = onCompare
+                )
+                Spacer(Modifier.height(12.dp))
+
                 // Status card
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -325,6 +360,74 @@ private fun DetailRow(label: String, value: String) {
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun EntradaSaidaCard(
+    vistoria: Vistoria,
+    exits: List<Vistoria>,
+    entrada: Vistoria?,
+    creating: Boolean,
+    onCreateExit: () -> Unit,
+    onOpen: (Long) -> Unit,
+    onCompare: (Long) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Vistoria de ${TipoVistoria.label(vistoria.tipoVistoria).lowercase()}", fontWeight = FontWeight.Bold)
+                    val extras = buildList {
+                        if (vistoria.medidores.hasAnyReading()) add("medidores")
+                        if (vistoria.chaves.isNotEmpty()) add("${vistoria.chaves.sumOf { it.quantidade }} chave(s)/controle(s)")
+                        add("${vistoria.signatures.count()}/3 assinaturas")
+                    }
+                    Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            when (vistoria.tipoVistoria) {
+                TipoVistoria.SAIDA -> {
+                    if (entrada != null) {
+                        Text("Entrada de ${entrada.dataLaudo.ifBlank { "—" }}", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(6.dp))
+                        Button(onClick = { onCompare(vistoria.id) }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Comparar com a entrada")
+                        }
+                    } else {
+                        Text("Sem vistoria de entrada vinculada neste aparelho.", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                else -> {
+                    exits.forEach { ex ->
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text("Saída de ${ex.dataLaudo.ifBlank { "—" }}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            TextButton(onClick = { onOpen(ex.id) }) { Text("Abrir") }
+                            TextButton(onClick = { onCompare(ex.id) }) { Text("Comparar") }
+                        }
+                    }
+                    OutlinedButton(onClick = onCreateExit, enabled = !creating, modifier = Modifier.fillMaxWidth()) {
+                        if (creating) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (exits.isEmpty()) "Criar vistoria de saída" else "Criar outra vistoria de saída")
+                    }
+                    Text("Copia imóvel, partes, cômodos, móveis, chaves e leituras dos medidores (sem fotos e sem avarias).",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp))
+                }
+            }
         }
     }
 }

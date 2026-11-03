@@ -10,6 +10,7 @@ import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.ui.home.HomeScreen
 import com.imobweb.app.ui.login.LoginScreen
 import com.imobweb.app.ui.settings.SettingsScreen
+import com.imobweb.app.ui.vistoria.CompareScreen
 import com.imobweb.app.ui.vistoria.VistoriaDetailScreen
 import com.imobweb.app.ui.vistoria.VistoriaListScreen
 import com.imobweb.app.ui.vistoria.VistoriaWizardScreen
@@ -22,9 +23,11 @@ object Routes {
     const val VISTORIA_LIST = "vistorias"
     const val VISTORIA_DETAIL = "vistoria/{vistoriaId}"
     const val SETTINGS = "settings"
+    const val COMPARE = "compare/{saidaId}"
 
     fun wizardEdit(id: Long) = "wizard/$id"
     fun vistoriaDetail(id: Long) = "vistoria/$id"
+    fun compare(saidaId: Long) = "compare/$saidaId"
 }
 
 @Composable
@@ -106,7 +109,20 @@ fun AppNavGraph(
                 repository = repository,
                 vistoriaId = id,
                 onBack = { navController.popBackStack() },
-                onEdit = { navController.navigate(Routes.wizardEdit(id)) }
+                onEdit = { navController.navigate(Routes.wizardEdit(id)) },
+                onOpenExit = { exitId -> navController.navigate(Routes.wizardEdit(exitId)) },
+                onCompare = { saidaId -> navController.navigate(Routes.compare(saidaId)) }
+            )
+        }
+
+        composable(
+            route = Routes.COMPARE,
+            arguments = listOf(navArgument("saidaId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            CompareScreen(
+                repository = repository,
+                saidaId = backStackEntry.arguments?.getLong("saidaId") ?: 0L,
+                onBack = { navController.popBackStack() }
             )
         }
     }

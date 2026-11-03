@@ -15,6 +15,13 @@ interface VistoriaDao {
     @Query("SELECT * FROM vistorias WHERE id = :id")
     suspend fun getVistoriaById(id: Long): Vistoria?
 
+    @Query("SELECT * FROM vistorias WHERE remoteId = :remoteId LIMIT 1")
+    suspend fun getByRemoteId(remoteId: String): Vistoria?
+
+    /** Vistorias de saída criadas a partir da entrada [entradaId]. */
+    @Query("SELECT * FROM vistorias WHERE linkedId = :entradaId ORDER BY createdAt DESC")
+    suspend fun getExitsFor(entradaId: Long): List<Vistoria>
+
     @Query("SELECT remoteId FROM vistorias WHERE remoteId IS NOT NULL")
     suspend fun getRemoteIds(): List<String>
 
