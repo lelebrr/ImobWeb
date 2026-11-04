@@ -253,7 +253,10 @@ class VistoriaRepository(
             val response = api.login(LoginRequest(email, password))
             val body = response.body()
             if (response.isSuccessful && body != null && body.success) {
-                val token = body.token
+                // Servidores mais antigos só devolvem o token no cookie de sessão
+                val token = body.token?.takeIf { it.isNotBlank() }
+                    ?: response.headers().values("Set-Cookie")
+                        .firstNotNullOfOrNull { Regex("""(?:^|;\s*)imobweb_token=([^;]+)""").find(it)?.groupValues?.get(1) }
                 if (token.isNullOrBlank()) {
                     return@withContext Result.failure(
                         Exception("O servidor não devolveu o token de acesso. Atualize o servidor (rota /api/auth/login).")

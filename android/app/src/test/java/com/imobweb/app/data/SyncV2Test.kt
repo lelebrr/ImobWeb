@@ -52,6 +52,9 @@ class SyncV2Test {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 val path = request.path.orEmpty()
                 return when {
+                    path == "/api/auth/login" -> MockResponse()
+                        .addHeader("Set-Cookie", "imobweb_token=tok-cookie; Path=/; HttpOnly; SameSite=lax")
+                        .setBody("""{"success":true,"user":{"id":"u9","email":"a@b.c","user_metadata":{"organizationId":"ORG1"}},"role":"ADMIN"}""")
                     path == "/api/admin/vistoria/photos/check" -> {
                         if (!photoApi) return MockResponse().setResponseCode(404)
                         val keys = Regex("\"(vistoria/[^\"]+)\"").findAll(request.body.readUtf8()).map { it.groupValues[1] }.toList()
@@ -238,5 +241,14 @@ class SyncV2Test {
 
         repo.deleteForeign("ORG2")
         assertNull(repo.getVistoriaById(id))
+    }
+
+    @Test
+    fun `login em servidor antigo usa o token do cookie`() = runBlocking {
+        session.clearSession()
+        val r = repo.login("a@b.c", "x")
+        assertTrue(r.exceptionOrNull()?.message, r.isSuccess)
+        assertEquals("tok-cookie", session.getToken())
+        assertEquals("ORG1", session.getOrganizationId())
     }
 }
