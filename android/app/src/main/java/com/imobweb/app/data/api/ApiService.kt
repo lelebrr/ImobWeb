@@ -16,7 +16,22 @@ interface ApiService {
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("/api/admin/vistoria/analyze")
-    suspend fun analyze(@Body request: AnalyzeRequest): Response<AnalyzeResponse>
+    suspend fun analyze(
+        @Body request: AnalyzeRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<AnalyzeResponse>
+
+    @POST("/api/admin/vistoria/compare")
+    suspend fun compareRoom(
+        @Body request: CompareRoomRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<CompareRoomResponse>
+
+    @POST("/api/admin/vistoria/compare")
+    suspend fun compareSummary(
+        @Body request: CompareSummaryRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<CompareSummaryResponse>
 
     @POST("/api/admin/vistoria/sync")
     suspend fun syncVistoria(@Body request: SyncRequest): Response<SyncSaveResponse>
@@ -24,6 +39,34 @@ interface ApiService {
     /** Sem [id]: resumo (sem cômodos/fotos). Com [id]: a vistoria completa. */
     @GET("/api/admin/vistoria/list")
     suspend fun listVistorias(@Query("id") id: String? = null): Response<SyncListResponse>
+
+    @POST("/api/admin/vistoria/photos")
+    suspend fun uploadPhoto(@Body body: okhttp3.RequestBody): Response<PhotoUploadResponse>
+
+    @POST("/api/admin/vistoria/photos/check")
+    suspend fun checkPhotos(@Body request: PhotoCheckRequest): Response<PhotoCheckResponse>
+
+    @Streaming
+    @GET("/api/admin/vistoria/photos/{key}")
+    suspend fun downloadPhoto(@Path("key", encoded = true) key: String): Response<ResponseBody>
+
+    @POST("/api/admin/vistoria/inspect")
+    suspend fun inspect(
+        @Body request: InspectRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<InspectResponse>
+
+    @POST("/api/admin/vistoria/considerations")
+    suspend fun considerations(
+        @Body request: ConsiderationsRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<ConsiderationsResponse>
+
+    @POST("/api/admin/vistoria/repairs")
+    suspend fun repairs(
+        @Body request: RepairsRequest,
+        @Header("x-gemini-key") geminiKey: String? = null
+    ): Response<RepairsResponse>
 
     @DELETE("/api/admin/vistoria/sync")
     suspend fun deleteVistoria(@Query("id") id: String): Response<ResponseBody>

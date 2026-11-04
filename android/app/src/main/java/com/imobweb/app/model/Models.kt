@@ -47,7 +47,55 @@ data class Vistoria(
     /** Leituras da vistoria de entrada (copiadas ao criar a saída) para calcular o consumo */
     val medidoresEntrada: Medidores? = null,
     @ColumnInfo(defaultValue = "[]") val chaves: List<ChaveItem> = emptyList(),
-    @ColumnInfo(defaultValue = "{}") val signatures: Signatures = Signatures()
+    @ColumnInfo(defaultValue = "{}") val signatures: Signatures = Signatures(),
+    /** Organização (conta) dona desta vistoria. Vistorias de outra conta não são sincronizadas. */
+    val ownerOrg: String? = null,
+    @ColumnInfo(defaultValue = "") val andar: String = "",
+    @ColumnInfo(defaultValue = "") val locadoraTelefone: String = "",
+    @ColumnInfo(defaultValue = "") val locatarioTelefone: String = "",
+    /** E-mail para contestação do laudo (impresso no PDF) */
+    @ColumnInfo(defaultValue = "") val emailContestacao: String = "",
+    /** Estimativa de custo de reparos (referencial) */
+    @ColumnInfo(defaultValue = "[]") val reparos: List<Reparo> = emptyList()
+) {
+    val hasConflict: Boolean get() = status == SyncStatus.CONFLICT
+}
+
+/** Valores da coluna `status`. */
+object SyncStatus {
+    const val DRAFT = "draft"
+    const val PENDING = "pending_sync"
+    /** Enviar e substituir a cópia do servidor (o usuário escolheu manter a versão do aparelho) */
+    const val PENDING_FORCE = "pending_force"
+    const val SYNCED = "synced"
+    /** Alterada aqui e em outro aparelho/no web: aguarda o usuário escolher qual manter */
+    const val CONFLICT = "conflict"
+}
+
+/** Item da estimativa de reparos (valores em reais). */
+data class Reparo(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val comodo: String = "",
+    val descricao: String = "",
+    val min: Double = 0.0,
+    val max: Double = 0.0,
+    val nota: String = "",
+    /** "ia" ou "manual" */
+    val origem: String = "manual"
+)
+
+/** Sugestão da IA aguardando revisão. Nada entra no laudo sem aceite. */
+data class Proposal(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    /** "furniture" ou "damage" */
+    val kind: String = "damage",
+    val text: String = "",
+    val confidence: Double = 0.8,
+    /** "inspecao" (detecção por foto) ou "analise" (análise do cômodo) */
+    val source: String = "inspecao",
+    val photoId: String? = null,
+    /** posição (%) para marcar a avaria na foto, se aceita */
+    val mark: PhotoAnnotation? = null
 )
 
 // ---------------------------------------------------------------- vistoria: extras
@@ -153,14 +201,19 @@ data class RoomData(
     /** elemento (Checklist.ITEMS) → ok | regular | ruim | na */
     val checklist: Map<String, String> = emptyMap(),
     /** observações livres do cômodo */
-    val observations: String = ""
+    val observations: String = "",
+    /** sugestões da IA aguardando revisão */
+    val proposals: List<Proposal> = emptyList()
 )
 
 data class PhotoData(
     val dataUrl: String = "",
     val name: String = "",
     val annotations: List<PhotoAnnotation> = emptyList(),
-    val filePath: String? = null
+    val filePath: String? = null,
+    val id: String = java.util.UUID.randomUUID().toString(),
+    /** chave da foto no armazenamento do servidor (R2), quando já enviada */
+    val remoteKey: String? = null
 )
 
 data class PhotoAnnotation(
@@ -179,7 +232,8 @@ data class LoginResponse(
     val redirectTo: String?,
     val error: String?
 )
-data class UserData(val id: String, val email: String?, val name: String?)
+data class UserData(val id: String, val email: String?, val name: String?, val user_metadata: UserMetadata? = null)
+data class UserMetadata(val name: String?, val role: String?, val organizationId: String?)
 
 data class AnalyzeRequest(
     val rooms: List<AnalyzeRoomInput>,
@@ -244,7 +298,16 @@ data class SyncVistoriaData(
     val medidores: Medidores? = null,
     val medidoresEntrada: Medidores? = null,
     val chaves: List<ChaveItem>? = null,
-    val signatures: Signatures? = null
+    val signatures: Signatures? = null,
+    val andar: String? = null,
+    val locadoraTelefone: String? = null,
+    val locatarioTelefone: String? = null,
+    val emailContestacao: String? = null,
+    val reparos: List<Reparo>? = null,
+    /** updatedAt do servidor que este cliente conhecia: detecta edição concorrente */
+    val baseUpdatedAt: Long? = null,
+    /** substituir mesmo havendo conflito */
+    val force: Boolean? = null
 )
 data class SyncRoomData(
     val id: String = "",
@@ -258,18 +321,32 @@ data class SyncRoomData(
     val observations: String? = null
 )
 data class SyncPhotoData(
-    val dataUrl: String = "",
+    val dataUrl: String? = null,
     val name: String = "",
     val annotations: List<SyncAnnotationData> = emptyList(),
-    val filePath: String? = null
+    val filePath: String? = null,
+    val id: String? = null,
+    /** chave no R2 (quando presente, a foto não vai embutida) */
+    val key: String? = null
 )
 data class SyncAnnotationData(
     val x: Double = 0.0,
     val y: Double = 0.0,
     val label: String = ""
 )
-data class SyncListResponse(val success: Boolean, val vistorias: List<SyncVistoriaData>?, val error: String?)
-data class SyncSaveResponse(val success: Boolean, val remoteId: String?, val error: String?)
+data class SyncListResponse(val success: Boolean, val vistorias: List<SyncVistoriaData>?, val error: String?, val organizationId: String? = null)
+/** [updatedAt]: data da última alteração no servidor (ms), usada para detectar mudanças feitas em outro aparelho/no web. */
+data class SyncSaveResponse(
+    val success: Boolean,
+    val remoteId: String?,
+    val updatedAt: Long? = null,
+    val error: String?,
+    val conflict: Boolean? = null,
+    val serverUpdatedAt: Long? = null
+)
+data class PhotoUploadResponse(val success: Boolean, val key: String?, val error: String?)
+data class PhotoCheckRequest(val keys: List<String>)
+data class PhotoCheckResponse(val success: Boolean, val missing: List<String>?, val error: String?)
 
 // Photo tips per room
 object RoomPhotoTips {
@@ -465,3 +542,114 @@ object ObservationTemplates {
         "Piso em porcelanato em todos os ambientes"
     )
 }
+
+// ---------------------------------------------------------------- comparativo com IA
+
+/** Lado (entrada ou saída) de um cômodo enviado para a IA comparar. */
+data class CompareSide(
+    val items: List<String> = emptyList(),
+    val furniture: List<String> = emptyList(),
+    val damages: List<String> = emptyList(),
+    val checklist: Map<String, String> = emptyMap(),
+    val observations: String = ""
+)
+
+data class CompareRoomRequest(
+    val name: String,
+    val entradaPhotos: List<String>,
+    val saidaPhotos: List<String>,
+    val entrada: CompareSide?,
+    val saida: CompareSide?
+)
+
+/** Diferença apontada pela IA: dano_novo, item_ausente, piora, melhoria, desgaste_normal, sem_alteracao. */
+data class AiDiff(
+    val type: String = "piora",
+    val description: String = "",
+    val severity: String = "leve",
+    val confidence: Double = 0.5
+) {
+    companion object {
+        val LABELS = mapOf(
+            "dano_novo" to "Dano novo", "item_ausente" to "Item ausente", "piora" to "Piora",
+            "melhoria" to "Melhoria", "desgaste_normal" to "Desgaste normal", "sem_alteracao" to "Sem alteração"
+        )
+        fun label(type: String?) = LABELS[type] ?: (type ?: "")
+    }
+
+    /** Gson pode trazer nulls; normaliza e limita valores. */
+    @Suppress("USELESS_ELVIS")
+    fun sanitized(): AiDiff = AiDiff(
+        type = (type ?: "piora").takeIf { it in LABELS } ?: "piora",
+        description = (description ?: "").take(240),
+        severity = (severity ?: "leve").takeIf { it in listOf("leve", "moderada", "grave") } ?: "leve",
+        confidence = (confidence ?: 0.5).coerceIn(0.0, 1.0)
+    )
+}
+
+data class AiRoomResult(val summary: String = "", val differences: List<AiDiff> = emptyList())
+
+data class CompareRoomResponse(
+    val success: Boolean,
+    val summary: String?,
+    val differences: List<AiDiff>?,
+    val error: String?
+)
+
+data class CompareSummaryRoom(val name: String, val summary: String, val differences: List<AiDiff>)
+data class CompareSummaryRequest(val mode: String = "summary", val rooms: List<CompareSummaryRoom>)
+data class CompareSummaryResponse(val success: Boolean, val summary: String?, val attention: List<String>?, val error: String?)
+
+/** Resultado completo do comparativo por IA. */
+data class AiCompare(
+    val rooms: Map<String, AiRoomResult>,
+    val summary: String? = null,
+    val attention: List<String> = emptyList(),
+    val failedRooms: List<String> = emptyList()
+)
+
+// ---------------------------------------------------------------- detecção de objetos e defeitos
+
+data class DetectedBox(val x: Double = 0.0, val y: Double = 0.0, val w: Double = 0.0, val h: Double = 0.0)
+data class DetectedObject(
+    val name: String = "", val category: String = "outro", val condition: String = "bom",
+    val confidence: Double = 0.5, val box: DetectedBox? = null
+)
+data class DetectedDefect(
+    val type: String = "outro", val severity: String = "leve", val description: String = "",
+    val `object`: String? = null, val confidence: Double = 0.5, val box: DetectedBox? = null
+)
+data class PhotoInspection(
+    val objects: List<DetectedObject> = emptyList(),
+    val defects: List<DetectedDefect> = emptyList(),
+    val quality: String? = null
+)
+data class InspectRequest(val photos: List<String>, val room: String, val propertyType: String)
+data class InspectResponse(val success: Boolean, val results: List<PhotoInspection>?, val error: String?)
+
+object DefectTypes {
+    val LABELS = mapOf(
+        "risco" to "Risco", "trinca" to "Trinca/rachadura", "quebrado" to "Quebrado", "descascado" to "Descascado/solto",
+        "mancha" to "Mancha", "umidade" to "Umidade/infiltração", "mofo" to "Mofo", "ferrugem" to "Ferrugem",
+        "amassado" to "Amassado", "desgaste" to "Desgaste", "sujeira" to "Sujeira", "falta_peca" to "Peça faltando",
+        "folgado" to "Folgado/desalinhado", "queimado" to "Queimado", "vazamento" to "Vazamento", "outro" to "Avaria"
+    )
+    fun label(type: String?) = LABELS[type] ?: "Avaria"
+}
+
+// ---------------------------------------------------------------- considerações e reparos (IA)
+
+data class ConsiderationsRoom(
+    val name: String, val photoCount: Int, val items: List<String>, val furniture: List<String>,
+    val damages: List<String>, val problems: List<String>, val checklist: Map<String, String>, val observations: String
+)
+data class ConsiderationsRequest(
+    val rooms: List<ConsiderationsRoom>,
+    val propertyInfo: Map<String, String>,
+    val entradaResumo: String? = null
+)
+data class ConsiderationsResponse(val success: Boolean, val text: String?, val highlights: List<String>?, val error: String?)
+
+data class RepairDamage(val comodo: String, val descricao: String)
+data class RepairsRequest(val damages: List<RepairDamage>, val cidade: String, val estado: String, val tipoImovel: String)
+data class RepairsResponse(val success: Boolean, val repairs: List<Reparo>?, val error: String?)

@@ -36,12 +36,14 @@ fun HomeScreen(
     onNewVistoria: () -> Unit,
     onViewVistorias: () -> Unit,
     onOpenVistoria: (Long) -> Unit = { onViewVistorias() },
+    onStats: () -> Unit = {},
     onSettings: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val vistorias by repository.getAllVistorias().collectAsState(initial = emptyList())
     val pendingSyncCount by repository.getPendingSyncCount().collectAsState(initial = 0)
+    val conflictCount by repository.getConflictCount().collectAsState(initial = 0)
     var isSyncing by remember { mutableStateOf(false) }
 
     // Connectivity observer
@@ -70,8 +72,9 @@ fun HomeScreen(
             isSyncing = false
             isLoggedIn = repository.isLoggedIn()
             result.onSuccess { r ->
-                if (!silent || r.errors.isNotEmpty()) {
+                if (!silent || r.errors.isNotEmpty() || r.conflicts > 0) {
                     val msg = when {
+                        r.conflicts > 0 -> "${r.conflicts} vistoria(s) em conflito: abra para escolher qual versão manter"
                         r.errors.isNotEmpty() -> "Sincronização com falhas: ${r.errors.first()}"
                         r.pushed == 0 && r.pulled == 0 -> "Tudo sincronizado"
                         else -> "Sincronizado: ${r.pushed} enviada(s), ${r.pulled} recebida(s)"
@@ -162,6 +165,9 @@ fun HomeScreen(
                             else LocalContentColor.current
                         )
                     }
+                    IconButton(onClick = onStats) {
+                        Icon(Icons.Default.BarChart, contentDescription = "Estatísticas")
+                    }
                     IconButton(onClick = onSettings) {
                         Icon(
                             Icons.Default.Settings,
@@ -181,6 +187,25 @@ fun HomeScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // Conflitos de versão aguardando decisão
+            AnimatedVisibility(visible = conflictCount > 0) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onViewVistorias),
+                    color = Color(0xFFF59E0B).copy(alpha = 0.15f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.SyncProblem, contentDescription = null,
+                            tint = Color(0xFFF59E0B), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("$conflictCount vistoria(s) alteradas aqui e em outro lugar. Toque para escolher qual versão manter.",
+                            style = MaterialTheme.typography.bodySmall, color = Color(0xFFF59E0B))
+                    }
+                }
+            }
+
             // Sem login: nada é enviado ao servidor
             AnimatedVisibility(visible = !isLoggedIn) {
                 Surface(

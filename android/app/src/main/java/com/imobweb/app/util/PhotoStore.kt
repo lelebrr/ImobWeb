@@ -105,4 +105,43 @@ object PhotoStore {
     fun deleteAll(context: Context) {
         dir(context).listFiles()?.forEach { it.delete() }
     }
+
+    // ------------------------------------------------------------------ fotos no servidor (R2)
+
+    private fun sha256Hex(file: File): String {
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buf)
+                if (n <= 0) break
+                md.update(buf, 0, n)
+            }
+        }
+        return md.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun extOf(file: File): String? {
+        val head = ByteArray(12)
+        val n = file.inputStream().use { it.read(head) }
+        if (n < 4) return null
+        return when {
+            head[0] == 0xFF.toByte() && head[1] == 0xD8.toByte() && head[2] == 0xFF.toByte() -> "jpg"
+            head[0] == 0x89.toByte() && head[1] == 0x50.toByte() && head[2] == 0x4E.toByte() && head[3] == 0x47.toByte() -> "png"
+            n >= 12 && head[0] == 'R'.code.toByte() && head[8] == 'W'.code.toByte() && head[9] == 'E'.code.toByte() -> "webp"
+            else -> null
+        }
+    }
+
+    /** Mesma chave que o servidor calcula: vistoria/<org>/<sha256>.<ext> (null se não for imagem). */
+    fun keyFor(org: String, file: File): String? = runCatching {
+        val ext = extOf(file) ?: return@runCatching null
+        "vistoria/$org/${sha256Hex(file)}.$ext"
+    }.getOrNull()
+
+    /** Arquivo local de uma foto baixada do servidor (nome = hash, então nunca baixa duas vezes). */
+    fun fileForKey(context: Context, key: String): File {
+        val name = key.substringAfterLast('/').filter { it.isLetterOrDigit() || it == '.' }.ifBlank { "foto.jpg" }
+        return File(dir(context), "r2_$name")
+    }
 }

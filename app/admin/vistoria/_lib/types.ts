@@ -6,6 +6,8 @@ export type ChecklistState = 'ok' | 'regular' | 'ruim' | 'na';
 export type TipoVistoria = 'ENTRADA' | 'SAIDA' | 'PERIODICA';
 export interface Signatures { locadora?: string; locatario?: string; vistoriadora?: string; }
 export interface PhotoData { id?: string; dataUrl: string; name: string; annotations: PhotoAnnotation[];
+  /** chave da foto no armazenamento do servidor (R2), quando já enviada */
+  remoteKey?: string;
   /** objetos e defeitos detectados automaticamente pela IA nesta foto */
   inspection?: PhotoInspection; }
 export interface RoomData { id: string; name: string; photos: PhotoData[]; items: string[]; furniture: string[]; damages: string[]; analyzing: boolean; analyzed: boolean;
@@ -64,6 +66,18 @@ export interface SavedLaudo {
   signatures?: Signatures;
   /** vistoria de saída aponta para a de entrada */
   linkedId?: string;
+  /** id da vistoria no servidor (compartilhada com o app Android) */
+  remoteId?: string;
+  /** updatedAt do servidor (ms) na última sincronização */
+  cloudUpdatedAt?: number;
+  /** savedAt local no momento da última sincronização; diferente de savedAt = há alterações a enviar */
+  cloudSavedAt?: string;
+  /** alterado aqui e em outro lugar: aguarda o usuário escolher qual versão manter */
+  cloudConflict?: boolean;
+  /** usuário escolheu manter a versão do navegador: o próximo envio substitui a do servidor */
+  cloudForce?: boolean;
+  /** pertence a outra conta no servidor: não é sincronizado */
+  cloudForeign?: boolean;
   propertyInfo: PropertyInfo; rooms: RoomData[];
 }
 export interface VistoriaSettings {

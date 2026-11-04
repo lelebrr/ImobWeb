@@ -24,6 +24,7 @@ object Routes {
     const val VISTORIA_DETAIL = "vistoria/{vistoriaId}"
     const val SETTINGS = "settings"
     const val COMPARE = "compare/{saidaId}"
+    const val STATS = "stats"
 
     fun wizardEdit(id: Long) = "wizard/$id"
     fun vistoriaDetail(id: Long) = "vistoria/$id"
@@ -54,8 +55,13 @@ fun AppNavGraph(
                 onNewVistoria = { navController.navigate(Routes.WIZARD) },
                 onViewVistorias = { navController.navigate(Routes.VISTORIA_LIST) },
                 onOpenVistoria = { id -> navController.navigate(Routes.vistoriaDetail(id)) },
+                onStats = { navController.navigate(Routes.STATS) },
                 onSettings = { navController.navigate(Routes.SETTINGS) }
             )
+        }
+
+        composable(Routes.STATS) {
+            com.imobweb.app.ui.stats.StatsScreen(repository = repository, onBack = { navController.popBackStack() })
         }
 
         composable(Routes.SETTINGS) {

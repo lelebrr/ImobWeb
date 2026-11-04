@@ -17,6 +17,11 @@ function extrasFrom(data: unknown) {
     medidoresEntrada: d.medidoresEntrada ?? null,
     chaves: Array.isArray(d.chaves) ? d.chaves : [],
     signatures: d.signatures ?? null,
+    andar: d.info?.andar ?? "",
+    locadoraTelefone: d.info?.locadoraTelefone ?? "",
+    locatarioTelefone: d.info?.locatarioTelefone ?? "",
+    emailContestacao: d.info?.emailContestacao ?? "",
+    reparos: Array.isArray(d.reparos) ? d.reparos : [],
   };
 }
 
@@ -83,7 +88,7 @@ export async function GET(request: NextRequest) {
       const r = await prisma.vistoria.findFirst({
         where: { id, organizationId: auth.organizationId },
       });
-      return NextResponse.json({ success: true, vistorias: r ? [toDto(r, true)] : [], error: null });
+      return NextResponse.json({ success: true, organizationId: auth.organizationId, vistorias: r ? [toDto(r, true)] : [], error: null });
     }
 
     const full = params.get("full") === "1";
@@ -95,6 +100,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      // os clientes usam para saber se a lista é da mesma conta antes de apagar cópias locais
+      organizationId: auth.organizationId,
       vistorias: (records as any[]).map((r) => toDto({ data: null, ...r } as NonNullable<Row>, full)),
       error: null,
     });

@@ -34,11 +34,11 @@ const uid = () =>
 /** ids de fotos já gravadas nesta sessão: o autosave só escreve fotos novas */
 const knownPhotos = new Set<string>();
 
-async function getKv<T>(key: string): Promise<T | undefined> {
+export async function getKv<T>(key: string): Promise<T | undefined> {
   const row = await db().kv.get(key);
   return row?.value as T | undefined;
 }
-async function setKv(key: string, value: unknown): Promise<void> {
+export async function setKv(key: string, value: unknown): Promise<void> {
   await db().kv.put({ key, value });
 }
 

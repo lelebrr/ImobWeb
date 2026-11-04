@@ -56,6 +56,14 @@ function fieldsFrom(v: Record<string, unknown>) {
       medidoresEntrada: obj(v.medidoresEntrada),
       chaves: Array.isArray(v.chaves) ? v.chaves.slice(0, 60) : [],
       signatures: obj(v.signatures),
+      // campos que app e web compartilham mas não têm coluna própria
+      info: {
+        andar: str(v.andar, 20) || "",
+        locadoraTelefone: str(v.locadoraTelefone, 30) || "",
+        locatarioTelefone: str(v.locatarioTelefone, 30) || "",
+        emailContestacao: str(v.emailContestacao, 120) || "",
+      },
+      reparos: Array.isArray(v.reparos) ? v.reparos.slice(0, 80) : [],
     } as Prisma.InputJsonValue,
   };
 }
@@ -88,7 +96,7 @@ export async function POST(request: NextRequest) {
     if (remoteId) {
       const existing = await prisma.vistoria.findUnique({
         where: { id: remoteId },
-        select: { id: true, organizationId: true },
+        select: { id: true, organizationId: true, updatedAt: true },
       });
       if (existing) {
         if (existing.organizationId !== auth.organizationId) {
@@ -97,8 +105,18 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           );
         }
+        // Conflito: a cópia do servidor mudou (outro aparelho / web) depois da última vez que
+        // este cliente a viu. Sem `force`, não sobrescreve: o cliente pergunta qual manter.
+        const base = Number(vistoria.baseUpdatedAt);
+        const force = body?.force === true || vistoria.force === true;
+        if (!force && Number.isFinite(base) && base > 0 && existing.updatedAt.getTime() > base + 1000) {
+          return NextResponse.json(
+            { success: false, conflict: true, remoteId, serverUpdatedAt: existing.updatedAt.getTime(), error: "Vistoria alterada em outro aparelho" },
+            { status: 409 }
+          );
+        }
         const saved = await prisma.vistoria.update({ where: { id: remoteId }, data });
-        return NextResponse.json({ success: true, remoteId: saved.id, error: null });
+        return NextResponse.json({ success: true, remoteId: saved.id, updatedAt: saved.updatedAt.getTime(), error: null });
       }
     }
 
@@ -106,7 +124,7 @@ export async function POST(request: NextRequest) {
     const saved = await prisma.vistoria.create({
       data: { ...data, organizationId: auth.organizationId, userId: auth.id },
     });
-    return NextResponse.json({ success: true, remoteId: saved.id, error: null });
+    return NextResponse.json({ success: true, remoteId: saved.id, updatedAt: saved.updatedAt.getTime(), error: null });
   } catch (err: any) {
     console.error("[API Vistoria Sync] Erro:", err);
     return NextResponse.json(

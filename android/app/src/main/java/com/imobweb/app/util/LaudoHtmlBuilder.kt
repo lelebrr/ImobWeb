@@ -10,6 +10,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Identidade visual do laudo (Configurações). */
+data class LaudoOptions(
+    val empresaNome: String = "",
+    val watermarkText: String? = null,
+    /** data URL da imagem (logo) usada como marca d'água */
+    val watermarkImage: String? = null
+)
+
 /**
  * Gera o laudo de vistoria em HTML puro, sem depender do servidor.
  * O mesmo HTML é usado na pré-visualização e na exportação para PDF.
@@ -21,7 +29,7 @@ object LaudoHtmlBuilder {
         "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
     )
 
-    fun build(vistoria: Vistoria): String {
+    fun build(vistoria: Vistoria, options: LaudoOptions = LaudoOptions()): String {
         val agora = Date()
         val dataGeracao = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR")).format(agora)
         val totalFotos = vistoria.rooms.sumOf { it.photos.size }
@@ -33,6 +41,7 @@ object LaudoHtmlBuilder {
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")
             append("<title>Laudo de Vistoria - ${esc(vistoria.condominio.ifBlank { vistoria.endereco })}</title>")
             append(style())
+            append(watermarkStyle(options))
             append("</head><body>")
 
             // ---------- CAPA ----------
@@ -76,6 +85,7 @@ object LaudoHtmlBuilder {
                     row("Endereço", vistoria.endereco) +
                     row("Número", vistoria.numero) +
                     row("Complemento", vistoria.conjApto) +
+                    row("Andar", vistoria.andar) +
                     row("Bairro", vistoria.bairro) +
                     row("Cidade / UF", listOf(vistoria.cidade, vistoria.estado).filter { it.isNotBlank() }.joinToString("/")) +
                     row("CEP", vistoria.cep) +
@@ -91,8 +101,10 @@ object LaudoHtmlBuilder {
                 table(
                     row("Locadora", vistoria.locadora) +
                     row("CPF/CNPJ da locadora", vistoria.locadoraCpf) +
+                    row("Telefone da locadora", vistoria.locadoraTelefone) +
                     row("Locatário(a)", vistoria.locatario) +
                     row("CPF/CNPJ do locatário", vistoria.locatarioCpf) +
+                    row("Telefone do locatário", vistoria.locatarioTelefone) +
                     row("Vistoriadora", vistoria.vistoriadora) +
                     row("Solicitante", vistoria.solicitante) +
                     row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
@@ -146,13 +158,33 @@ object LaudoHtmlBuilder {
                 })
             }
 
+            // ---------- ESTIMATIVA DE REPAROS ----------
+            val reparos = vistoria.reparos.filter { it.descricao.isNotBlank() }
+            if (reparos.isNotEmpty()) {
+                append(section(next("Estimativa de custo de reparos")) {
+                    buildString {
+                        append("<table class=\"data-table grid\"><thead><tr><th>Cômodo</th><th>Reparo</th><th style=\"width:150px\">Faixa (R$)</th></tr></thead><tbody>")
+                        reparos.forEach { r ->
+                            append("<tr><td>${esc(r.comodo)}</td><td>${esc(r.descricao)}")
+                            if (r.nota.isNotBlank()) append("<br><span class=\"muted\">${esc(r.nota)}</span>")
+                            append("</td><td>${esc(brl(r.min))} – ${esc(brl(r.max))}</td></tr>")
+                        }
+                        append("<tr><td></td><td><b>Total estimado</b></td><td><b>${esc(brl(reparos.sumOf { it.min }))} – ${esc(brl(reparos.sumOf { it.max }))}</b></td></tr>")
+                        append("</tbody></table>")
+                        append("<p class=\"muted\">Valores referenciais de mão de obra e material; não constituem orçamento.</p>")
+                    }
+                })
+            }
+
             // ---------- CONSIDERAÇÕES ----------
             append(section(next("Considerações finais")) {
                 if (vistoria.consideracoes.isBlank()) {
                     "<p class=\"empty\">Sem considerações adicionais.</p>"
                 } else {
                     "<p class=\"considerations\">${esc(vistoria.consideracoes).replace("\n", "<br>")}</p>"
-                }
+                } + if (vistoria.emailContestacao.isNotBlank()) {
+                    "<p class=\"contest\">Eventuais divergências podem ser contestadas por escrito em até 5 (cinco) dias do recebimento deste laudo, pelo e-mail <b>${esc(vistoria.emailContestacao)}</b>.</p>"
+                } else ""
             })
 
             // ---------- ASSINATURAS ----------
@@ -167,7 +199,8 @@ object LaudoHtmlBuilder {
             append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "—" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
             append("</section>")
 
-            append("<footer class=\"doc-footer\">Laudo gerado pelo aplicativo imobWeb Vistoria em ${esc(dataGeracao)} • Documento de caráter descritivo, sem valor de perícia judicial.</footer>")
+            val empresa = options.empresaNome.takeIf { it.isNotBlank() }?.let { "${esc(it)} • " } ?: ""
+            append("<footer class=\"doc-footer\">${empresa}Laudo gerado pelo aplicativo imobWeb Vistoria em ${esc(dataGeracao)} • Documento de caráter descritivo, sem valor de perícia judicial.</footer>")
             append("</body></html>")
         }
     }
@@ -261,6 +294,35 @@ object LaudoHtmlBuilder {
         val img = image?.takeIf { SAFE_SIG.matches(it) }?.let { "<img class=\"sig-img\" src=\"$it\" alt=\"Assinatura\">" }
             ?: "<div class=\"sig-space\"></div>"
         return "<div class=\"sig\">$img<div class=\"sig-line\"></div><b>${esc(name.ifBlank { "____________________" })}</b><span>${esc(role)}</span></div>"
+    }
+
+    private fun brl(n: Double): String = java.text.NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(n)
+
+    private val SAFE_WM = Regex("^data:image/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$")
+
+    /**
+     * Marca d'água repetida em todo o documento (fundo do body em mosaico): aparece em todas
+     * as páginas do PDF, mesmo com o recorte por página feito no exportador.
+     */
+    private fun watermarkStyle(o: LaudoOptions): String {
+        val layers = mutableListOf<String>()
+        o.watermarkText?.takeIf { it.isNotBlank() }?.let { text ->
+            val safe = text.take(40).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+            val svg = "<svg xmlns='http://www.w3.org/2000/svg' width='420' height='300'><text x='210' y='150' " +
+                "text-anchor='middle' transform='rotate(-30 210 150)' font-family='Arial' font-size='28' font-weight='700' " +
+                "fill='#0f172a' fill-opacity='0.07'>$safe</text></svg>"
+            val b64 = java.util.Base64.getEncoder().encodeToString(svg.toByteArray(Charsets.UTF_8))
+            layers += "url(\"data:image/svg+xml;base64,$b64\")"
+        }
+        o.watermarkImage?.takeIf { SAFE_WM.matches(it) }?.let { layers += "url(\"$it\")" }
+        if (layers.isEmpty()) return ""
+        val sizes = buildList {
+            if (o.watermarkText?.isNotBlank() == true) add("420px 300px")
+            if (o.watermarkImage != null && SAFE_WM.matches(o.watermarkImage)) add("220px auto")
+        }
+        // (a imagem já vem clareada de loadLaudoOptions)
+        return "<style>body{background-image:${layers.joinToString(",")};background-repeat:repeat;" +
+            "background-size:${sizes.joinToString(",")};background-position:center 0}</style>"
     }
 
     private fun fmtNum(n: Double): String =
@@ -439,6 +501,8 @@ object LaudoHtmlBuilder {
             .sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
             .sig { text-align: center; padding-top: 34px; }
             .sig-line { border-top: 1px solid #94a3b8; margin-bottom: 6px; }
+            .muted { color: #64748b; font-size: 10px; }
+            .contest { margin-top: 10px; font-size: 11px; color: #334155; }
             .sig-img { display: block; height: 56px; max-width: 100%; margin: 0 auto 4px; object-fit: contain; }
             .sig-space { height: 60px; }
             .sig { padding-top: 0 !important; }

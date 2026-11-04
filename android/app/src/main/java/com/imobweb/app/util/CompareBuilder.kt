@@ -171,7 +171,28 @@ object CompareBuilder {
         else String.format(Locale("pt", "BR"), "%,.3f", n).trimEnd('0').trimEnd(',')
 
     /** Relatório HTML autocontido (mesmo visual do web). Todo texto é escapado. */
-    fun buildHtml(entrada: Vistoria, saida: Vistoria, cmp: Comparison): String {
+    fun buildHtml(entrada: Vistoria, saida: Vistoria, cmp: Comparison, ai: com.imobweb.app.model.AiCompare? = null): String {
+        fun aiRoom(name: String): String {
+            val a = ai?.rooms?.get(name) ?: return ""
+            if (a.summary.isBlank() && a.differences.isEmpty()) return ""
+            return buildString {
+                append("<div class=\"box ai\"><b>Análise por IA</b>")
+                if (a.summary.isNotBlank()) append("<p>${esc(a.summary)}</p>")
+                if (a.differences.isNotEmpty()) {
+                    append("<ul>")
+                    a.differences.forEach { d ->
+                        append("<li><b>${esc(com.imobweb.app.model.AiDiff.label(d.type))}</b> (${esc(d.severity)}, confiança ${Math.round(d.confidence * 100)}%): ${esc(d.description)}</li>")
+                    }
+                    append("</ul>")
+                }
+                append("</div>")
+            }
+        }
+        val aiSummary = if (ai?.summary.isNullOrBlank()) "" else buildString {
+            append("<div class=\"box ai\"><b>Resumo da análise por IA</b><p>${esc(ai?.summary)}</p>")
+            if (!ai?.attention.isNullOrEmpty()) append("<ul>${ai!!.attention.joinToString("") { "<li>${esc(it)}</li>" }}</ul>")
+            append("<p style=\"font-size:11px;color:#64748b\">Conteúdo gerado por IA; confira as fotos antes de qualquer conclusão.</p></div>")
+        }
         val statusCls = mapOf(
             Status.PIOROU to "piorou", Status.ALTERADO to "alterado", Status.SEM_ALTERACAO to "sem-alteracao",
             Status.SEM_SAIDA to "sem-saida", Status.NOVO to "novo"
@@ -192,6 +213,7 @@ object CompareBuilder {
                     }
                     append("</table>")
                 }
+                append(aiRoom(r.name))
                 if (!r.saida?.observations.isNullOrBlank()) {
                     append("<p class=\"obs\"><b>Obs. da saída:</b> ${esc(r.saida?.observations)}</p>")
                 }
@@ -230,7 +252,7 @@ h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:0 0 8px;display:flex;j
 .box{border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px}.box ul{margin:4px 0 0;padding-left:18px}.bad{background:#fef2f2;border:1px solid #fecaca}.good{background:#f0fdf4;border:1px solid #bbf7d0}
 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}th,td{border:1px solid #e2e8f0;padding:5px 8px;text-align:left}tr.w td{background:#fef2f2}tr.i td{background:#f0fdf4}
 .st{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:#f1f5f9}.st-piorou{background:#fee2e2;color:#991b1b}.st-alterado{background:#fef3c7;color:#92400e}.st-sem-alteracao{background:#dcfce7;color:#166534}
-.obs{font-size:12px;color:#475569}
+.obs{font-size:12px;color:#475569}.ai{background:#eef2ff;border:1px solid #c7d2fe}.ai p{margin:4px 0}
 </style></head><body>
 <h1>Comparativo de vistorias — Entrada x Saída</h1>
 <div class="sub">${esc(entrada.condominio.ifBlank { entrada.endereco })} · ${esc(endereco)} · ${esc(local)}<br>Entrada: ${esc(entrada.dataLaudo)} · Saída: ${esc(saida.dataLaudo)} · Locatário(a): ${esc(entrada.locatario)}</div>
@@ -240,7 +262,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}th,td{bo
 <div class="kpi"><b>${cmp.totals.missingFurniture}</b>itens não encontrados</div>
 <div class="kpi"><b>${cmp.totals.roomsWithIssues}</b>cômodos com deterioração</div>
 ${if (cmp.keys.isNotEmpty()) "<div class=\"kpi\"><b>${cmp.missingKeys}</b>chaves/controles não devolvidos</div>" else ""}
-</div>$meters$keys$rows
+</div>$aiSummary$meters$keys$rows
 <p style="font-size:11px;color:#94a3b8;margin-top:24px">Gerado por imobWeb Vistoria em ${esc(geradoEm)}. Este comparativo é auxiliar e não substitui a análise dos laudos originais.</p>
 </body></html>"""
     }

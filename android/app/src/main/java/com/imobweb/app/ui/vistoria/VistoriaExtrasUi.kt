@@ -297,6 +297,7 @@ fun RoomConditionCard(
                 onValueChange = { onChange(room.copy(observations = it.take(2000))) },
                 label = { Text("Observações do cômodo") },
                 placeholder = { Text("Ex.: pintura com marcas de móveis na parede da janela") },
+                trailingIcon = { DictationIcon { spoken -> onChange(room.copy(observations = appendDictation(room.observations, spoken).take(2000))) } },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
                 maxLines = 6

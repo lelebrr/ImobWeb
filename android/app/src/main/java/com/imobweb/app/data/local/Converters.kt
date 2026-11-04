@@ -8,6 +8,8 @@ import com.imobweb.app.model.Medidor
 import com.imobweb.app.model.Medidores
 import com.imobweb.app.model.PhotoAnnotation
 import com.imobweb.app.model.PhotoData
+import com.imobweb.app.model.Proposal
+import com.imobweb.app.model.Reparo
 import com.imobweb.app.model.RoomData
 import com.imobweb.app.model.Signatures
 
@@ -27,13 +29,36 @@ object ModelSanitizer {
         items = r.items ?: emptyList(),
         photos = (r.photos ?: emptyList()).map { photo(it) },
         checklist = r.checklist ?: emptyMap(),
-        observations = r.observations ?: ""
+        observations = r.observations ?: "",
+        proposals = (r.proposals ?: emptyList()).map { proposal(it) }
     )
 
     fun photo(p: PhotoData): PhotoData = p.copy(
         dataUrl = p.dataUrl ?: "",
         name = p.name ?: "",
-        annotations = (p.annotations ?: emptyList()).map { a -> a.copy(label = a.label ?: "") }
+        annotations = (p.annotations ?: emptyList()).map { a -> a.copy(label = a.label ?: "") },
+        // id estável para fotos antigas (sem id): derivado do arquivo/conteúdo, não aleatório
+        id = p.id ?: java.util.UUID.nameUUIDFromBytes(
+            (p.filePath ?: ((p.dataUrl ?: "").take(256) + (p.name ?: ""))).toByteArray()
+        ).toString()
+    )
+
+    fun proposal(p: Proposal): Proposal = p.copy(
+        id = p.id ?: java.util.UUID.randomUUID().toString(),
+        kind = if (p.kind == "furniture") "furniture" else "damage",
+        text = p.text ?: "",
+        source = p.source ?: "inspecao",
+        confidence = (p.confidence ?: 0.8).coerceIn(0.0, 1.0)
+    )
+
+    fun reparo(r: Reparo): Reparo = r.copy(
+        id = r.id ?: java.util.UUID.randomUUID().toString(),
+        comodo = r.comodo ?: "",
+        descricao = r.descricao ?: "",
+        nota = r.nota ?: "",
+        origem = r.origem ?: "manual",
+        min = (r.min ?: 0.0).coerceAtLeast(0.0),
+        max = (r.max ?: 0.0).coerceAtLeast(0.0)
     )
 
     fun medidor(m: Medidor?): Medidor = if (m == null) Medidor() else Medidor(m.numero ?: "", m.leitura ?: "")
@@ -104,4 +129,15 @@ class Converters {
     @TypeConverter
     fun toSignatures(value: String?): Signatures =
         value?.let { runCatching { gson.fromJson(it, Signatures::class.java) }.getOrNull() } ?: Signatures()
+
+    @TypeConverter
+    fun fromReparos(value: List<Reparo>): String = gson.toJson(value)
+
+    @TypeConverter
+    fun toReparos(value: String?): List<Reparo> {
+        if (value.isNullOrBlank()) return emptyList()
+        val type = object : TypeToken<List<Reparo>>() {}.type
+        val list: List<Reparo>? = runCatching { gson.fromJson<List<Reparo>>(value, type) }.getOrNull()
+        return list.orEmpty().map { ModelSanitizer.reparo(it) }
+    }
 }

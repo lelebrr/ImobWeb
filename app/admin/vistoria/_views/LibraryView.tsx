@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Library, ArrowLeft, Search, Plus, Camera, Building2, MapPin, Edit3, Eye, Download, Trash2, Copy, Star,
-  FileText, DatabaseBackup, LayoutGrid, List as ListIcon, User, DoorOpen, GitCompareArrows,
+  FileText, DatabaseBackup, LayoutGrid, List as ListIcon, User, DoorOpen, GitCompareArrows, RefreshCw, Smartphone, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { VistoriaController } from '../_lib/useVistoriaController';
@@ -15,6 +15,7 @@ import { PageHeader, Thumb, ProgressRing } from '../_components/PageHeader';
 type Sort = 'recent' | 'oldest' | 'name' | 'photos';
 
 export function LibraryView({ v }: { v: VistoriaController }) {
+  const { cloudSyncing, syncCloud, cloudLastSyncAt, resolveCloudConflict } = v;
   const { sortedLaudos, loaded, setView, loadLaudo, deleteLaudo, duplicateLaudo, toggleFavorite, createExitFrom, openCompare, openLaudoHtml, downloadLaudoHtml, exportAll, startWizard, searchEdit, setSearchEdit } = v;
   const [tipo, setTipo] = useState('TODOS');
   const [sort, setSort] = useState<Sort>('recent');
@@ -52,6 +53,9 @@ export function LibraryView({ v }: { v: VistoriaController }) {
         subtitle={`${sortedLaudos.length} laudo(s) · ${items.length} exibido(s)`}
         actions={
           <>
+            <Button variant="ghost" size="sm" onClick={() => void syncCloud()} disabled={cloudSyncing}
+              title={cloudLastSyncAt ? `Última sincronização: ${new Date(cloudLastSyncAt).toLocaleString('pt-BR')}` : 'Sincronizar com o app Android'}
+              className="rounded-xl text-xs text-slate-400 hover:text-white"><RefreshCw className={cn('w-3.5 h-3.5 sm:mr-1', cloudSyncing && 'animate-spin')} /><span className="hidden sm:inline">{cloudSyncing ? 'Sincronizando…' : 'Sincronizar app'}</span></Button>
             <Button variant="ghost" size="sm" onClick={() => openCompare()} className="rounded-xl text-xs text-slate-400 hover:text-white"><GitCompareArrows className="w-3.5 h-3.5 sm:mr-1" /><span className="hidden sm:inline">Comparar</span></Button>
             <Button variant="ghost" size="sm" onClick={() => void exportAll()} disabled={!sortedLaudos.length} className="rounded-xl text-xs text-slate-400 hover:text-white"><DatabaseBackup className="w-3.5 h-3.5 sm:mr-1" /><span className="hidden sm:inline">Backup</span></Button>
             <Button variant="ghost" size="sm" onClick={() => setView('home')} className="rounded-xl text-xs text-slate-400 hover:text-white"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Voltar</Button>
@@ -114,6 +118,9 @@ export function LibraryView({ v }: { v: VistoriaController }) {
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="text-sm font-bold text-white truncate">{l.name || 'Sem nome'}</h3>
                           <span className="flex gap-1 shrink-0">
+                            {l.cloudConflict && <span title="Alterado aqui e no app ao mesmo tempo" className="text-[11px] font-bold rounded px-1.5 py-0.5 inline-flex items-center gap-1 text-red-300 bg-red-500/10"><AlertTriangle className="w-3 h-3" />Conflito</span>}
+                            {l.cloudForeign && <span title="Este laudo pertence a outra conta no servidor e não é sincronizado" className="text-[11px] font-bold rounded px-1.5 py-0.5 text-slate-300 bg-white/10">Outra conta</span>}
+                            {l.remoteId && !l.cloudConflict && <span title={l.savedAt === l.cloudSavedAt ? 'Sincronizado com o app' : 'Alterações ainda não enviadas ao app'} className={cn('text-[11px] font-bold rounded px-1.5 py-0.5 inline-flex items-center', l.savedAt === l.cloudSavedAt ? 'text-emerald-300 bg-emerald-500/10' : 'text-amber-300 bg-amber-500/10')}><Smartphone className="w-3 h-3" /></span>}
                             {l.propertyInfo?.tipoVistoria && l.propertyInfo.tipoVistoria !== 'ENTRADA' && <span className="text-[11px] font-bold text-violet-300 bg-violet-500/10 rounded px-1.5 py-0.5">{l.propertyInfo.tipoVistoria === 'SAIDA' ? 'SAÍDA' : 'PERIÓDICA'}</span>}
                             <span className="text-[11px] font-bold text-slate-400 bg-white/5 rounded px-1.5 py-0.5">{l.propertyInfo?.tipoImovel || '—'}</span>
                           </span>
@@ -128,6 +135,15 @@ export function LibraryView({ v }: { v: VistoriaController }) {
                           <span className="ml-auto">{formatSaved(l.savedAt)}</span>
                         </div>
                       </div>
+                      {l.cloudConflict && (
+                        <div className="mx-3 mb-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[11px] text-red-200">
+                          <p className="mb-2">Este laudo foi alterado aqui e no app (ou em outro navegador) desde a última sincronização. Escolha qual versão manter — a outra será descartada.</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => void resolveCloudConflict(l, 'local')} className="h-8 text-[11px] bg-white/5 text-white">Manter a deste navegador</Button>
+                            <Button size="sm" variant="ghost" onClick={() => void resolveCloudConflict(l, 'server')} className="h-8 text-[11px] bg-white/5 text-white">Usar a do servidor</Button>
+                          </div>
+                        </div>
+                      )}
                       <div className="px-3 py-2 border-t border-white/5 flex flex-wrap items-center gap-1 bg-white/[0.01]">
                         {confirmId === l.id ? (
                           <>

@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.PhotoStore
 
-@Database(entities = [Vistoria::class], version = 3, exportSchema = false)
+@Database(entities = [Vistoria::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun vistoriaDao(): VistoriaDao
@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     // Nunca apagar os laudos do usuário numa atualização do app:
                     // toda mudança de schema precisa de uma Migration explícita.
-                    .addMigrations(PhotosToFilesMigration(context.applicationContext), ExtrasMigration)
+                    .addMigrations(PhotosToFilesMigration(context.applicationContext), ExtrasMigration, OwnerAndInfoMigration)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -108,5 +108,17 @@ object ExtrasMigration : Migration(2, 3) {
         db.execSQL("ALTER TABLE vistorias ADD COLUMN medidoresEntrada TEXT")
         db.execSQL("ALTER TABLE vistorias ADD COLUMN chaves TEXT NOT NULL DEFAULT '[]'")
         db.execSQL("ALTER TABLE vistorias ADD COLUMN signatures TEXT NOT NULL DEFAULT '{}'")
+    }
+}
+
+/** v3 → v4: conta dona da vistoria, contatos, andar, e-mail de contestação e reparos. */
+object OwnerAndInfoMigration : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN ownerOrg TEXT")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN andar TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN locadoraTelefone TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN locatarioTelefone TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN emailContestacao TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN reparos TEXT NOT NULL DEFAULT '[]'")
     }
 }

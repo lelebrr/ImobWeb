@@ -37,21 +37,37 @@ interface VistoriaDao {
     @Query("DELETE FROM vistorias")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM vistorias WHERE status = 'pending_sync' ORDER BY updatedAt ASC")
+    @Query("SELECT * FROM vistorias WHERE status IN ('pending_sync', 'pending_force') ORDER BY updatedAt ASC")
     suspend fun getPendingSyncVistorias(): List<Vistoria>
+
+    @Query("UPDATE vistorias SET status = :status WHERE id = :id")
+    suspend fun setStatus(id: Long, status: String)
+
+    /** Vistorias de outra conta (ou de conta desconhecida já enviadas ao servidor). */
+    @Query("SELECT COUNT(*) FROM vistorias WHERE (ownerOrg IS NOT NULL AND ownerOrg != :org) OR (ownerOrg IS NULL AND remoteId IS NOT NULL)")
+    suspend fun countForeign(org: String): Int
+
+    @Query("SELECT * FROM vistorias WHERE (ownerOrg IS NOT NULL AND ownerOrg != :org) OR (ownerOrg IS NULL AND remoteId IS NOT NULL)")
+    suspend fun getForeign(org: String): List<Vistoria>
+
+    @Query("UPDATE vistorias SET ownerOrg = :org WHERE ownerOrg IS NULL AND remoteId IS NULL")
+    suspend fun adoptUnowned(org: String)
 
     /**
      * Marca como sincronizada só se a vistoria não foi editada durante o envio
      * (mesmo updatedAt). Se foi, ela continua pendente e sobe de novo depois.
      */
     @Query(
-        "UPDATE vistorias SET status = 'synced', syncedAt = :syncedAt, remoteId = :remoteId " +
+        "UPDATE vistorias SET status = 'synced', syncedAt = :syncedAt, remoteId = :remoteId, ownerOrg = :org " +
             "WHERE id = :id AND updatedAt = :updatedAt"
     )
-    suspend fun markSyncedIfUnchanged(id: Long, remoteId: String, updatedAt: Long, syncedAt: Long): Int
+    suspend fun markSyncedIfUnchanged(id: Long, remoteId: String, updatedAt: Long, syncedAt: Long, org: String?): Int
 
-    @Query("UPDATE vistorias SET remoteId = :remoteId WHERE id = :id")
-    suspend fun setRemoteId(id: Long, remoteId: String)
+    @Query("UPDATE vistorias SET remoteId = :remoteId, ownerOrg = :org WHERE id = :id")
+    suspend fun setRemoteId(id: Long, remoteId: String, org: String?)
+
+    @Query("SELECT COUNT(*) FROM vistorias WHERE status = 'conflict'")
+    fun getConflictCount(): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM vistorias WHERE status = 'pending_sync'")
     fun getPendingSyncCount(): Flow<Int>

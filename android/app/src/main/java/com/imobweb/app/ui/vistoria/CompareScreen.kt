@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imobweb.app.data.repository.VistoriaRepository
+import com.imobweb.app.model.AiCompare
+import com.imobweb.app.model.AiDiff
+import com.imobweb.app.model.AiRoomResult
 import com.imobweb.app.model.Checklist
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.CompareBuilder
@@ -32,6 +35,7 @@ import kotlinx.coroutines.withContext
 private val Red = Color(0xFFEF4444)
 private val Amber = Color(0xFFF59E0B)
 private val Green = Color(0xFF10B981)
+private val Indigo = Color(0xFF818CF8)
 
 private fun statusColor(s: CompareBuilder.Status): Color = when (s) {
     CompareBuilder.Status.PIOROU -> Red
@@ -55,6 +59,26 @@ fun CompareScreen(
     var entrada by remember { mutableStateOf<Vistoria?>(null) }
     var report by remember { mutableStateOf<String?>(null) }
     var building by remember { mutableStateOf(false) }
+    var ai by remember { mutableStateOf<AiCompare?>(null) }
+    var aiRunning by remember { mutableStateOf(false) }
+    var aiProgress by remember { mutableStateOf(0 to 0) }
+
+    fun runAi() {
+        val e = entrada ?: return
+        val s = saida ?: return
+        scope.launch {
+            aiRunning = true
+            repository.compareWithAi(e, s) { done, total -> aiProgress = done to total }
+                .onSuccess {
+                    ai = it
+                    if (it.failedRooms.isNotEmpty()) {
+                        Toast.makeText(context, "IA não comparou: ${it.failedRooms.joinToString(", ")}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .onFailure { Toast.makeText(context, it.message ?: "Erro na análise por IA", Toast.LENGTH_LONG).show() }
+            aiRunning = false
+        }
+    }
 
     LaunchedEffect(saidaId) {
         val s = repository.getVistoriaById(saidaId)
@@ -90,7 +114,7 @@ fun CompareScreen(
                                 val s = saida ?: return@IconButton
                                 scope.launch {
                                     building = true
-                                    runCatching { withContext(Dispatchers.Default) { CompareBuilder.buildHtml(e, s, cmp) } }
+                                    runCatching { withContext(Dispatchers.Default) { CompareBuilder.buildHtml(e, s, cmp, ai) } }
                                         .onSuccess { report = it }
                                         .onFailure { Toast.makeText(context, "Erro ao gerar relatório: ${it.message}", Toast.LENGTH_LONG).show() }
                                     building = false
@@ -121,7 +145,7 @@ fun CompareScreen(
                     Text("Sincronize para baixá-la ou crie a saída a partir da entrada.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                cmp != null -> CompareContent(cmp, entrada!!, saida!!)
+                cmp != null -> CompareContent(cmp, entrada!!, saida!!, ai, aiRunning, aiProgress, onRunAi = { runAi() })
             }
         }
     }
@@ -137,7 +161,15 @@ fun CompareScreen(
 }
 
 @Composable
-private fun CompareContent(cmp: CompareBuilder.Comparison, entrada: Vistoria, saida: Vistoria) {
+private fun CompareContent(
+    cmp: CompareBuilder.Comparison,
+    entrada: Vistoria,
+    saida: Vistoria,
+    ai: AiCompare?,
+    aiRunning: Boolean,
+    aiProgress: Pair<Int, Int>,
+    onRunAi: () -> Unit
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -152,6 +184,8 @@ private fun CompareContent(cmp: CompareBuilder.Comparison, entrada: Vistoria, sa
             Kpi(cmp.totals.roomsWithIssues, "cômodos c/ deterioração", Red)
             if (cmp.keys.isNotEmpty()) Kpi(cmp.missingKeys, "chaves não devolvidas", Amber)
         }
+
+        AiCard(ai, aiRunning, aiProgress, onRunAi)
 
         if (cmp.meters.isNotEmpty()) {
             Card(Modifier.fillMaxWidth()) {
@@ -187,7 +221,7 @@ private fun CompareContent(cmp: CompareBuilder.Comparison, entrada: Vistoria, sa
             }
         }
 
-        cmp.rooms.forEach { r -> RoomCompareCard(r) }
+        cmp.rooms.forEach { r -> RoomCompareCard(r, ai?.rooms?.get(r.name)) }
 
         Text("Comparativo automático por nome de cômodo, inventário, avarias e checklist. Confira as fotos antes de qualquer conclusão.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -206,7 +240,7 @@ private fun Kpi(value: Int, label: String, color: Color) {
 }
 
 @Composable
-private fun RoomCompareCard(r: CompareBuilder.RoomComparison) {
+private fun RoomCompareCard(r: CompareBuilder.RoomComparison, aiRoom: AiRoomResult? = null) {
     val color = statusColor(r.status)
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp)) {
@@ -238,6 +272,22 @@ private fun RoomCompareCard(r: CompareBuilder.RoomComparison) {
                 Spacer(Modifier.height(6.dp))
                 Text("Obs. da saída: ${r.saida?.observations}", style = MaterialTheme.typography.bodySmall)
             }
+            if (aiRoom != null && (aiRoom.summary.isNotBlank() || aiRoom.differences.isNotEmpty())) {
+                Spacer(Modifier.height(8.dp))
+                Surface(color = Indigo.copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(10.dp)) {
+                        Text("Análise por IA", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Indigo)
+                        if (aiRoom.summary.isNotBlank()) Text(aiRoom.summary, fontSize = 12.sp)
+                        aiRoom.differences.forEach { d ->
+                            Text(
+                                "• ${AiDiff.label(d.type)} (${d.severity}, ${Math.round(d.confidence * 100)}%): ${d.description}",
+                                fontSize = 12.sp,
+                                color = when (d.type) { "dano_novo", "item_ausente", "piora" -> Red; "melhoria" -> Green; else -> MaterialTheme.colorScheme.onSurface }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -248,4 +298,49 @@ private fun Bullets(title: String, items: List<String>, color: Color) {
     Spacer(Modifier.height(6.dp))
     Text(title, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = color)
     items.forEach { Text("• $it", fontSize = 12.sp) }
+}
+
+@Composable
+private fun AiCard(ai: AiCompare?, running: Boolean, progress: Pair<Int, Int>, onRun: () -> Unit) {
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Indigo.copy(alpha = 0.10f))
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Indigo)
+                Spacer(Modifier.width(8.dp))
+                Text("Análise por IA", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(6.dp))
+            when {
+                running -> {
+                    val (done, total) = progress
+                    Text(if (total > 0 && done < total) "Comparando cômodo ${done + 1} de $total…" else "Gerando resumo…",
+                        style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(6.dp))
+                    if (total > 0) LinearProgressIndicator(progress = { done.toFloat() / total }, modifier = Modifier.fillMaxWidth())
+                    else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                ai == null -> {
+                    Text("A IA compara as fotos e os dados de cada cômodo (até 3 fotos de cada lado) e aponta danos novos, itens ausentes e desgaste normal.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = onRun, modifier = Modifier.fillMaxWidth()) { Text("Comparar com IA") }
+                }
+                else -> {
+                    if (!ai.summary.isNullOrBlank()) Text(ai.summary, style = MaterialTheme.typography.bodyMedium)
+                    if (ai.attention.isNotEmpty()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text("Pontos para conferir", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        ai.attention.forEach { Text("• $it", fontSize = 12.sp) }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Conteúdo gerado por IA; confira as fotos antes de qualquer conclusão. Incluído no relatório em PDF.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick = onRun) { Text("Refazer análise") }
+                }
+            }
+        }
+    }
 }

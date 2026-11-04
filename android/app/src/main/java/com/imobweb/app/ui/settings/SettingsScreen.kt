@@ -31,13 +31,48 @@ private val SOLICITANTE_KEY = stringPreferencesKey("solicitante")
 private val CIDADE_KEY = stringPreferencesKey("cidade")
 private val ESTADO_KEY = stringPreferencesKey("estado")
 private val GEMINI_KEY = stringPreferencesKey("gemini_api_key")
+private val EMPRESA_KEY = stringPreferencesKey("empresa_nome")
+private val EMAIL_CONTEST_KEY = stringPreferencesKey("email_contestacao")
+private val WM_ENABLED_KEY = stringPreferencesKey("watermark_enabled")
+private val WM_TEXT_KEY = stringPreferencesKey("watermark_text")
+private val WM_IMAGE_KEY = stringPreferencesKey("watermark_image")
+
+/** Logo reduzido (máx. 360 px) e bem transparente, pronto para usar como marca d'água (PNG em data URL). */
+private fun faintWatermark(path: String): String? = runCatching {
+    val f = java.io.File(path)
+    if (!f.exists()) return null
+    val src = android.graphics.BitmapFactory.decodeFile(f.absolutePath) ?: return null
+    val scale = minOf(1f, 360f / maxOf(src.width, src.height))
+    val w = (src.width * scale).toInt().coerceAtLeast(1)
+    val h = (src.height * scale).toInt().coerceAtLeast(1)
+    val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(out)
+    val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply { alpha = 22 }
+    canvas.drawBitmap(src, null, android.graphics.Rect(0, 0, w, h), paint)
+    src.recycle()
+    val bytes = java.io.ByteArrayOutputStream().also { out.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+    out.recycle()
+    "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(bytes)
+}.getOrNull()
+
+suspend fun loadLaudoOptions(context: android.content.Context): com.imobweb.app.util.LaudoOptions {
+    val p = context.settingsStore.data.first()
+    val enabled = p[WM_ENABLED_KEY] == "1"
+    val image = if (enabled) p[WM_IMAGE_KEY]?.let { path -> faintWatermark(path) } else null
+    return com.imobweb.app.util.LaudoOptions(
+        empresaNome = p[EMPRESA_KEY].orEmpty(),
+        watermarkText = if (enabled) p[WM_TEXT_KEY]?.takeIf { it.isNotBlank() } else null,
+        watermarkImage = image
+    )
+}
 
 /** Valores padrão configurados pelo usuário, usados para preencher uma nova vistoria. */
 data class VistoriaDefaults(
     val vistoriadora: String = "",
     val solicitante: String = "",
     val cidade: String = "",
-    val estado: String = ""
+    val estado: String = "",
+    val emailContestacao: String = ""
 )
 
 suspend fun loadVistoriaDefaults(context: android.content.Context): VistoriaDefaults {
@@ -46,7 +81,8 @@ suspend fun loadVistoriaDefaults(context: android.content.Context): VistoriaDefa
         vistoriadora = prefs[VISTORIADORA_KEY].orEmpty(),
         solicitante = prefs[SOLICITANTE_KEY].orEmpty(),
         cidade = prefs[CIDADE_KEY].orEmpty(),
-        estado = prefs[ESTADO_KEY].orEmpty()
+        estado = prefs[ESTADO_KEY].orEmpty(),
+        emailContestacao = prefs[EMAIL_CONTEST_KEY].orEmpty()
     )
 }
 
@@ -71,6 +107,62 @@ fun SettingsScreen(
     var isLoggedIn by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
+    var empresaNome by remember { mutableStateOf("") }
+    var emailContestacao by remember { mutableStateOf("") }
+    var wmEnabled by remember { mutableStateOf(false) }
+    var wmText by remember { mutableStateOf("") }
+    var wmImage by remember { mutableStateOf<String?>(null) }
+    var backupBusy by remember { mutableStateOf<String?>(null) }
+
+    val wmPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    // copia os bytes (mantém a transparência do PNG), limitado a 1,5 MB
+                    val bytes = context.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                    require(bytes.size <= 1_500_000) { "Imagem grande demais (máx. 1,5 MB)" }
+                    val isPng = bytes.size > 4 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte()
+                    val dir = java.io.File(context.filesDir, "brand").apply { mkdirs() }
+                    dir.listFiles()?.forEach { it.delete() }
+                    java.io.File(dir, if (isPng) "watermark.png" else "watermark.jpg").apply { writeBytes(bytes) }.absolutePath
+                }
+            }
+            saved.onSuccess { wmImage = it }.onFailure {
+                Toast.makeText(context, it.message ?: "Não foi possível usar a imagem", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            backupBusy = "Exportando…"
+            runCatching { com.imobweb.app.util.BackupManager.export(context, repository, uri) }
+                .onSuccess { Toast.makeText(context, "Backup exportado: $it vistoria(s)", Toast.LENGTH_LONG).show() }
+                .onFailure { Toast.makeText(context, "Falha no backup: ${it.message}", Toast.LENGTH_LONG).show() }
+            backupBusy = null
+        }
+    }
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            backupBusy = "Importando…"
+            runCatching { com.imobweb.app.util.BackupManager.import(context, repository, uri) }
+                .onSuccess {
+                    totalSaved = repository.getAllVistorias().first().size
+                    Toast.makeText(context, "$it vistoria(s) importada(s)", Toast.LENGTH_LONG).show()
+                }
+                .onFailure { Toast.makeText(context, "Falha ao importar: ${it.message}", Toast.LENGTH_LONG).show() }
+            backupBusy = null
+        }
+    }
     val appScope = (context.applicationContext as com.imobweb.app.ImobWebApp).appScope
 
     // Load settings
@@ -81,6 +173,11 @@ fun SettingsScreen(
         cidade = prefs[CIDADE_KEY] ?: "São Paulo"
         estado = prefs[ESTADO_KEY] ?: "SP"
         geminiKey = repository.getGeminiKey() ?: prefs[GEMINI_KEY] ?: ""
+        empresaNome = prefs[EMPRESA_KEY].orEmpty()
+        emailContestacao = prefs[EMAIL_CONTEST_KEY].orEmpty()
+        wmEnabled = prefs[WM_ENABLED_KEY] == "1"
+        wmText = prefs[WM_TEXT_KEY].orEmpty()
+        wmImage = prefs[WM_IMAGE_KEY]
         serverUrl = repository.getBaseUrl()
 
         val vistorias = repository.getAllVistorias().first()
@@ -96,6 +193,12 @@ fun SettingsScreen(
             it[CIDADE_KEY] = cidade
             it[ESTADO_KEY] = estado.trim().uppercase().take(2)
             it.remove(GEMINI_KEY) // a chave fica só no SessionManager
+            it[EMPRESA_KEY] = empresaNome.trim()
+            it[EMAIL_CONTEST_KEY] = emailContestacao.trim()
+            it[WM_ENABLED_KEY] = if (wmEnabled) "1" else "0"
+            it[WM_TEXT_KEY] = wmText.trim()
+            val img = wmImage
+            if (img == null) it.remove(WM_IMAGE_KEY) else it[WM_IMAGE_KEY] = img
         }
         repository.setGeminiKey(geminiKey)
         repository.setBaseUrl(serverUrl)
@@ -259,6 +362,91 @@ fun SettingsScreen(
                             }
                         }
                     )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Laudo (PDF): empresa, contestação e marca d'água
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.PictureAsPdf, null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Laudo (PDF)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(value = empresaNome, onValueChange = { empresaNome = it.take(80) },
+                        label = { Text("Nome da empresa (rodapé do laudo)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(value = emailContestacao, onValueChange = { emailContestacao = it.take(120) },
+                        label = { Text("E-mail para contestação (padrão)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Marca d'água no laudo", modifier = Modifier.weight(1f))
+                        Switch(checked = wmEnabled, onCheckedChange = { wmEnabled = it })
+                    }
+                    if (wmEnabled) {
+                        OutlinedTextField(value = wmText, onValueChange = { wmText = it.take(40) },
+                            label = { Text("Texto da marca d'água") }, placeholder = { Text("Ex.: CÓPIA — imobWeb") },
+                            modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedButton(onClick = { wmPicker.launch("image/*") }) {
+                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(if (wmImage == null) "Usar logo como marca d'água" else "Trocar logo")
+                            }
+                            if (wmImage != null) {
+                                TextButton(onClick = { wmImage = null }) { Text("Remover") }
+                            }
+                        }
+                        Text("A marca d'água aparece clara, repetida em todas as páginas.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Backup
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Backup, null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Backup", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Arquivo .json com todas as vistorias e fotos. É o mesmo formato do sistema web: dá para importar lá e vice-versa.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    if (backupBusy != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(backupBusy!!)
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                                    exportLauncher.launch("vistorias-backup-$date.json")
+                                },
+                                enabled = totalSaved > 0,
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Exportar") }
+                            OutlinedButton(
+                                onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Importar") }
+                        }
+                    }
                 }
             }
 

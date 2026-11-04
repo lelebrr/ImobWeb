@@ -350,3 +350,14 @@ Responsividade: viewport `dvh`, navegação do wizard fixa no rodapé em telas p
 ## App Android
 
 O módulo roda como app Android (Capacitor) em `mobile/` — veja `mobile/README.md`. A ponte com o app fica em `_lib/native.ts` (salvar/compartilhar, imprimir PDF, WhatsApp); no navegador comum nada muda.
+
+## App Android e sincronização (v4)
+
+O app nativo fica em `android/` (Kotlin + Jetpack Compose). O antigo app Capacitor (`mobile/`) foi removido — se precisar, ele está no histórico do Git. O workflow `.github/workflows/android-build.yml` roda os testes de unidade e gera o APK de teste; com os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD` gera também APK/AAB de release.
+
+Sincronização (web ↔ app, rotas `/api/admin/vistoria/sync`, `/list` e `/photos`):
+
+- **Fotos no R2**: cada foto é enviada uma única vez (chave `vistoria/<org>/<sha256>.<ext>`); o JSON do laudo leva só a chave. Sem o bucket `STORAGE`, as rotas de foto respondem 501 e as fotos seguem embutidas como antes.
+- **Conflito**: o envio leva `baseUpdatedAt`; se a cópia do servidor mudou depois disso, a resposta é 409 e o laudo fica marcado como *Conflito* até o usuário escolher “manter a deste aparelho/navegador” (reenvia com `force`) ou “usar a do servidor”.
+- **Exclusão**: apagar aqui apaga no servidor; o que foi apagado no servidor sai do aparelho/navegador na próxima sincronização, desde que seja a mesma conta e não haja alterações locais pendentes.
+- **Troca de conta**: cada vistoria guarda a organização dona; vistorias de outra conta nunca são enviadas para a nova (no app, ao entrar com outra conta, ele pergunta se mantém ou apaga as antigas).

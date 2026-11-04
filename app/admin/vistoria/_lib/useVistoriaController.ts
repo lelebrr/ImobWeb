@@ -16,6 +16,7 @@ import {
 } from './storage';
 import { compressImage, downscaleDataUrl } from './image';
 import { saveFile, openHtmlDocument, openExternal, openedHint } from './native';
+import { syncWithCloud, deleteRemote, lastCloudSync, keepLocalVersion, useServerVersion, CloudAuthError } from './cloud';
 
 export type VistoriaView = 'home' | 'wizard' | 'library' | 'config' | 'stats' | 'compare';
 
@@ -66,6 +67,8 @@ export function useVistoriaController() {
   const [inspectingIds, setInspectingIds] = useState<string[]>([]);
   const [reviewRoomIdx, setReviewRoomIdx] = useState<number | null>(null);
   const [roomsGenerated, setRoomsGenerated] = useState(false);
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const [cloudLastSyncAt, setCloudLastSyncAt] = useState<string | undefined>(undefined);
 
   // Refs com o estado mais recente (evita closures velhas em timers/atalhos/async)
   const idRef = useRef<string | null>(null);
@@ -192,6 +195,13 @@ export function useVistoriaController() {
       createdAt: existing?.createdAt || now,
       favorite: existing?.favorite,
       isExample: existing?.isExample,
+      // vínculo com o servidor (sincronização com o app): só a sincronização altera
+      remoteId: existing?.remoteId,
+      cloudUpdatedAt: existing?.cloudUpdatedAt,
+      cloudSavedAt: existing?.cloudSavedAt,
+      cloudConflict: existing?.cloudConflict,
+      cloudForce: existing?.cloudForce,
+      cloudForeign: existing?.cloudForeign,
       thumb,
       signatures: sigRef.current,
       linkedId: linkRef.current,
@@ -270,7 +280,10 @@ export function useVistoriaController() {
   };
 
   const deleteLaudo = async (id: string) => {
+    const remoteId = (await getLaudoLight(id))?.remoteId;
     await deleteLaudoById(id);
+    // apaga também a cópia do servidor (e do app), senão ela voltaria na próxima sincronização
+    if (remoteId) void deleteRemote(remoteId);
     setSavedLaudos((prev) => prev.filter((l) => l.id !== id));
     if (idRef.current === id) { idRef.current = null; setEditingLaudoId(null); }
     toast.success('Laudo removido');
@@ -295,6 +308,12 @@ export function useVistoriaController() {
       name: `${full.name} (cópia)`,
       savedAt: now,
       createdAt: now,
+      remoteId: undefined,
+      cloudUpdatedAt: undefined,
+      cloudSavedAt: undefined,
+      cloudConflict: undefined,
+      cloudForce: undefined,
+      cloudForeign: undefined,
       isExample: false,
       favorite: false,
       rooms: full.rooms.map((r) => ({ ...r, id: uid(), photos: r.photos.map((p) => ({ ...p, id: uid() })) })),
@@ -321,6 +340,12 @@ export function useVistoriaController() {
       name: `${full.name} — Saída`,
       savedAt: now,
       createdAt: now,
+      remoteId: undefined,
+      cloudUpdatedAt: undefined,
+      cloudSavedAt: undefined,
+      cloudConflict: undefined,
+      cloudForce: undefined,
+      cloudForeign: undefined,
       isExample: false,
       favorite: false,
       thumb: undefined,
@@ -363,6 +388,67 @@ export function useVistoriaController() {
       toast.error(err instanceof Error ? err.message : 'Falha ao importar o backup');
     }
   };
+
+  /** Sincroniza com o servidor/app Android: envia o que mudou aqui e baixa o que mudou lá. */
+  const syncCloud = useCallback(async (silent = false) => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (!silent) toast.error('Sem conexão com a internet');
+      return;
+    }
+    setCloudSyncing(true);
+    const toastId = silent ? undefined : toast.loading('Sincronizando com o app…');
+    try {
+      // não mexe no laudo aberto no editor (o autosave dele pode estar gravando)
+      const skip = viewRef.current === 'wizard' ? idRef.current : null;
+      const r = await syncWithCloud(skip, (msg) => { if (toastId) toast.loading(msg, { id: toastId }); });
+      setSavedLaudos(await listLaudos());
+      setCloudLastSyncAt(await lastCloudSync());
+      refreshUsage();
+      const msg = r.pushed || r.pulled || r.removedLocally
+        ? `Sincronizado: ${r.pushed} enviado(s), ${r.pulled} recebido(s)${r.removedLocally ? `, ${r.removedLocally} removido(s) (apagados no servidor)` : ''}`
+        : 'Tudo sincronizado';
+      if (r.conflicts) toast.warning(`${r.conflicts} laudo(s) alterado(s) aqui e no app ao mesmo tempo: escolha qual versão manter na biblioteca`, { id: toastId, duration: 8000 });
+      else if (r.errors.length) toast.error(`Sincronização com falhas: ${r.errors[0]}`, { id: toastId });
+      else if (!silent) toast.success(msg, { id: toastId });
+      else if (r.pulled) toast.success(`${r.pulled} vistoria(s) recebida(s) do app`);
+    } catch (err) {
+      const message = err instanceof CloudAuthError ? err.message : `Falha ao sincronizar: ${err instanceof Error ? err.message : 'erro'}`;
+      if (!silent || err instanceof CloudAuthError) toast.error(message, { id: toastId });
+      else if (toastId) toast.dismiss(toastId);
+    } finally {
+      setCloudSyncing(false);
+    }
+  }, [refreshUsage]);
+
+  /** Conflito de sincronização: o usuário escolhe qual versão fica. */
+  const resolveCloudConflict = useCallback(async (laudo: SavedLaudo, keep: 'local' | 'server') => {
+    try {
+      if (keep === 'local') await keepLocalVersion(laudo.id);
+      else await useServerVersion(laudo.id);
+      setSavedLaudos(await listLaudos());
+      toast.success(keep === 'local' ? 'Mantida a versão deste navegador' : 'Substituído pela versão do servidor');
+      void syncCloud(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível resolver o conflito');
+    }
+  }, [syncCloud]);
+
+  // sincroniza ao abrir o módulo e quando a conexão volta
+  useEffect(() => {
+    if (!loaded) return;
+    void lastCloudSync().then(setCloudLastSyncAt);
+    void syncCloud(true);
+    const onOnline = () => { void syncCloud(true); };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [loaded, syncCloud]);
+
+  // ao sair do editor, envia o laudo recém-editado
+  const prevViewRef = useRef(view);
+  useEffect(() => {
+    if (loaded && prevViewRef.current === 'wizard' && view !== 'wizard') void syncCloud(true);
+    prevViewRef.current = view;
+  }, [view, loaded, syncCloud]);
 
   const saveSettings = async (next?: VistoriaSettings) => {
     const toSave = next || settings;
@@ -825,6 +911,7 @@ export function useVistoriaController() {
     generationStep, batchAnalyzing, searchEdit, setSearchEdit,
     uploading, lastSavedAt, dirty, storageUsage,
     aiStatus, aiWriting, aiFetch, refreshAiStatus, generateConsiderations, estimateRepairs, repairsBusy, reviewRoomIdx, setReviewRoomIdx, resolveProposals, inspectOne, inspectRoom, inspectPhoto, inspectingIds,
+    cloudSyncing, cloudLastSyncAt, syncCloud, resolveCloudConflict,
     saveLaudo, loadLaudo, loadFull, deleteLaudo, clearAllLaudos, duplicateLaudo, toggleFavorite, createExitFrom, openCompare,
     exportAll, importFromFile, saveSettings, startWizard, addRoom, removeRoom, patchRoom, handlePhotoUpload,
     handleDragStart, handleDragOver, handleDrop, analyzeRoom, analyzeAllRooms, generatePdf, exportHtml, openPdfInTab,

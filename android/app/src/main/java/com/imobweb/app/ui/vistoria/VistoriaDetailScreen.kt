@@ -44,7 +44,10 @@ fun VistoriaDetailScreen(
     var entrada by remember { mutableStateOf<Vistoria?>(null) }
     var creatingExit by remember { mutableStateOf(false) }
 
-    LaunchedEffect(vistoriaId) {
+    var resolving by remember { mutableStateOf(false) }
+    var reload by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(vistoriaId, reload) {
         val v = repository.getVistoriaById(vistoriaId)
         vistoria = v
         if (v != null) {
@@ -66,6 +69,18 @@ fun VistoriaDetailScreen(
                 actions = {
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar")
+                    }
+                    IconButton(onClick = {
+                        scope.launch {
+                            runCatching { repository.duplicate(vistoriaId) }
+                                .onSuccess { id ->
+                                    Toast.makeText(context, "Laudo duplicado (sem assinaturas e sem vínculo)", Toast.LENGTH_LONG).show()
+                                    onOpenExit(id)
+                                }
+                                .onFailure { Toast.makeText(context, "Erro ao duplicar: ${it.message}", Toast.LENGTH_LONG).show() }
+                        }
+                    }) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Duplicar")
                     }
                     IconButton(onClick = { showDeleteConfirm = true }) {
                         Icon(
@@ -102,7 +117,7 @@ fun VistoriaDetailScreen(
                                     buildingPdf = true
                                     // Lê e codifica todas as fotos: fora da thread da UI
                                     runCatching {
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LaudoHtmlBuilder.build(v) }
+                                        val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context); kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LaudoHtmlBuilder.build(v, opts) }
                                     }.onSuccess {
                                         pdfContent = it
                                         pdfFileName = ReportPdfExporter.fileNameFor(v)
@@ -144,6 +159,40 @@ fun VistoriaDetailScreen(
                     .padding(16.dp)
             ) {
                 // Entrada × saída
+                if (v.hasConflict) {
+                    ConflictCard(
+                        busy = resolving,
+                        onKeepLocal = {
+                            scope.launch {
+                                resolving = true
+                                runCatching { repository.resolveConflictKeepLocal(v.id) }
+                                    .onSuccess { Toast.makeText(context, "Versão deste aparelho enviada", Toast.LENGTH_SHORT).show() }
+                                    .onFailure { Toast.makeText(context, it.message ?: "Erro ao enviar", Toast.LENGTH_LONG).show() }
+                                resolving = false
+                                reload++
+                            }
+                        },
+                        onUseServer = {
+                            scope.launch {
+                                resolving = true
+                                repository.resolveConflictUseServer(v.id)
+                                    .onSuccess { Toast.makeText(context, "Versão do servidor aplicada", Toast.LENGTH_SHORT).show() }
+                                    .onFailure { Toast.makeText(context, it.message ?: "Erro ao baixar", Toast.LENGTH_LONG).show() }
+                                resolving = false
+                                reload++
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (v.ownerOrg == "?") {
+                    Card(Modifier.fillMaxWidth()) {
+                        Text("Vistoria de outra conta: fica só neste aparelho e não é sincronizada.",
+                            Modifier.padding(14.dp), style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
                 EntradaSaidaCard(
                     vistoria = v,
                     exits = exits,

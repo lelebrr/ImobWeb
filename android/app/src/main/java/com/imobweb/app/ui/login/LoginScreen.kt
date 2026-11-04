@@ -39,6 +39,43 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    var foreignCount by remember { mutableIntStateOf(0) }
+    var foreignOrg by remember { mutableStateOf<String?>(null) }
+
+    /** Depois de entrar: se o aparelho tem vistorias de outra conta, pergunta o que fazer. */
+    val afterLogin: () -> Unit = {
+        scope.launch {
+            val org = repository.currentOrganization()
+            val count = if (org != null) repository.countForeign(org) else 0
+            if (count > 0) {
+                foreignOrg = org
+                foreignCount = count
+            } else onLoginSuccess()
+        }
+    }
+
+    if (foreignCount > 0 && foreignOrg != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Vistorias de outra conta") },
+            text = {
+                Text("Este aparelho tem $foreignCount vistoria(s) de outra conta. Elas não serão enviadas para a conta que você acabou de entrar.\n\n" +
+                    "Você pode mantê-las só neste aparelho (sem sincronizar) ou apagá-las daqui — as cópias no servidor da outra conta não são afetadas.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val org = foreignOrg!!
+                    scope.launch { repository.keepForeignLocal(org); foreignCount = 0; onLoginSuccess() }
+                }) { Text("Manter no aparelho") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    val org = foreignOrg!!
+                    scope.launch { repository.deleteForeign(org); foreignCount = 0; onLoginSuccess() }
+                }) { Text("Apagar do aparelho", color = MaterialTheme.colorScheme.error) }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -132,7 +169,7 @@ fun LoginScreen(
                     focusManager.clearFocus()
                     if (email.isNotBlank() && password.isNotBlank()) {
                         scope.launch {
-                            doLogin(repository, email, password, onLoginSuccess, { isLoading = it }, { errorMessage = it })
+                            doLogin(repository, email, password, afterLogin, { isLoading = it }, { errorMessage = it })
                         }
                     }
                 }
@@ -172,7 +209,7 @@ fun LoginScreen(
             onClick = {
                 focusManager.clearFocus()
                 scope.launch {
-                    doLogin(repository, email, password, onLoginSuccess, { isLoading = it }, { errorMessage = it })
+                    doLogin(repository, email, password, afterLogin, { isLoading = it }, { errorMessage = it })
                 }
             },
             enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,

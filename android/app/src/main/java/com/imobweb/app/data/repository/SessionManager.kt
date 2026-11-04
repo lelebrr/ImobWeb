@@ -23,14 +23,17 @@ class SessionManager(private val context: Context) {
         private val GEMINI_KEY = stringPreferencesKey("gemini_api_key")
         private val DELETED_REMOTE_IDS_KEY = stringSetPreferencesKey("deleted_remote_ids")
         private val PENDING_DELETES_KEY = stringSetPreferencesKey("pending_remote_deletes")
+        private val ORG_KEY = stringPreferencesKey("organization_id")
+        private val PHOTO_API_KEY = stringPreferencesKey("photo_api_unavailable_at")
     }
 
     val authToken: Flow<String?> = context.dataStore.data.map { it[TOKEN_KEY] }
     val userEmail: Flow<String?> = context.dataStore.data.map { it[EMAIL_KEY] }
     val userRole: Flow<String?> = context.dataStore.data.map { it[USER_ROLE_KEY] }
 
-    suspend fun saveSession(token: String, email: String, userId: String, role: String) {
+    suspend fun saveSession(token: String, email: String, userId: String, role: String, organizationId: String? = null) {
         context.dataStore.edit {
+            if (organizationId.isNullOrBlank()) it.remove(ORG_KEY) else it[ORG_KEY] = organizationId
             it[TOKEN_KEY] = token
             it[EMAIL_KEY] = email
             it[USER_ID_KEY] = userId
@@ -75,6 +78,7 @@ class SessionManager(private val context: Context) {
             it.remove(EMAIL_KEY)
             it.remove(USER_ID_KEY)
             it.remove(USER_ROLE_KEY)
+            it.remove(ORG_KEY)
         }
     }
 
@@ -112,4 +116,19 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun getEmail(): String? = context.dataStore.data.first()[EMAIL_KEY]
+
+    /** Organização da conta logada (dona das vistorias sincronizadas). */
+    suspend fun getOrganizationId(): String? = context.dataStore.data.first()[ORG_KEY]
+
+    /** Servidor sem rota de fotos (R2): evita tentar de novo a cada sincronização por 1 dia. */
+    suspend fun photoApiUnavailable(): Boolean {
+        val at = context.dataStore.data.first()[PHOTO_API_KEY]?.toLongOrNull() ?: return false
+        return System.currentTimeMillis() - at < 24 * 60 * 60 * 1000L
+    }
+
+    suspend fun setPhotoApiUnavailable(unavailable: Boolean) {
+        context.dataStore.edit {
+            if (unavailable) it[PHOTO_API_KEY] = System.currentTimeMillis().toString() else it.remove(PHOTO_API_KEY)
+        }
+    }
 }

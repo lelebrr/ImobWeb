@@ -97,7 +97,7 @@ fun VistoriaListScreen(
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("all" to "Todas", "draft" to "Rascunho", "pending_sync" to "Pendente", "synced" to "Sincronizado").forEach { (key, label) ->
+                listOf("all" to "Todas", "pending_sync" to "Pendente", "synced" to "Sincronizado", "conflict" to "Conflito").forEach { (key, label) ->
                     FilterChip(
                         selected = filterStatus == key,
                         onClick = { filterStatus = key },
@@ -188,7 +188,8 @@ fun VistoriaListScreen(
         // Montar o laudo lê e codifica todas as fotos: fora da thread da UI
         val html by produceState<String?>(initialValue = null, report.id, report.updatedAt) {
             value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                runCatching { LaudoHtmlBuilder.build(report) }.getOrElse { e ->
+                val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context)
+                runCatching { LaudoHtmlBuilder.build(report, opts) }.getOrElse { e ->
                     "<html><body><p>Erro ao montar o laudo: ${e.message}</p></body></html>"
                 }
             }
@@ -246,6 +247,13 @@ private fun VistoriaListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (vistoria.hasConflict) {
+                        Text("⚠ Conflito de versões — abra para escolher", style = MaterialTheme.typography.labelSmall,
+                            color = androidx.compose.ui.graphics.Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
+                    } else if (vistoria.ownerOrg == "?") {
+                        Text("Outra conta · só neste aparelho", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Text(
                         text = "Vistoria de ${com.imobweb.app.model.TipoVistoria.label(vistoria.tipoVistoria).lowercase()} · ${vistoria.dataLaudo}",
                         style = MaterialTheme.typography.labelSmall,
@@ -294,7 +302,8 @@ private fun VistoriaListItem(
 private fun StatusBadge(status: String) {
     val (label, color) = when (status) {
         "synced" -> "Sincronizado" to MaterialTheme.colorScheme.secondary
-        "pending_sync" -> "Pendente" to MaterialTheme.colorScheme.error
+        "pending_sync", "pending_force" -> "Pendente" to MaterialTheme.colorScheme.error
+        "conflict" -> "Conflito" to androidx.compose.ui.graphics.Color(0xFFF59E0B)
         else -> "Rascunho" to MaterialTheme.colorScheme.tertiary
     }
 
