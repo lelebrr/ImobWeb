@@ -342,8 +342,10 @@ fun VistoriaWizardScreen(
 
                 1 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     StepParties(
+                        locadorTipo = vm.locadorTipo, onLocadorTipoChange = { vm.locadorTipo = it },
                         locadora = locadora, onLocadoraChange = { locadora = it },
                         locadoraCpf = locadoraCpf, onLocadoraCpfChange = { locadoraCpf = it },
+                        locatarioTipo = vm.locatarioTipo, onLocatarioTipoChange = { vm.locatarioTipo = it },
                         locatario = locatario, onLocatarioChange = { locatario = it },
                         locatarioCpf = locatarioCpf, onLocatarioCpfChange = { locatarioCpf = it },
                         vistoriadora = vistoriadora, onVistoriadoraChange = { vistoriadora = it },

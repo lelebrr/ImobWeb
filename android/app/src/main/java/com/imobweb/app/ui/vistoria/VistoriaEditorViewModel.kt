@@ -67,9 +67,11 @@ class VistoriaEditorViewModel(
     var finalidade by mutableStateOf("RESIDENCIAL")
     var metragem by mutableStateOf("")
     var mobiliado by mutableStateOf("NÃO")
+    var locadorTipo by mutableStateOf("Locador")
     var locadora by mutableStateOf("")
     var locadoraCpf by mutableStateOf("")
     var locadoraTelefone by mutableStateOf("")
+    var locatarioTipo by mutableStateOf("Locatário")
     var locatario by mutableStateOf("")
     var locatarioCpf by mutableStateOf("")
     var locatarioTelefone by mutableStateOf("")
@@ -126,7 +128,9 @@ class VistoriaEditorViewModel(
         conjApto = v.conjApto; andar = v.andar; cep = v.cep; bairro = v.bairro
         cidade = v.cidade; estado = v.estado; tipoImovel = v.tipoImovel
         finalidade = v.finalidade; metragem = v.metragem; mobiliado = v.mobiliado
+        locadorTipo = v.locadorTipo.ifBlank { "Locador" }
         locadora = v.locadora; locadoraCpf = v.locadoraCpf; locadoraTelefone = v.locadoraTelefone
+        locatarioTipo = v.locatarioTipo.ifBlank { "Locatário" }
         locatario = v.locatario; locatarioCpf = v.locatarioCpf; locatarioTelefone = v.locatarioTelefone
         vistoriadora = v.vistoriadora; solicitante = v.solicitante; emailContestacao = v.emailContestacao
         consideracoes = v.consideracoes
@@ -145,7 +149,15 @@ class VistoriaEditorViewModel(
 
     val canProceed: Boolean
         get() = when (currentStep) {
-            0 -> endereco.isNotBlank() || condominio.isNotBlank()
+            0 -> {
+                val t = tipoImovel.uppercase()
+                val isCondo = t in listOf("APARTAMENTO", "COBERTURA", "LOFT", "STUDIO/FLAT", "FLAT")
+                if (isCondo) {
+                    condominio.isNotBlank() || endereco.isNotBlank()
+                } else {
+                    endereco.isNotBlank() || condominio.isNotBlank()
+                }
+            }
             1 -> locadora.isNotBlank() && locatario.isNotBlank()
             2 -> rooms.isNotEmpty()
             else -> true
@@ -158,7 +170,9 @@ class VistoriaEditorViewModel(
         conjApto = conjApto, cep = cep, bairro = bairro,
         cidade = cidade, estado = estado, tipoImovel = tipoImovel,
         finalidade = finalidade, metragem = metragem, mobiliado = mobiliado,
+        locadorTipo = locadorTipo,
         locadora = locadora, locadoraCpf = locadoraCpf,
+        locatarioTipo = locatarioTipo,
         locatario = locatario, locatarioCpf = locatarioCpf,
         vistoriadora = vistoriadora, dataFotografia = dataFotografia,
         dataLaudo = dataLaudo, solicitante = solicitante,

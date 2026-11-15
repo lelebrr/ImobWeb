@@ -544,14 +544,14 @@ internal fun StepRooms(
                             val currentChoice = choiceAnswers[currentQ.key] ?: currentQ.defaultChoice
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 currentQ.options.forEach { opt ->
                                     val isSelected = currentChoice.equals(opt, ignoreCase = true)
                                     Surface(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .clip(RoundedCornerShape(14.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .clickable { choiceAnswers[currentQ.key] = opt },
                                         color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                                                 else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
@@ -559,16 +559,20 @@ internal fun StepRooms(
                                             if (isSelected) 2.dp else 1.dp,
                                             if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                                         ),
-                                        shape = RoundedCornerShape(14.dp)
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Box(
                                             contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 14.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 4.dp, vertical = 12.dp)
                                         ) {
                                             Text(
                                                 opt,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp,
+                                                fontSize = 12.sp,
+                                                maxLines = 2,
+                                                softWrap = true,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                                 textAlign = TextAlign.Center
                                             )
@@ -585,7 +589,7 @@ internal fun StepRooms(
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     val isSim = wantsExtraRooms == true || customExtras.isNotEmpty()
                                     val isNao = wantsExtraRooms == false && customExtras.isEmpty()
@@ -604,12 +608,17 @@ internal fun StepRooms(
                                     ) {
                                         Box(
                                             contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 14.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp, vertical = 12.dp)
                                         ) {
                                             Text(
-                                                "Sim ✓",
+                                                "Sim, tem mais ✓",
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
+                                                fontSize = 13.sp,
+                                                maxLines = 2,
+                                                softWrap = true,
+                                                textAlign = TextAlign.Center,
                                                 color = if (isSim) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
                                             )
                                         }
@@ -633,12 +642,17 @@ internal fun StepRooms(
                                     ) {
                                         Box(
                                             contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 14.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp, vertical = 12.dp)
                                         ) {
                                             Text(
-                                                "Não ✗",
+                                                "Não, apenas estes",
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
+                                                fontSize = 13.sp,
+                                                maxLines = 2,
+                                                softWrap = true,
+                                                textAlign = TextAlign.Center,
                                                 color = if (isNao) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface
                                             )
                                         }

@@ -75,6 +75,44 @@ object LaudoHtmlBuilder {
             append("</div>")
             append("</section>")
 
+            // ---------- PÁGINA 2: TERMO DE VISTORIA & CRITÉRIOS DE AVALIAÇÃO ----------
+            val locadorTitle = vistoria.locadorTipo.ifBlank { "Locador" }.uppercase()
+            val locatarioTitle = vistoria.locatarioTipo.ifBlank { "Locatário" }.uppercase()
+            val condoHeader = if (vistoria.condominio.isNotBlank()) " no CONDOMÍNIO ${vistoria.condominio.uppercase()}" else ""
+
+            append("<section class=\"section page-break preamble-section\">")
+            append("<h2 class=\"preamble-title\">Termo de vistoria de ${esc(TipoVistoria.label(vistoria.tipoVistoria).lowercase())}</h2>")
+            append("<p class=\"preamble-text\">")
+            append("O presente anexo faz parte integrante do “Contrato de Locação” do imóvel${esc(condoHeader)} situado na ${esc(fullAddress(vistoria))}, datado de ${esc(vistoria.dataLaudo.ifBlank { hoje() })}, tendo como partes:<br><br>")
+            append("<b>De um lado, na qualidade de ${esc(locadorTitle)}:</b> ${esc(vistoria.locadora.ifBlank { "—" })}${if (vistoria.locadoraCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locadoraCpf) else ""}.<br>")
+            append("<b>De outro lado, na condição de ${esc(locatarioTitle)}:</b> ${esc(vistoria.locatario.ifBlank { "—" })}${if (vistoria.locatarioCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locatarioCpf) else ""}.")
+            append("</p>")
+
+            append("<p class=\"preamble-legal\">")
+            append("Este laudo de vistoria tem por objetivo retratar o estado de conservação e funcionamento do imóvel na data de sua realização, em atendimento ao disposto no art. 22, inciso V e art. 23, inciso III, ambos da Lei nº 8.245/91 (Lei do Inquilinato). A presente Vistoria foi realizada por observância estética da construção e acabamentos, não se atendo a aspectos estruturais de solidez, fundações e vícios ocultos.")
+            append("</p>")
+
+            append("<div class=\"property-summary-box\">")
+            append("<div><b>Tipo de imóvel:</b> ${esc(vistoria.tipoImovel.ifBlank { "—" })}</div>")
+            append("<div><b>Finalidade:</b> ${esc(vistoria.finalidade.ifBlank { "—" })}</div>")
+            append("<div><b>Metragem:</b> ${esc(vistoria.metragem.ifBlank { "—" })}</div>")
+            append("<div><b>Mobiliado:</b> ${esc(vistoria.mobiliado.ifBlank { "NÃO" })}</div>")
+            append("<div><b>Fotos:</b> $totalFotos</div>")
+            append("<div><b>Solicitante:</b> ${esc(vistoria.solicitante.ifBlank { "—" })}</div>")
+            append("</div>")
+
+            append("<div class=\"criteria-box\">")
+            append("<h3>Critérios de avaliação do estado de conservação do imóvel (aspecto visual):</h3>")
+            append("<ul>")
+            append("<li><b>- Novo estado:</b> primeiro uso.</li>")
+            append("<li><b>- Ótimo estado:</b> semi novo, sem avarias.</li>")
+            append("<li><b>- Bom estado:</b> com uso, podendo conter: leves manchas, riscos, trincas, desgaste e furos.</li>")
+            append("<li><b>- Estado regular:</b> podendo conter: gotejamento, trincas, manchas e desgastes em grandes proporções.</li>")
+            append("<li><b>- Estado ruim:</b> danos graves, podendo conter: infiltração, rachaduras, danificações, pragas e vazamento.</li>")
+            append("</ul>")
+            append("</div>")
+            append("</section>")
+
             var n = 0
             fun next(title: String) = "${++n}. $title"
 
@@ -99,12 +137,12 @@ object LaudoHtmlBuilder {
             // ---------- PARTES ----------
             append(section(next("Partes envolvidas")) {
                 table(
-                    row("Locadora", vistoria.locadora) +
-                    row("CPF/CNPJ da locadora", vistoria.locadoraCpf) +
-                    row("Telefone da locadora", vistoria.locadoraTelefone) +
-                    row("Locatário(a)", vistoria.locatario) +
-                    row("CPF/CNPJ do locatário", vistoria.locatarioCpf) +
-                    row("Telefone do locatário", vistoria.locatarioTelefone) +
+                    row(vistoria.locadorTipo.ifBlank { "Locador" }, vistoria.locadora) +
+                    row("CPF/CNPJ do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraCpf) +
+                    row("Telefone do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraTelefone) +
+                    row(vistoria.locatarioTipo.ifBlank { "Locatário" }, vistoria.locatario) +
+                    row("CPF/CNPJ do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioCpf) +
+                    row("Telefone do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioTelefone) +
                     row("Vistoriadora", vistoria.vistoriadora) +
                     row("Solicitante", vistoria.solicitante) +
                     row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
@@ -190,13 +228,15 @@ object LaudoHtmlBuilder {
             // ---------- ASSINATURAS ----------
             append("<section class=\"section signatures page-break\">")
             append("<h2>${esc(next("Assinaturas"))}</h2>")
-            append("<p class=\"sig-intro\">As partes declaram ter recebido o presente laudo e concordam com as constatações registradas.</p>")
+            append("<p class=\"sig-agreement\">E, assim, por estarem justos e contratados, <b>${esc(locadorTitle)}</b> e <b>${esc(locatarioTitle)}</b>, declaram terem vistoriado o imóvel, firmando o presente instrumento, acompanhado de fotografias, fazendo-o juntamente, para todos os fins e efeitos de direito.</p>")
+            append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "São Paulo" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}.</div>")
             append("<div class=\"sig-grid\">")
-            append(signature(vistoria.locadora, "Locadora", vistoria.signatures.locadora))
-            append(signature(vistoria.locatario, "Locatário(a)", vistoria.signatures.locatario))
-            append(signature(vistoria.vistoriadora, "Vistoriadora", vistoria.signatures.vistoriadora))
+            append(signature(vistoria.locadora, locadorTitle, vistoria.signatures.locadora))
+            append(signature(vistoria.locatario, locatarioTitle, vistoria.signatures.locatario))
+            if (vistoria.vistoriadora.isNotBlank() || vistoria.signatures.vistoriadora != null) {
+                append(signature(vistoria.vistoriadora, "VISTORIADORA", vistoria.signatures.vistoriadora))
+            }
             append("</div>")
-            append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "—" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
             append("</section>")
 
             val empresa = options.empresaNome.takeIf { it.isNotBlank() }?.let { "${esc(it)} • " } ?: ""
@@ -476,10 +516,10 @@ object LaudoHtmlBuilder {
                 background: #fee2e2; color: #991b1b; font-size: 8px; font-weight: 700;
                 letter-spacing: .5px; text-transform: uppercase;
             }
-            .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+            .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
             .photo { margin: 0; }
-            .photo-frame { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #f1f5f9; border: 1px solid #e2e8f0; }
-            .photo-frame img { display: block; width: 100%; height: auto; }
+            .photo-frame { position: relative; width: 100%; border-radius: 6px; overflow: hidden; background: #f1f5f9; border: 1px solid #cbd5e1; }
+            .photo-frame img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; }
             .pin {
                 position: absolute; transform: translate(-50%, -50%);
                 width: 17px; height: 17px; border-radius: 50%;
@@ -492,11 +532,28 @@ object LaudoHtmlBuilder {
                 font-size: 7px; padding: 2px 4px; border-radius: 3px;
                 max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             }
-            .photo figcaption { margin-top: 4px; font-size: 9px; color: #64748b; }
+            .photo figcaption { margin-top: 3px; font-size: 8px; color: #475569; text-align: center; }
             .empty { padding: 12px; border-radius: 8px; background: #f8fafc; color: #94a3b8; font-size: 11px; }
             .empty.small { font-size: 10px; margin-top: 12px; }
             .considerations { font-size: 12px; color: #334155; }
-            .signatures { margin-top: 48px; }
+            .preamble-section { margin-top: 20px; }
+            .preamble-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .preamble-text { font-size: 12px; line-height: 1.6; color: #1e293b; margin-bottom: 12px; text-align: justify; }
+            .preamble-legal { font-size: 11px; line-height: 1.5; color: #475569; margin-bottom: 14px; text-align: justify; }
+            .property-summary-box {
+                display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+                background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;
+                font-size: 11px; color: #1e293b; margin-bottom: 16px;
+            }
+            .criteria-box {
+                background: #f1f5f9; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0;
+                padding: 12px 14px; margin-bottom: 20px;
+            }
+            .criteria-box h3 { font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.4px; }
+            .criteria-box ul { list-style: none; padding: 0; margin: 0; font-size: 10.5px; line-height: 1.5; color: #334155; }
+            .criteria-box li { margin-bottom: 3px; }
+            .sig-agreement { font-size: 11.5px; line-height: 1.6; color: #1e293b; margin-bottom: 16px; text-align: justify; }
+            .signatures { margin-top: 36px; }
             .sig-intro { color: #64748b; font-size: 11px; margin-bottom: 26px; }
             .sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
             .sig { text-align: center; padding-top: 34px; }

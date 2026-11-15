@@ -29,15 +29,15 @@ object PhotoStore {
     private fun newFile(context: Context): File = File(dir(context), "foto_${UUID.randomUUID()}.jpg")
 
     /** Importa uma foto da galeria (ou de qualquer content://). */
-    suspend fun importUri(context: Context, uri: Uri): PhotoData? = withContext(Dispatchers.IO) {
-        val file = ImageCompressor.compressToFile(context, uri, newFile(context)) ?: return@withContext null
+    suspend fun importUri(context: Context, uri: Uri, label: String? = null): PhotoData? = withContext(Dispatchers.IO) {
+        val file = ImageCompressor.compressToFile(context, uri, newFile(context), watermarkText = label) ?: return@withContext null
         PhotoData(name = file.name, filePath = file.absolutePath)
     }
 
     /** Importa uma foto tirada pela câmera (arquivo temporário), apagando o original temporário. */
-    suspend fun importFile(context: Context, path: String): PhotoData? = withContext(Dispatchers.IO) {
+    suspend fun importFile(context: Context, path: String, label: String? = null): PhotoData? = withContext(Dispatchers.IO) {
         val source = File(path)
-        val result = ImageCompressor.compressToFile(context, Uri.fromFile(source), newFile(context))
+        val result = ImageCompressor.compressToFile(context, Uri.fromFile(source), newFile(context), watermarkText = label)
         if (source.absolutePath.startsWith(context.cacheDir.absolutePath)) source.delete()
         result?.let { PhotoData(name = it.name, filePath = it.absolutePath) }
     }

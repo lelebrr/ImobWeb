@@ -207,16 +207,20 @@ class VistoriaRepository(
     suspend fun getExitsFor(entradaId: Long): List<Vistoria> = dao.getExitsFor(entradaId)
 
     suspend fun deleteVistoria(vistoria: Vistoria) = withContext(Dispatchers.IO) {
-        val remoteId = vistoria.remoteId
-        if (!remoteId.isNullOrBlank()) {
-            // Fica registrado: não volta no próximo pull e a exclusão no servidor é refeita se falhar agora
-            sessionManager.markRemoteIdDeleted(remoteId)
-            runCatching { deleteRemote(remoteId) }
-        }
         writeMutex.withLock {
             val current = dao.getVistoriaById(vistoria.id) ?: vistoria
             dao.deleteVistoriaById(vistoria.id)
             PhotoStore.deleteFiles(current)
+        }
+        val remoteId = vistoria.remoteId
+        if (!remoteId.isNullOrBlank()) {
+            // Fica registrado: não volta no próximo pull e a exclusão no servidor é refeita se falhar agora
+            sessionManager.markRemoteIdDeleted(remoteId)
+            runCatching {
+                kotlinx.coroutines.withTimeoutOrNull(4000L) {
+                    deleteRemote(remoteId)
+                }
+            }
         }
     }
 

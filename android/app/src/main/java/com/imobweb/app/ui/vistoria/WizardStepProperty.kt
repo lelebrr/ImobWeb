@@ -488,23 +488,49 @@ internal fun StepPropertyInfo(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun StepParties(
+    locadorTipo: String = "Locador", onLocadorTipoChange: (String) -> Unit = {},
     locadora: String, onLocadoraChange: (String) -> Unit,
     locadoraCpf: String, onLocadoraCpfChange: (String) -> Unit,
+    locatarioTipo: String = "Locatário", onLocatarioTipoChange: (String) -> Unit = {},
     locatario: String, onLocatarioChange: (String) -> Unit,
     locatarioCpf: String, onLocatarioCpfChange: (String) -> Unit,
     vistoriadora: String, onVistoriadoraChange: (String) -> Unit,
     solicitante: String, onSolicitanteChange: (String) -> Unit
 ) {
+    val locadorOptions = listOf("Locador", "Locadora", "Locadores", "Pessoa Jurídica")
+    val locatarioOptions = listOf("Locatário", "Locatária", "Locatários", "Pessoa Jurídica")
+
     Column {
         Text("Partes Envolvidas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text("Dados do locador, locatário e vistoriadora", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
 
+        // Seletor de Tipo / Tratamento do Locador
+        Text("Identificação do Locador (Proprietário)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            locadorOptions.forEach { opt ->
+                val isSelected = locadorTipo.equals(opt, ignoreCase = true) ||
+                        (opt == "Pessoa Jurídica" && locadorTipo.contains("PJ", ignoreCase = true))
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onLocadorTipoChange(opt) },
+                    label = { Text(opt, fontSize = 12.sp) }
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+
         OutlinedTextField(
             value = locadora,
             onValueChange = onLocadoraChange,
-            label = { Text("Nome da Locadora / Proprietário(a) *") },
+            label = { Text("Nome do(a) $locadorTipo *") },
             placeholder = { Text("Nome completo ou Razão Social") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -515,21 +541,42 @@ internal fun StepParties(
             onValueChange = {
                 onLocadoraCpfChange(com.imobweb.app.util.Formatters.maskCpfOrCnpj(it))
             },
-            label = { Text("CPF / CNPJ da Locadora") },
+            label = { Text("CPF / CNPJ do(a) $locadorTipo") },
             placeholder = { Text("000.000.000-00 ou 00.000.000/0000-00") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
         HorizontalDivider()
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
+
+        // Seletor de Tipo / Tratamento do Locatário
+        Text("Identificação do(a) Locatário(a) (Inquilino)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            locatarioOptions.forEach { opt ->
+                val isSelected = locatarioTipo.equals(opt, ignoreCase = true) ||
+                        (opt == "Pessoa Jurídica" && locatarioTipo.contains("PJ", ignoreCase = true))
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onLocatarioTipoChange(opt) },
+                    label = { Text(opt, fontSize = 12.sp) }
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = locatario,
             onValueChange = onLocatarioChange,
-            label = { Text("Nome do(a) Locatário(a) / Inquilino(a) *") },
+            label = { Text("Nome do(a) $locatarioTipo *") },
             placeholder = { Text("Nome completo ou Razão Social") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -540,13 +587,13 @@ internal fun StepParties(
             onValueChange = {
                 onLocatarioCpfChange(com.imobweb.app.util.Formatters.maskCpfOrCnpj(it))
             },
-            label = { Text("CPF / CNPJ do(a) Locatário(a)") },
+            label = { Text("CPF / CNPJ do(a) $locatarioTipo") },
             placeholder = { Text("000.000.000-00 ou 00.000.000/0000-00") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
         HorizontalDivider()
         Spacer(Modifier.height(12.dp))

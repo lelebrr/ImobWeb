@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.PhotoStore
 
-@Database(entities = [Vistoria::class], version = 4, exportSchema = false)
+@Database(entities = [Vistoria::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun vistoriaDao(): VistoriaDao
@@ -31,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     // Nunca apagar os laudos do usuário numa atualização do app:
                     // toda mudança de schema precisa de uma Migration explícita.
-                    .addMigrations(PhotosToFilesMigration(context.applicationContext), ExtrasMigration, OwnerAndInfoMigration)
+                    .addMigrations(PhotosToFilesMigration(context.applicationContext), ExtrasMigration, OwnerAndInfoMigration, GenderAndTypeMigration)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -120,5 +120,13 @@ object OwnerAndInfoMigration : Migration(3, 4) {
         db.execSQL("ALTER TABLE vistorias ADD COLUMN locatarioTelefone TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE vistorias ADD COLUMN emailContestacao TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE vistorias ADD COLUMN reparos TEXT NOT NULL DEFAULT '[]'")
+    }
+}
+
+/** v4 → v5: flexibilidade de gênero e tipo para Locador e Locatário (Ele, Ela, Eles, PJ). */
+object GenderAndTypeMigration : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN locadorTipo TEXT NOT NULL DEFAULT 'Locador'")
+        db.execSQL("ALTER TABLE vistorias ADD COLUMN locatarioTipo TEXT NOT NULL DEFAULT 'Locatário'")
     }
 }

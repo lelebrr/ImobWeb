@@ -161,29 +161,9 @@ fun CameraScreen(
                 val capture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
-                var lastAnalysis = 0L
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also {
-                        it.setAnalyzer(cameraExecutor) { image ->
-                            val now = System.currentTimeMillis()
-                            if (now - lastAnalysis > 250) {
-                                lastAnalysis = now
-                                runCatching {
-                                    val plane = image.planes[0]
-                                    val buf = plane.buffer
-                                    val bytes = ByteArray(buf.remaining()).also { b -> buf.get(b) }
-                                    val luma = PhotoQuality.meanLuma(bytes, image.width, image.height, plane.rowStride, 16)
-                                    brightness = luma.toFloat()
-                                }
-                            }
-                            image.close()
-                        }
-                    }
                 val selector = CameraSelector.Builder().requireLensFacing(cameraFacing).build()
                 provider.unbindAll()
-                camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, capture, analysis)
+                camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
                 preview.setSurfaceProvider(pv.surfaceProvider)
                 imageCapture = capture
                 cameraInitError = null
@@ -199,7 +179,6 @@ fun CameraScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            cameraExecutor.shutdown()
             previewView = null
         }
     }
@@ -252,24 +231,31 @@ fun CameraScreen(
         val capture = imageCapture ?: run { launchSystemCamera(); return }
         if (isCapturing || review != null) return
         isCapturing = true
+
+        // Watchdog: libera após 6s se o hardware da câmera não disparar o callback
+        scope.launch {
+            delay(6000L)
+            if (isCapturing) {
+                isCapturing = false
+                Toast.makeText(context, "Câmera demorou para capturar. Você pode usar a câmera nativa.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         val dir = File(context.cacheDir, "photos").apply { mkdirs() }
         val file = File(dir, "cam_${UUID.randomUUID()}.jpg")
+        val mainExecutor = ContextCompat.getMainExecutor(context)
         capture.takePicture(
             ImageCapture.OutputFileOptions.Builder(file).build(),
-            cameraExecutor,
+            mainExecutor,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    scope.launch(Dispatchers.Main) {
-                        isCapturing = false
-                        if (file.exists() && file.length() > 0) handleCaptured(file)
-                        else Toast.makeText(context, "Erro ao processar imagem capturada", Toast.LENGTH_SHORT).show()
-                    }
+                    isCapturing = false
+                    if (file.exists() && file.length() > 0) handleCaptured(file)
+                    else Toast.makeText(context, "Erro ao processar imagem capturada", Toast.LENGTH_SHORT).show()
                 }
                 override fun onError(exception: ImageCaptureException) {
-                    scope.launch(Dispatchers.Main) {
-                        isCapturing = false
-                        Toast.makeText(context, "Erro: ${exception.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    isCapturing = false
+                    Toast.makeText(context, "Erro: ${exception.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -313,6 +299,9 @@ fun CameraScreen(
                         Icon(if (torch) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff, contentDescription = "Lanterna",
                             tint = if (torch) Color.Yellow else LocalContentColor.current)
                     }
+                    IconButton(onClick = { launchSystemCamera() }) {
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Usar Câmera Nativa")
+                    }
                     IconButton(onClick = {
                         cameraFacing = if (cameraFacing == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
                     }) { Icon(Icons.Default.FlipCameraAndroid, contentDescription = "Virar câmera") }
@@ -353,7 +342,7 @@ fun CameraScreen(
                 factory = { ctx ->
                     PreviewView(ctx).apply {
                         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        implementationMode = PreviewView.ImplementationMode.PERFORMANCE
                         scaleType = PreviewView.ScaleType.FILL_CENTER
                         // foco por toque
                         setOnTouchListener { v, ev ->
