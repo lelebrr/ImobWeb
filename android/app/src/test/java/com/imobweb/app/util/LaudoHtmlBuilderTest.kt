@@ -177,4 +177,29 @@ class LaudoHtmlBuilderTest {
         assertFalse(html.contains("Lei nº 8.245/91"))
         assertFalse(html.contains("Critérios de avaliação"))
     }
+
+    @Test
+    fun `suporta multiplos locadores sumario clicavel e secao de contestacao`() {
+        val multi = sample().copy(
+            locadorTipo = "Locadores",
+            locadora = "LUIS FERNANDO FELIPPE | CINTIA YUKA SAKURAKI FELIPPE",
+            locadoraCpf = "296.009.188-48 | 294.214.358-42",
+            locatarioTipo = "Locatária",
+            locatario = "MONIQUE DE SOUZA LINDMANN",
+            locatarioCpf = "044.503.930-23",
+            dataFotografia = "02/04/2026",
+            emailContestacao = "zulmara@ampliacaoimoveis.com.br"
+        )
+        val html = LaudoHtmlBuilder.build(multi)
+
+        assertTrue(html.contains("LUIS FERNANDO FELIPPE</b>, CPF nº 296.009.188-48 e <b>CINTIA YUKA SAKURAKI FELIPPE</b>, CPF nº 294.214.358-42"))
+        assertTrue(html.contains("Sumário"))
+        assertTrue(html.contains("href=\"#room-1\""))
+        assertTrue(html.contains("id=\"room-1\""))
+        assertTrue(html.contains("INDICAÇÃO DO ESTADO DO IMÓVEL"))
+        assertTrue(html.contains("CONTESTAÇÃO"))
+        assertTrue(html.contains("zulmara@ampliacaoimoveis.com.br"))
+        assertTrue(html.contains("02/04/2026"))
+        assertTrue(html.contains("sig-group-title"))
+    }
 }

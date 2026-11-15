@@ -3,6 +3,8 @@ package com.imobweb.app.util
 import com.imobweb.app.model.Checklist
 import com.imobweb.app.model.FurnitureDetail
 import com.imobweb.app.model.Medidores
+import com.imobweb.app.model.PartyListHelper
+import com.imobweb.app.model.PartyPerson
 import com.imobweb.app.model.PhotoData
 import com.imobweb.app.model.TipoVistoria
 import com.imobweb.app.model.RoomData
@@ -51,9 +53,16 @@ object LaudoHtmlBuilder {
             append("</head><body>")
 
             val coverTitleHtml = customTitle?.let { esc(it).replace("\n", "<br>") } ?: "Laudo de<br>Vistoria"
-            val locadorTitle = vistoria.locadorTipo.ifBlank { "Locador" }.uppercase()
-            val locatarioTitle = vistoria.locatarioTipo.ifBlank { "Locatário" }.uppercase()
+            val locadoresList = PartyListHelper.parseNonBlank(vistoria.locadora, vistoria.locadoraCpf)
+            val locatariosList = PartyListHelper.parseNonBlank(vistoria.locatario, vistoria.locatarioCpf)
+            val locadorTitle = (vistoria.locadorTipo.ifBlank {
+                if (locadoresList.size > 1) "Locadores" else "Locador"
+            }).uppercase()
+            val locatarioTitle = (vistoria.locatarioTipo.ifBlank {
+                if (locatariosList.size > 1) "Locatários" else "Locatário"
+            }).uppercase()
             val condoHeader = if (vistoria.condominio.isNotBlank()) " no CONDOMÍNIO ${vistoria.condominio.uppercase()}" else ""
+            val fotoDate = vistoria.dataFotografia.ifBlank { vistoria.dataLaudo.ifBlank { hoje() } }
 
             // ---------- CAPA OU CABEÇALHO COMPACTO ----------
             if (t.showCover && t.coverStyle != "none") {
@@ -95,7 +104,8 @@ object LaudoHtmlBuilder {
                 append("</div>")
 
                 append("<div class=\"cover-footer\">")
-                append("<div><span class=\"label\">Vistoriadora</span><b>${esc(vistoria.vistoriadora.ifBlank { "—" })}</b></div>")
+                append("<div><span class=\"label\">Autor(a) / Vistoriadora</span><b>${esc(vistoria.vistoriadora.ifBlank { "—" })}</b></div>")
+                append("<div><span class=\"label\">Fotografado em</span><b>${esc(fotoDate)}</b></div>")
                 append("<div><span class=\"label\">Solicitante</span><b>${esc(vistoria.solicitante.ifBlank { "—" })}</b></div>")
                 append("<div class=\"cover-generated\">Gerado em ${esc(dataGeracao)}</div>")
                 append("</div>")
@@ -113,11 +123,13 @@ object LaudoHtmlBuilder {
                 val preambleBreak = if (!t.showCover || t.coverStyle == "none" || t.compactFlow) "" else " page-break"
                 append("<section class=\"section$preambleBreak preamble-section\">")
                 if (t.showLegalPreamble) {
+                    val locadorPreamble = PartyListHelper.formatPreambleHtml(locadoresList, ::esc)
+                    val locatarioPreamble = PartyListHelper.formatPreambleHtml(locatariosList, ::esc)
                     append("<h2 class=\"preamble-title\">Termo de vistoria de ${esc(TipoVistoria.label(vistoria.tipoVistoria).lowercase())}</h2>")
                     append("<p class=\"preamble-text\">")
                     append("O presente anexo faz parte integrante do “Contrato de Locação” do imóvel${esc(condoHeader)} situado na ${esc(fullAddress(vistoria))}, datado de ${esc(vistoria.dataLaudo.ifBlank { hoje() })}, tendo como partes:<br><br>")
-                    append("<b>De um lado, na qualidade de ${esc(locadorTitle)}:</b> ${esc(vistoria.locadora.ifBlank { "—" })}${if (vistoria.locadoraCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locadoraCpf) else ""}.<br>")
-                    append("<b>De outro lado, na condição de ${esc(locatarioTitle)}:</b> ${esc(vistoria.locatario.ifBlank { "—" })}${if (vistoria.locatarioCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locatarioCpf) else ""}.")
+                    append("De um lado, na qualidade de <b>${esc(locadorTitle)}</b>: $locadorPreamble.<br>")
+                    append("De outro lado, na condição de <b>${esc(locatarioTitle)}</b>: $locatarioPreamble.")
                     append("</p>")
 
                     append("<p class=\"preamble-legal\">")
@@ -149,6 +161,27 @@ object LaudoHtmlBuilder {
                 append("</section>")
             }
 
+            // ---------- SUMÁRIO CLICÁVEL ----------
+            if (vistoria.rooms.isNotEmpty()) {
+                append("<section class=\"section toc-section\">")
+                append("<h2>Sumário <span class=\"toc-hint\">(clique no cômodo desejado)</span></h2>")
+                append("<ul class=\"toc-list\">")
+                vistoria.rooms.forEachIndexed { idx, room ->
+                    val rName = room.name.ifBlank { "Cômodo ${idx + 1}" }
+                    val meta = buildString {
+                        append("${room.photos.size} foto(s)")
+                        val mc = maxOf(room.furnitureDetails.size, room.furniture.size)
+                        if (mc > 0) append(" • $mc item(ns)")
+                    }
+                    append("<li><a href=\"#room-${idx + 1}\"><span class=\"toc-label\">${idx + 1} - ${esc(rName)}</span><span class=\"toc-dots\"></span><span class=\"toc-meta\">$meta</span></a></li>")
+                }
+                if (t.showConsiderations) {
+                    append("<li><a href=\"#consideracoes-finais\"><span class=\"toc-label\">Considerações finais e Contestação</span><span class=\"toc-dots\"></span><span class=\"toc-meta\">Termo</span></a></li>")
+                }
+                append("</ul>")
+                append("</section>")
+            }
+
             var n = 0
             fun next(title: String) = "${++n}. $title"
 
@@ -176,14 +209,15 @@ object LaudoHtmlBuilder {
             if (t.showPartiesTable) {
                 append(section(next("Partes envolvidas")) {
                     table(
-                        row(vistoria.locadorTipo.ifBlank { "Locador" }, vistoria.locadora) +
-                        row("CPF/CNPJ do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraCpf) +
+                        row(vistoria.locadorTipo.ifBlank { "Locador" }, PartyListHelper.displayNames(vistoria.locadora)) +
+                        row("CPF/CNPJ do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraCpf.replace(" | ", " • ")) +
                         row("Telefone do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraTelefone) +
-                        row(vistoria.locatarioTipo.ifBlank { "Locatário" }, vistoria.locatario) +
-                        row("CPF/CNPJ do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioCpf) +
+                        row(vistoria.locatarioTipo.ifBlank { "Locatário" }, PartyListHelper.displayNames(vistoria.locatario)) +
+                        row("CPF/CNPJ do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioCpf.replace(" | ", " • ")) +
                         row("Telefone do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioTelefone) +
                         row("Vistoriadora", vistoria.vistoriadora) +
                         row("Solicitante", vistoria.solicitante) +
+                        row("Fotografado em", vistoria.dataFotografia) +
                         row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
                         row("Data da vistoria", vistoria.dataLaudo.ifBlank { hoje() })
                     )
@@ -223,6 +257,7 @@ object LaudoHtmlBuilder {
             if (vistoria.rooms.isEmpty()) {
                 append("<p class=\"empty\">Nenhum cômodo registrado nesta vistoria.</p>")
             } else {
+                append("<p class=\"section-subkicker\">INDICAÇÃO DO ESTADO DO IMÓVEL, ACESSÓRIOS, SUAS PARTES E COMPONENTES:</p>")
                 vistoria.rooms.forEachIndexed { index, room ->
                     append(roomSection(index + 1, room, t))
                 }
@@ -268,17 +303,37 @@ object LaudoHtmlBuilder {
                 }
             }
 
-            // ---------- CONSIDERAÇÕES ----------
+            // ---------- CONSIDERAÇÕES & CONTESTAÇÃO ----------
             if (t.showConsiderations) {
-                append(section(next("Considerações finais")) {
-                    if (vistoria.consideracoes.isBlank()) {
-                        "<p class=\"empty\">Sem considerações adicionais.</p>"
-                    } else {
-                        "<p class=\"considerations\">${esc(vistoria.consideracoes).replace("\n", "<br>")}</p>"
-                    } + if (vistoria.emailContestacao.isNotBlank()) {
-                        "<p class=\"contest\">Eventuais divergências podem ser contestadas por escrito em até 5 (cinco) dias do recebimento deste laudo, pelo e-mail <b>${esc(vistoria.emailContestacao)}</b>.</p>"
-                    } else ""
-                })
+                append("<section id=\"consideracoes-finais\" class=\"section\"><h2>${esc(next("Considerações finais"))}</h2>")
+                if (vistoria.consideracoes.isBlank()) {
+                    append("<p class=\"empty\">Sem considerações adicionais.</p>")
+                } else {
+                    append("<p class=\"considerations\">${esc(vistoria.consideracoes).replace("\n", "<br>")}</p>")
+                }
+                if (vistoria.rooms.isNotEmpty() || vistoria.consideracoes.isNotBlank() || vistoria.emailContestacao.isNotBlank()) {
+                    append("<div class=\"legal-closing\">")
+                    append("<p><u>As fotos poderão ser utilizadas como forma de comprovação do real estado do imóvel se caso o laudo escrito não o relate.</u></p>")
+                    append("<p><b>${esc(locatarioTitle)}</b> responsabiliza(m)-se pela conservação do imóvel, comprometendo-se a restituí-lo a(o)(s) <b>${esc(locadorTitle)}</b> nas mesmas condições declaradas acima.</p>")
+                    append("<p>Este laudo retrata o estado do imóvel no momento da vistoria. Caso algo não esteja relatado na forma de texto, mas visível nas fotos, as mesmas poderão ser utilizadas para efeitos de comprovação das características e estado de conservação.</p>")
+                    append("<p>Em caso de necessidade de manutenção, troca, conserto, reparo ou retirada de itens do imóvel, tratar diretamente entre as partes ou entre a administradora e o proprietário para que seja oficializado via e-mail. Alterações serão feitas no laudo desde que estejam dentro do prazo de contestação.</p>")
+                    append("<p><b>${esc(locatarioTitle)}</b> e <b>${esc(locadorTitle)}</b> terão até <b>10 (dez) dias</b> corridos a contar da data do recebimento para contestar algum item da vistoria para possível verificação, alteração ou reparo, caso haja.</p>")
+                    append("</div>")
+                    append("<div class=\"contest-box\">")
+                    append("<h4>CONTESTAÇÃO</h4>")
+                    append("<p>Caso identifique divergência entre o relatório e o estado atual do imóvel, poderá contestar observando os seguintes pré-requisitos:</p>")
+                    append("<ol>")
+                    append("<li>Verifique o prazo de contestação da vistoria. Serão aceitas contestações apenas dentro do prazo previsto (10 dias corridos);</li>")
+                    append("<li>Verifique no registro textual e no arquivo de fotos deste relatório se as divergências já estão identificadas;</li>")
+                    append("<li>Caso não estejam, formalize sua contestação via e-mail, apresentando a descrição dos problemas e as fotos para comprovar cada divergência.</li>")
+                    append("</ol>")
+                    append("<p class=\"contest\">Toda a vistoria está acompanhada de arquivo de fotos enviado por e-mail ou WhatsApp às partes.")
+                    if (vistoria.emailContestacao.isNotBlank()) {
+                        append("<br><b>Caso haja alguma divergência no relatório, favor enviar para o e-mail ${esc(vistoria.emailContestacao)} para que sejam feitas as devidas alterações.</b>")
+                    }
+                    append("</p></div>")
+                }
+                append("</section>")
             }
 
             // ---------- ASSINATURAS ----------
@@ -288,8 +343,24 @@ object LaudoHtmlBuilder {
                 append("<p class=\"sig-agreement\">E, assim, por estarem justos e contratados, <b>${esc(locadorTitle)}</b> e <b>${esc(locatarioTitle)}</b>, declaram terem vistoriado o imóvel, firmando o presente instrumento, acompanhado de fotografias, fazendo-o juntamente, para todos os fins e efeitos de direito.</p>")
                 append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "São Paulo" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}.</div>")
                 append("<div class=\"sig-grid\">")
-                append(signature(vistoria.locadora, locadorTitle, vistoria.signatures.locadora))
-                append(signature(vistoria.locatario, locatarioTitle, vistoria.signatures.locatario))
+                if (locadoresList.size <= 1) {
+                    append(signature(locadoresList.firstOrNull()?.name ?: vistoria.locadora, locadorTitle, vistoria.signatures.locadora))
+                } else {
+                    append("<div class=\"sig-group\"><div class=\"sig-group-title\">${esc(locadorTitle)}:</div>")
+                    locadoresList.forEachIndexed { idx, p ->
+                        append(signature(p.name, locadorTitle, if (idx == 0) vistoria.signatures.locadora else null))
+                    }
+                    append("</div>")
+                }
+                if (locatariosList.size <= 1) {
+                    append(signature(locatariosList.firstOrNull()?.name ?: vistoria.locatario, locatarioTitle, vistoria.signatures.locatario))
+                } else {
+                    append("<div class=\"sig-group\"><div class=\"sig-group-title\">${esc(locatarioTitle)}:</div>")
+                    locatariosList.forEachIndexed { idx, p ->
+                        append(signature(p.name, locatarioTitle, if (idx == 0) vistoria.signatures.locatario else null))
+                    }
+                    append("</div>")
+                }
                 if (vistoria.vistoriadora.isNotBlank() || vistoria.signatures.vistoriadora != null) {
                     append(signature(vistoria.vistoriadora, "VISTORIADORA", vistoria.signatures.vistoriadora))
                 }
@@ -333,9 +404,9 @@ object LaudoHtmlBuilder {
     }
 
     private fun roomSection(index: Int, room: RoomData, t: PdfTemplateConfig): String = buildString {
-        append("<article class=\"room\">")
+        append("<article id=\"room-$index\" class=\"room\">")
         append("<div class=\"room-head\"><span class=\"room-number\">${index.toString().padStart(2, '0')}</span>")
-        append("<div><h3>${esc(room.name.ifBlank { "Cômodo $index" })}</h3>")
+        append("<div><h3>$index - ${esc(room.name.ifBlank { "Cômodo $index" })}</h3>")
         append("<span class=\"room-meta\">${room.photos.size} foto(s)</span></div></div>")
 
         if (t.showFurnitureTable && room.furnitureDetails.isNotEmpty()) {
@@ -367,7 +438,7 @@ object LaudoHtmlBuilder {
             if (extraFurniture.isNotEmpty()) itens.add("Móveis/Itens: " + extraFurniture.joinToString(", "))
             if (room.items.isNotEmpty()) itens.addAll(room.items)
             if (itens.isNotEmpty()) {
-                append("<div class=\"block\"><h4>Inventário Complementar</h4><ul class=\"bullets\">")
+                append("<div class=\"block\"><h4>Inventário e Descrição</h4><ul class=\"bullets check-bullets\">")
                 itens.forEach { append("<li>${esc(it)}</li>") }
                 append("</ul></div>")
             }
@@ -735,6 +806,22 @@ object LaudoHtmlBuilder {
             .sig b { display: block; font-size: 10px; color: #0f172a; }
             .sig span { display: block; margin-top: 2px; font-size: 9px; color: #64748b; }
             .sig-place { margin-top: 30px; text-align: right; font-size: 11px; color: #475569; }
+            .sig-group { display: flex; flex-direction: column; gap: 14px; }
+            .sig-group-title { font-size: 10px; font-weight: 800; color: $secondary; letter-spacing: .8px; text-align: center; }
+            .toc-hint { font-size: 11px; font-weight: 400; color: $accent; font-style: italic; }
+            .toc-list { list-style: none; padding: 0; margin: 6px 0 0; }
+            .toc-list li { margin: 5px 0; }
+            .toc-list a { display: flex; align-items: baseline; gap: 6px; text-decoration: none; color: #1e293b; font-size: 11.5px; }
+            .toc-label { font-weight: 600; color: $secondary; }
+            .toc-dots { flex: 1; border-bottom: 1px dotted #94a3b8; margin: 0 4px; }
+            .toc-meta { font-size: 10px; color: #64748b; white-space: nowrap; }
+            .section-subkicker { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: $secondary; margin: 4px 0 10px; }
+            .check-bullets { list-style: none; padding-left: 4px; }
+            .check-bullets li::before { content: "✓ "; font-weight: 700; color: $accent; margin-right: 4px; }
+            .legal-closing { margin-top: 12px; font-size: 11px; line-height: 1.55; color: #334155; display: flex; flex-direction: column; gap: 8px; text-align: justify; }
+            .contest-box { margin-top: 14px; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; font-size: 11px; line-height: 1.5; color: #1e293b; }
+            .contest-box h4 { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-decoration: underline; margin-bottom: 6px; color: $secondary; }
+            .contest-box ol { margin: 6px 0 8px 18px; padding: 0; }
             .doc-footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #94a3b8; text-align: center; }
             @media print {
                 body { padding: 0; width: auto; }

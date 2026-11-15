@@ -509,107 +509,55 @@ internal fun StepParties(
 ) {
     val locadorOptions = listOf("Locador", "Locadora", "Locadores", "Pessoa Jurídica")
     val locatarioOptions = listOf("Locatário", "Locatária", "Locatários", "Pessoa Jurídica")
+    val locadoresList = remember(locadora, locadoraCpf) {
+        PartyListHelper.parseEditable(locadora, locadoraCpf)
+    }
+    val locatariosList = remember(locatario, locatarioCpf) {
+        PartyListHelper.parseEditable(locatario, locatarioCpf)
+    }
     val missingStep2 = buildList {
-        if (locadora.isBlank()) add("Nome do(a) $locadorTipo")
-        if (locatario.isBlank()) add("Nome do(a) $locatarioTipo")
+        if (locadoresList.none { it.name.isNotBlank() }) add("Nome do(a) $locadorTipo")
+        if (locatariosList.none { it.name.isNotBlank() }) add("Nome do(a) $locatarioTipo")
     }
 
     Column {
         Text("Partes Envolvidas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Dados do locador, locatário e vistoriadora", style = MaterialTheme.typography.bodySmall,
+        Text("Adicione um ou mais locadores e locatários", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
         StepReadinessBanner(missingStep2)
         Spacer(Modifier.height(14.dp))
 
-        // Seletor de Tipo / Tratamento do Locador
-        Text("Identificação do Locador (Proprietário)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            locadorOptions.forEach { opt ->
-                val isSelected = locadorTipo.equals(opt, ignoreCase = true) ||
-                        (opt == "Pessoa Jurídica" && locadorTipo.contains("PJ", ignoreCase = true))
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onLocadorTipoChange(opt) },
-                    label = { Text(opt, fontSize = 12.sp) }
-                )
+        MultiPartySection(
+            sectionTitle = "Identificação do(a) Locador(a) (Proprietário)",
+            roleTipo = locadorTipo,
+            options = locadorOptions,
+            pluralTipo = "Locadores",
+            addButtonLabel = "Adicionar outro(a) Locador(a)",
+            people = locadoresList,
+            onTipoChange = onLocadorTipoChange,
+            onPeopleChange = { updated ->
+                onLocadoraChange(PartyListHelper.encodeNames(updated))
+                onLocadoraCpfChange(PartyListHelper.encodeCpfs(updated))
             }
-        }
-        Spacer(Modifier.height(8.dp))
+        )
 
-        OutlinedTextField(
-            value = locadora,
-            onValueChange = onLocadoraChange,
-            label = { Text("Nome do(a) $locadorTipo *") },
-            placeholder = { Text("Nome completo ou Razão Social") },
-            trailingIcon = { DictationIcon { onLocadoraChange(it) } },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = locadoraCpf,
-            onValueChange = {
-                onLocadoraCpfChange(com.imobweb.app.util.Formatters.maskCpfOrCnpj(it))
-            },
-            label = { Text("CPF / CNPJ do(a) $locadorTipo") },
-            placeholder = { Text("000.000.000-00 ou 00.000.000/0000-00") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
         Spacer(Modifier.height(14.dp))
-
         HorizontalDivider()
         Spacer(Modifier.height(14.dp))
 
-        // Seletor de Tipo / Tratamento do Locatário
-        Text("Identificação do(a) Locatário(a) (Inquilino)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            locatarioOptions.forEach { opt ->
-                val isSelected = locatarioTipo.equals(opt, ignoreCase = true) ||
-                        (opt == "Pessoa Jurídica" && locatarioTipo.contains("PJ", ignoreCase = true))
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onLocatarioTipoChange(opt) },
-                    label = { Text(opt, fontSize = 12.sp) }
-                )
+        MultiPartySection(
+            sectionTitle = "Identificação do(a) Locatário(a) (Inquilino)",
+            roleTipo = locatarioTipo,
+            options = locatarioOptions,
+            pluralTipo = "Locatários",
+            addButtonLabel = "Adicionar outro(a) Locatário(a)",
+            people = locatariosList,
+            onTipoChange = onLocatarioTipoChange,
+            onPeopleChange = { updated ->
+                onLocatarioChange(PartyListHelper.encodeNames(updated))
+                onLocatarioCpfChange(PartyListHelper.encodeCpfs(updated))
             }
-        }
-        Spacer(Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = locatario,
-            onValueChange = onLocatarioChange,
-            label = { Text("Nome do(a) $locatarioTipo *") },
-            placeholder = { Text("Nome completo ou Razão Social") },
-            trailingIcon = { DictationIcon { onLocatarioChange(it) } },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = locatarioCpf,
-            onValueChange = {
-                onLocatarioCpfChange(com.imobweb.app.util.Formatters.maskCpfOrCnpj(it))
-            },
-            label = { Text("CPF / CNPJ do(a) $locatarioTipo") },
-            placeholder = { Text("000.000.000-00 ou 00.000.000/0000-00") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         Spacer(Modifier.height(14.dp))
 
@@ -641,6 +589,129 @@ internal fun StepParties(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+}
+
+@Composable
+private fun MultiPartySection(
+    sectionTitle: String,
+    roleTipo: String,
+    options: List<String>,
+    pluralTipo: String,
+    addButtonLabel: String,
+    people: List<PartyPerson>,
+    onTipoChange: (String) -> Unit,
+    onPeopleChange: (List<PartyPerson>) -> Unit
+) {
+    Text(sectionTitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+    Spacer(Modifier.height(4.dp))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        options.forEach { opt ->
+            val isSelected = roleTipo.equals(opt, ignoreCase = true) ||
+                    (opt == "Pessoa Jurídica" && roleTipo.contains("PJ", ignoreCase = true))
+            FilterChip(
+                selected = isSelected,
+                onClick = { onTipoChange(opt) },
+                label = { Text(opt, fontSize = 12.sp) }
+            )
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+
+    people.forEachIndexed { idx, person ->
+        if (idx > 0) Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (people.size > 1) {
+                Text(
+                    text = "${roleTipo.ifBlank { pluralTipo }} #${idx + 1}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        val updated = people.toMutableList().apply { removeAt(idx) }
+                        if (updated.size == 1 && roleTipo.equals(pluralTipo, ignoreCase = true)) {
+                            onTipoChange(options.first())
+                        }
+                        onPeopleChange(updated)
+                    },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.DeleteOutline,
+                        contentDescription = "Remover",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+        OutlinedTextField(
+            value = person.name,
+            onValueChange = { newName ->
+                val updated = people.toMutableList()
+                updated[idx] = person.copy(name = newName)
+                onPeopleChange(updated)
+            },
+            label = {
+                Text(
+                    if (idx == 0) "Nome do(a) $roleTipo *"
+                    else "Nome do(a) ${roleTipo} (${idx + 1})"
+                )
+            },
+            placeholder = { Text("Nome completo ou Razão Social") },
+            trailingIcon = {
+                DictationIcon { dictated ->
+                    val updated = people.toMutableList()
+                    updated[idx] = person.copy(name = dictated)
+                    onPeopleChange(updated)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = person.cpf,
+            onValueChange = { newDoc ->
+                val updated = people.toMutableList()
+                updated[idx] = person.copy(cpf = com.imobweb.app.util.Formatters.maskCpfOrCnpj(newDoc))
+                onPeopleChange(updated)
+            },
+            label = {
+                Text(
+                    if (idx == 0) "CPF / CNPJ do(a) $roleTipo"
+                    else "CPF / CNPJ (${idx + 1})"
+                )
+            },
+            placeholder = { Text("000.000.000-00 ou 00.000.000/0000-00") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+    }
+
+    Spacer(Modifier.height(8.dp))
+    TextButton(
+        onClick = {
+            val updated = people + PartyPerson()
+            if (updated.size >= 2 && !roleTipo.contains("Jurídica", ignoreCase = true)) {
+                onTipoChange(pluralTipo)
+            }
+            onPeopleChange(updated)
+        },
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(addButtonLabel, fontSize = 12.sp)
     }
 }
 

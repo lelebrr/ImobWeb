@@ -321,12 +321,13 @@ fun VistoriaDetailScreen(
 
                 // Parties info
                 DetailSection("Partes Envolvidas") {
-                    DetailRow("Locadora", v.locadora)
-                    if (v.locadoraCpf.isNotBlank()) DetailRow("CPF/CNPJ Locadora", v.locadoraCpf)
-                    DetailRow("Locatário", v.locatario)
-                    if (v.locatarioCpf.isNotBlank()) DetailRow("CPF/CNPJ Locatário", v.locatarioCpf)
+                    DetailRow(v.locadorTipo.ifBlank { "Locador" }, com.imobweb.app.model.PartyListHelper.displayNames(v.locadora))
+                    if (v.locadoraCpf.isNotBlank()) DetailRow("CPF/CNPJ", v.locadoraCpf.replace(" | ", " • "))
+                    DetailRow(v.locatarioTipo.ifBlank { "Locatário" }, com.imobweb.app.model.PartyListHelper.displayNames(v.locatario))
+                    if (v.locatarioCpf.isNotBlank()) DetailRow("CPF/CNPJ", v.locatarioCpf.replace(" | ", " • "))
                     if (v.vistoriadora.isNotBlank()) DetailRow("Vistoriadora", v.vistoriadora)
                     if (v.solicitante.isNotBlank()) DetailRow("Solicitante", v.solicitante)
+                    if (v.emailContestacao.isNotBlank()) DetailRow("E-mail contestação", v.emailContestacao)
                 }
 
                 Spacer(Modifier.height(12.dp))

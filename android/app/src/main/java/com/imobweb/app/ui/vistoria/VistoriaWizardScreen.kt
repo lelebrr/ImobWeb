@@ -643,7 +643,11 @@ fun VistoriaWizardScreen(
                         onConsideracoesChange = { consideracoes = it },
                         locadoraCpf = locadoraCpf, locatarioCpf = locatarioCpf,
                         dataVistoria = dataFotografia,
-                        onDataVistoriaChange = { dataFotografia = it; dataLaudo = it },
+                        onDataVistoriaChange = { dataFotografia = it },
+                        dataLaudo = dataLaudo,
+                        onDataLaudoChange = { dataLaudo = it },
+                        emailContestacao = vm.emailContestacao,
+                        onEmailContestacaoChange = { vm.emailContestacao = it },
                         onJumpToRoom = { idx ->
                             currentRoomIdx = idx
                             currentStep = 3

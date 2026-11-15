@@ -75,6 +75,8 @@ internal fun StepReview(
     consideracoes: String, onConsideracoesChange: (String) -> Unit,
     locadoraCpf: String = "", locatarioCpf: String = "",
     dataVistoria: String = "", onDataVistoriaChange: (String) -> Unit = {},
+    dataLaudo: String = "", onDataLaudoChange: (String) -> Unit = {},
+    emailContestacao: String = "", onEmailContestacaoChange: (String) -> Unit = {},
     onJumpToRoom: ((Int) -> Unit)? = null,
     onFillMissingChecklists: ((String) -> Unit)? = null,
     selectedTemplateName: String = "",
@@ -83,14 +85,14 @@ internal fun StepReview(
 ) {
     val context = LocalContext.current
 
-    fun pickDate() {
+    fun pickDate(currentValue: String, onPicked: (String) -> Unit) {
         val cal = Calendar.getInstance()
         runCatching {
-            SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).parse(dataVistoria)
+            SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).parse(currentValue)
         }.getOrNull()?.let { cal.time = it }
         android.app.DatePickerDialog(
             context,
-            { _, y, m, d -> onDataVistoriaChange(String.format(Locale.US, "%02d/%02d/%04d", d, m + 1, y)) },
+            { _, y, m, d -> onPicked(String.format(Locale.US, "%02d/%02d/%04d", d, m + 1, y)) },
             cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)
         ).show()
     }
@@ -182,9 +184,9 @@ internal fun StepReview(
             Column(modifier = Modifier.padding(12.dp)) {
                 Text("Partes", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
-                InfoRow("Locadora", locadora)
-                InfoRow("Locatário", locatario)
-                if (vistoriadora.isNotBlank()) InfoRow("Vistoriadora", vistoriadora)
+                InfoRow("Locador(es)", PartyListHelper.displayNames(locadora))
+                InfoRow("Locatário(s)", PartyListHelper.displayNames(locatario))
+                if (vistoriadora.isNotBlank()) InfoRow("Autor(a) / Vistoriadora", vistoriadora)
                 if (solicitante.isNotBlank()) InfoRow("Solicitante", solicitante)
             }
         }
@@ -300,8 +302,30 @@ internal fun StepReview(
         Spacer(Modifier.height(12.dp))
 
         // Observations
-        Text("Observações", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
+        Text("Considerações Finais", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(6.dp))
+
+        FilledTonalButton(
+            onClick = {
+                val standardText = listOf(
+                    "No laudo relatado acima, o imóvel encontra-se em bom estado de conservação.",
+                    "O imóvel apresenta PINTURA EM BOM ESTADO nas paredes, e deverá ser entregue da mesma forma no final da locação;",
+                    "Foram testados torneiras, vasos sanitários, chuveiros, duchas, estando toda parte hidráulica em perfeito funcionamento;",
+                    "Foram testadas todas as lâmpadas e interruptores e tomadas estando em perfeito funcionamento."
+                ).joinToString("\n")
+                onConsideracoesChange(
+                    if (consideracoes.isBlank()) standardText
+                    else "$standardText\n\n$consideracoes"
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Icon(Icons.Default.FactCheck, null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Inserir Termo Padrão (Pintura, Hidráulica e Elétrica)", fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
 
         // Quick observation templates (rolável horizontalmente)
         Row(
@@ -353,26 +377,67 @@ internal fun StepReview(
 
         Spacer(Modifier.height(8.dp))
 
-        Card(
-            onClick = { pickDate() },
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
-            )
+        OutlinedTextField(
+            value = emailContestacao,
+            onValueChange = onEmailContestacaoChange,
+            label = { Text("E-mail para Contestação (prazo de 10 dias)") },
+            placeholder = { Text("ex: vistoria@imobiliaria.com.br") },
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Data da vistoria: ${dataVistoria.ifBlank { "—" }}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold)
-                    Text("Ao finalizar, o laudo será gerado e salvo no dispositivo.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Card(
+                onClick = { pickDate(dataVistoria) { onDataVistoriaChange(it) } },
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                )
+            ) {
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Fotografado em", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(dataVistoria.ifBlank { "—" },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    }
+                    Icon(Icons.Default.Edit, contentDescription = "Alterar data das fotos",
+                        tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(15.dp))
                 }
-                Icon(Icons.Default.Edit, contentDescription = "Alterar data",
-                    tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
+            }
+
+            Card(
+                onClick = { pickDate(dataLaudo.ifBlank { dataVistoria }) { onDataLaudoChange(it) } },
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
+                )
+            ) {
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.DateRange, contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Data do laudo", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(dataLaudo.ifBlank { dataVistoria }.ifBlank { "—" },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold)
+                    }
+                    Icon(Icons.Default.Edit, contentDescription = "Alterar data do laudo",
+                        tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(15.dp))
+                }
             }
         }
 

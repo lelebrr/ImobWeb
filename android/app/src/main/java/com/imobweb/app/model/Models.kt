@@ -823,3 +823,67 @@ data class ConsiderationsResponse(val success: Boolean, val text: String?, val h
 data class RepairDamage(val comodo: String, val descricao: String)
 data class RepairsRequest(val damages: List<RepairDamage>, val cidade: String, val estado: String, val tipoImovel: String)
 data class RepairsResponse(val success: Boolean, val repairs: List<Reparo>?, val error: String?)
+
+// ---------------------------------------------------------------- múltiplas partes (locadores / locatários)
+
+data class PartyPerson(val name: String = "", val cpf: String = "")
+
+/** Suporta 1 ou múltiplos locadores/locatários nos campos String de Vistoria sem alterar o schema Room (v5). */
+object PartyListHelper {
+    private val SPLIT_REGEX = Regex("\\s*(?:\\||\\r?\\n)\\s*")
+
+    fun parseEditable(namesRaw: String, cpfsRaw: String): List<PartyPerson> {
+        if (namesRaw.isBlank() && cpfsRaw.isBlank()) return listOf(PartyPerson())
+        val names = namesRaw.split(SPLIT_REGEX).map { it.trim() }
+        val cpfs = cpfsRaw.split(SPLIT_REGEX).map { it.trim() }
+        val count = maxOf(names.size, cpfs.size).coerceAtLeast(1)
+        return (0 until count).map { i ->
+            PartyPerson(
+                name = names.getOrElse(i) { "" },
+                cpf = cpfs.getOrElse(i) { "" }
+            )
+        }
+    }
+
+    fun parseNonBlank(namesRaw: String, cpfsRaw: String): List<PartyPerson> =
+        parseEditable(namesRaw, cpfsRaw).filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+
+    fun encodeNames(list: List<PartyPerson>): String {
+        if (list.all { it.name.isBlank() && it.cpf.isBlank() }) return ""
+        return list.joinToString(" | ") { it.name.replace("|", "/").trim() }
+    }
+
+    fun encodeCpfs(list: List<PartyPerson>): String {
+        if (list.all { it.cpf.isBlank() }) return ""
+        return list.joinToString(" | ") { it.cpf.replace("|", "/").trim() }
+    }
+
+    fun displayNames(namesRaw: String): String {
+        val parts = namesRaw.split(SPLIT_REGEX).map { it.trim() }.filter { it.isNotBlank() }
+        return when (parts.size) {
+            0 -> ""
+            1 -> parts[0]
+            2 -> "${parts[0]} e ${parts[1]}"
+            else -> parts.dropLast(1).joinToString(", ") + " e ${parts.last()}"
+        }
+    }
+
+    fun formatPreambleHtml(list: List<PartyPerson>, esc: (String) -> String): String {
+        val valid = list.filter { it.name.isNotBlank() }
+        if (valid.isEmpty()) return "—"
+        val formatted = valid.map { p ->
+            val cleanCpf = p.cpf.trim()
+            if (cleanCpf.isNotBlank()) {
+                val docLabel = if (cleanCpf.count { it.isDigit() } > 11) "CNPJ" else "CPF"
+                "<b>${esc(p.name)}</b>, $docLabel nº ${esc(cleanCpf)}"
+            } else {
+                "<b>${esc(p.name)}</b>"
+            }
+        }
+        return when (formatted.size) {
+            1 -> formatted[0]
+            2 -> "${formatted[0]} e ${formatted[1]}"
+            else -> formatted.dropLast(1).joinToString(", ") + " e ${formatted.last()}"
+        }
+    }
+}
