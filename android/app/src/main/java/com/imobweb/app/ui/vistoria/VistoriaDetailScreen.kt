@@ -13,10 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.model.TipoVistoria
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.PdfTemplateCatalog
+import com.imobweb.app.util.PdfTemplateConfig
 import com.imobweb.app.util.ReportPdfExporter
 import kotlinx.coroutines.launch
 
@@ -46,8 +49,20 @@ fun VistoriaDetailScreen(
 
     var resolving by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
+    var selectedTemplate by remember { mutableStateOf(PdfTemplateCatalog.loadForVistoria(context, vistoriaId)) }
+    var customTemplateDraft by remember { mutableStateOf(PdfTemplateCatalog.loadCustomTemplate(context)) }
+    var showTemplatePickerDialog by remember { mutableStateOf(false) }
+    var showCustomBuilderDialog by remember { mutableStateOf(false) }
+
+    suspend fun rebuildDetailPdf(v: Vistoria, template: PdfTemplateConfig): String {
+        val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context, v.id).copy(template = template)
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            LaudoHtmlBuilder.build(v, opts)
+        }
+    }
 
     LaunchedEffect(vistoriaId, reload) {
+        selectedTemplate = PdfTemplateCatalog.loadForVistoria(context, vistoriaId)
         val v = repository.getVistoriaById(vistoriaId)
         vistoria = v
         if (v != null) {
@@ -117,7 +132,7 @@ fun VistoriaDetailScreen(
                                     buildingPdf = true
                                     // Lê e codifica todas as fotos: fora da thread da UI
                                     runCatching {
-                                        val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context); kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LaudoHtmlBuilder.build(v, opts) }
+                                        rebuildDetailPdf(v, selectedTemplate)
                                     }.onSuccess {
                                         pdfContent = it
                                         pdfFileName = ReportPdfExporter.fileNameFor(v)
@@ -246,11 +261,43 @@ fun VistoriaDetailScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
+                            val totalFurn = v.rooms.sumOf { roomFurnitureCount(it) }
                             Text(
-                                "${v.rooms.size} cômodos · ${v.rooms.sumOf { it.photos.size }} fotos",
+                                buildString {
+                                    append("${v.rooms.size} cômodos · ${v.rooms.sumOf { it.photos.size }} fotos")
+                                    if (totalFurn > 0) append(" · $totalFurn móveis")
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                DetailSection("Modelo de Laudo PDF (#${selectedTemplate.number})") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                selectedTemplate.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                selectedTemplate.subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        FilledTonalButton(
+                            onClick = { showTemplatePickerDialog = true },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Palette, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Trocar (9)", fontSize = 12.sp)
                         }
                     }
                 }
@@ -308,12 +355,13 @@ fun VistoriaDetailScreen(
                                 Text(room.name.ifBlank { "Sem nome" },
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold)
+                                val furnCount = roomFurnitureCount(room)
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("${room.photos.size} fotos",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    if (room.furniture.isNotEmpty()) {
-                                        Text("· ${room.furniture.size} móveis",
+                                    if (furnCount > 0) {
+                                        Text("· $furnCount móveis",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
@@ -322,6 +370,15 @@ fun VistoriaDetailScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.error)
                                     }
+                                }
+                                if (room.furnitureDetails.isNotEmpty()) {
+                                    Text(
+                                        text = room.furnitureDetails.take(4).joinToString(", ") {
+                                            if (it.quantity > 1) "${it.name} (${it.quantity}x)" else it.name
+                                        } + if (room.furnitureDetails.size > 4) " +${room.furnitureDetails.size - 4}" else "",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
@@ -383,7 +440,55 @@ fun VistoriaDetailScreen(
             htmlContent = pdfContent,
             title = "Laudo - ${vistoria?.condominio.orEmpty().ifBlank { "Vistoria" }}",
             fileName = pdfFileName,
+            templateLabel = "#${selectedTemplate.number} ${selectedTemplate.name}",
+            onChangeTemplate = { showTemplatePickerDialog = true },
             onClose = { showPdfViewer = false }
+        )
+    }
+
+    if (showTemplatePickerDialog) {
+        PdfTemplatePickerDialog(
+            selectedTemplate = selectedTemplate,
+            customTemplate = customTemplateDraft,
+            onSelectPreset = { newTmpl ->
+                selectedTemplate = newTmpl
+                val v = vistoria
+                if (v != null) {
+                    PdfTemplateCatalog.saveForVistoria(context, v.id, newTmpl)
+                    if (showPdfViewer) {
+                        scope.launch {
+                            runCatching { rebuildDetailPdf(v, newTmpl) }
+                                .onSuccess { pdfContent = it }
+                        }
+                    }
+                }
+            },
+            onOpenCustomBuilder = { showCustomBuilderDialog = true },
+            onDismiss = { showTemplatePickerDialog = false }
+        )
+    }
+
+    if (showCustomBuilderDialog) {
+        CustomTemplateBuilderDialog(
+            initialConfig = if (selectedTemplate.id == "t9_custom") selectedTemplate else customTemplateDraft,
+            onDismiss = { showCustomBuilderDialog = false },
+            onSave = { savedCfg ->
+                PdfTemplateCatalog.saveCustomTemplate(context, savedCfg)
+                customTemplateDraft = savedCfg
+                selectedTemplate = savedCfg
+                showCustomBuilderDialog = false
+                val v = vistoria
+                if (v != null) {
+                    PdfTemplateCatalog.saveForVistoria(context, v.id, savedCfg)
+                    if (showPdfViewer) {
+                        scope.launch {
+                            runCatching { rebuildDetailPdf(v, savedCfg) }
+                                .onSuccess { pdfContent = it }
+                        }
+                    }
+                }
+                Toast.makeText(context, "Template personalizado #9 aplicado!", Toast.LENGTH_SHORT).show()
+            }
         )
     }
 }

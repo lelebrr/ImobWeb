@@ -74,7 +74,13 @@ internal fun StepInventory(
     context: Context,
     onTakePhoto: () -> Unit,
     onPickFromGallery: () -> Unit,
-    isUploading: Boolean
+    isUploading: Boolean,
+    onAddOrUpdateDetail: (String, FurnitureDetail) -> Unit = { _, _ -> },
+    onRemoveDetail: (String, String) -> Unit = { _, _ -> },
+    onDuplicateDetail: (String, String) -> Unit = { _, _ -> },
+    onTakePhotoForFurniture: (String) -> Unit = { onTakePhoto() },
+    onPickFromGalleryForFurniture: (String) -> Unit = { onPickFromGallery() },
+    onOpenPhotoAnnotator: ((Int) -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     var showAllFurniture by remember { mutableStateOf(false) }
@@ -102,7 +108,7 @@ internal fun StepInventory(
 
         // ================= ROOM SELECTOR AREA (ALL ROOMS VISIBLE & CLICKABLE) =================
         val completedCount = rooms.count { room ->
-            room.analyzed || room.photos.isNotEmpty() || room.furniture.isNotEmpty() || room.damages.isNotEmpty() || room.problems.isNotEmpty()
+            room.analyzed || room.photos.isNotEmpty() || roomFurnitureCount(room) > 0 || room.damages.isNotEmpty() || room.problems.isNotEmpty()
         }
 
         Card(
@@ -151,7 +157,7 @@ internal fun StepInventory(
                 ) {
                     rooms.forEachIndexed { idx, room ->
                         val isSelected = idx == currentRoomIdx
-                        val isComplete = room.analyzed || room.photos.isNotEmpty() || room.furniture.isNotEmpty() || room.damages.isNotEmpty() || room.problems.isNotEmpty()
+                        val isComplete = room.analyzed || room.photos.isNotEmpty() || roomFurnitureCount(room) > 0 || room.damages.isNotEmpty() || room.problems.isNotEmpty()
 
                         Surface(
                             onClick = { onCurrentRoomIdxChange(idx) },
@@ -195,7 +201,7 @@ internal fun StepInventory(
                                         else -> MaterialTheme.colorScheme.onSurface
                                     }
                                 )
-                                val totalCount = room.photos.size + room.furniture.size + room.damages.size + room.problems.size
+                                val totalCount = room.photos.size + roomFurnitureCount(room) + room.damages.size + room.problems.size
                                 if (totalCount > 0) {
                                     Text(
                                         text = "($totalCount)",
@@ -427,7 +433,7 @@ internal fun StepInventory(
 
             // ================= INVENTORY TABS (MÓVEIS / AVARIAS / PROBLEMAS) =================
             var tab by remember { mutableIntStateOf(0) }
-            val tabs = listOf("Móveis (${currentRoom.furniture.size})", "Avarias (${currentRoom.damages.size})", "Problemas (${currentRoom.problems.size})")
+            val tabs = listOf("Móveis (${roomFurnitureCount(currentRoom)})", "Avarias (${currentRoom.damages.size})", "Problemas (${currentRoom.problems.size})")
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -448,80 +454,20 @@ internal fun StepInventory(
 
             when (tab) {
                 0 -> {
-                    // Relevance-filtered furniture for this room
-                    val relevantList = remember(currentRoom.name) {
-                        RoomFurnitureCatalog.getRelevantFurniture(currentRoom.name)
-                    }
-                    val displayedList = if (showAllFurniture) (relevantList + FurnitureItems.items).distinct() else relevantList
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Móveis relevantes para ${currentRoom.name}",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        TextButton(
-                            onClick = { showAllFurniture = !showAllFurniture },
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-                        ) {
-                            Text(
-                                text = if (showAllFurniture) "Menos" else "+ Todos os 25",
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        displayedList.forEach { furniture ->
-                            val isSelected = furniture in currentRoom.furniture
-                            AssistChip(
-                                onClick = {
-                                    val list = currentRoom.furniture.toMutableList()
-                                    if (isSelected) list.remove(furniture) else list.add(furniture)
-                                    updateRoomInventory(rooms, currentRoomIdx,
-                                        furniture = list) { onRoomsChange(it) }
-                                },
-                                label = { Text(furniture, fontSize = 10.sp, maxLines = 1) },
-                                leadingIcon = {
-                                    if (isSelected) Icon(Icons.Default.Check, null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = MaterialTheme.colorScheme.secondary)
-                                },
-                                border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.secondary) else null,
-                                modifier = Modifier.height(30.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newItem,
-                            onValueChange = { newItem = it },
-                            placeholder = { Text("Outro móvel ou item...", fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        IconButton(onClick = {
-                            if (newItem.isNotBlank()) {
-                                val list = currentRoom.furniture + newItem.trim()
-                                updateRoomInventory(rooms, currentRoomIdx,
-                                    furniture = list) { onRoomsChange(it) }
-                                newItem = ""
-                            }
-                        }) { Icon(Icons.Default.Add, contentDescription = "Adicionar") }
-                    }
+                    FurnitureInventorySection(
+                        room = currentRoom,
+                        onAddOrUpdateDetail = { detail -> onAddOrUpdateDetail(currentRoom.id, detail) },
+                        onRemoveDetail = { detailId -> onRemoveDetail(currentRoom.id, detailId) },
+                        onDuplicateDetail = { detailId -> onDuplicateDetail(currentRoom.id, detailId) },
+                        onToggleLegacyFurniture = { fn ->
+                            val list = currentRoom.furniture.toMutableList()
+                            if (fn in list) list.remove(fn) else list.add(fn)
+                            updateRoomInventory(rooms, currentRoomIdx, furniture = list) { onRoomsChange(it) }
+                        },
+                        onTakePhotoForFurniture = onTakePhotoForFurniture,
+                        onPickFromGalleryForFurniture = onPickFromGalleryForFurniture,
+                        onOpenPhotoAnnotator = onOpenPhotoAnnotator
+                    )
                 }
 
                 1 -> {
@@ -664,7 +610,7 @@ internal fun StepInventory(
                         Text("Fotos", style = MaterialTheme.typography.labelSmall)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text("${currentRoom.furniture.size}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                        Text("${roomFurnitureCount(currentRoom)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                         Text("Móveis", style = MaterialTheme.typography.labelSmall)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
@@ -828,8 +774,12 @@ internal fun StepInventory(
                         val targetId = pendingAiRoomId ?: rooms.getOrNull(currentRoomIdx)?.id
                         if (targetId != null) {
                             onUpdateRoom(targetId) { current ->
+                                val newDetails = selectedMoveis
+                                    .filter { fn -> current.furnitureDetails.none { it.name.equals(fn, ignoreCase = true) } }
+                                    .map { fn -> FurnitureDetail(name = fn, category = FurnitureItems.detectCategory(fn)) }
                                 current.copy(
                                     furniture = (current.furniture + selectedMoveis).distinct(),
+                                    furnitureDetails = current.furnitureDetails + newDetails,
                                     damages = (current.damages + selectedAvarias).distinct(),
                                     problems = (current.problems + selectedProblemas).distinct(),
                                     items = (current.items + aiResult.observations).distinct(),

@@ -3,9 +3,11 @@ package com.imobweb.app.ui.vistoria
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,8 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imobweb.app.data.repository.VistoriaRepository
+import com.imobweb.app.model.TipoVistoria
 import com.imobweb.app.model.Vistoria
 import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.PdfTemplateCatalog
+import com.imobweb.app.util.PdfTemplateConfig
 import com.imobweb.app.util.ReportPdfExporter
 import kotlinx.coroutines.launch
 
@@ -38,10 +43,24 @@ fun VistoriaListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var reportVistoria by remember { mutableStateOf<Vistoria?>(null) }
     var vistoriaToDelete by remember { mutableStateOf<Vistoria?>(null) }
+    var activeReportTemplate by remember { mutableStateOf<PdfTemplateConfig?>(null) }
+    var customTemplateDraft by remember { mutableStateOf(PdfTemplateCatalog.loadCustomTemplate(context)) }
+    var showTemplatePickerDialog by remember { mutableStateOf(false) }
+    var showCustomBuilderDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(reportVistoria?.id) {
+        val r = reportVistoria
+        activeReportTemplate = if (r != null) PdfTemplateCatalog.loadForVistoria(context, r.id) else null
+    }
 
     val filteredVistorias = remember(vistorias, filterStatus, searchQuery) {
         vistorias.filter { v ->
-            val matchesStatus = filterStatus == "all" || v.status == filterStatus
+            val matchesStatus = when (filterStatus) {
+                "all" -> true
+                "entrada" -> v.tipoVistoria == TipoVistoria.ENTRADA
+                "saida" -> v.tipoVistoria == TipoVistoria.SAIDA
+                else -> v.status == filterStatus
+            }
             val matchesSearch = searchQuery.isBlank() ||
                     v.condominio.contains(searchQuery, ignoreCase = true) ||
                     v.endereco.contains(searchQuery, ignoreCase = true) ||
@@ -90,14 +109,22 @@ fun VistoriaListScreen(
                 shape = MaterialTheme.shapes.large
             )
 
-            // Filter chips
+            // Filter chips (rolável horizontalmente)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("all" to "Todas", "pending_sync" to "Pendente", "synced" to "Sincronizado", "conflict" to "Conflito").forEach { (key, label) ->
+                listOf(
+                    "all" to "Todas",
+                    "entrada" to "Entrada",
+                    "saida" to "Saída",
+                    "pending_sync" to "Pendente",
+                    "synced" to "Sincronizado",
+                    "conflict" to "Conflito"
+                ).forEach { (key, label) ->
                     FilterChip(
                         selected = filterStatus == key,
                         onClick = { filterStatus = key },
@@ -185,10 +212,12 @@ fun VistoriaListScreen(
     val report = reportVistoria
     if (report != null) {
         androidx.activity.compose.BackHandler { reportVistoria = null }
+        val chosenTemplate = activeReportTemplate ?: PdfTemplateCatalog.loadForVistoria(context, report.id)
         // Montar o laudo lê e codifica todas as fotos: fora da thread da UI
-        val html by produceState<String?>(initialValue = null, report.id, report.updatedAt) {
+        val html by produceState<String?>(initialValue = null, report.id, report.updatedAt, chosenTemplate) {
             value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context)
+                val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context, report.id)
+                    .copy(template = chosenTemplate)
                 runCatching { LaudoHtmlBuilder.build(report, opts) }.getOrElse { e ->
                     "<html><body><p>Erro ao montar o laudo: ${e.message}</p></body></html>"
                 }
@@ -204,7 +233,37 @@ fun VistoriaListScreen(
                 htmlContent = content,
                 title = "Laudo - ${report.condominio.ifBlank { "Vistoria" }}",
                 fileName = remember(report.id) { ReportPdfExporter.fileNameFor(report) },
+                templateLabel = "#${chosenTemplate.number} ${chosenTemplate.name}",
+                onChangeTemplate = { showTemplatePickerDialog = true },
                 onClose = { reportVistoria = null }
+            )
+        }
+
+        if (showTemplatePickerDialog) {
+            PdfTemplatePickerDialog(
+                selectedTemplate = chosenTemplate,
+                customTemplate = customTemplateDraft,
+                onSelectPreset = { newTmpl ->
+                    activeReportTemplate = newTmpl
+                    PdfTemplateCatalog.saveForVistoria(context, report.id, newTmpl)
+                },
+                onOpenCustomBuilder = { showCustomBuilderDialog = true },
+                onDismiss = { showTemplatePickerDialog = false }
+            )
+        }
+
+        if (showCustomBuilderDialog) {
+            CustomTemplateBuilderDialog(
+                initialConfig = if (chosenTemplate.id == "t9_custom") chosenTemplate else customTemplateDraft,
+                onDismiss = { showCustomBuilderDialog = false },
+                onSave = { savedCfg ->
+                    PdfTemplateCatalog.saveCustomTemplate(context, savedCfg)
+                    customTemplateDraft = savedCfg
+                    activeReportTemplate = savedCfg
+                    PdfTemplateCatalog.saveForVistoria(context, report.id, savedCfg)
+                    showCustomBuilderDialog = false
+                    Toast.makeText(context, "Template personalizado #9 aplicado!", Toast.LENGTH_SHORT).show()
+                }
             )
         }
     }
@@ -270,9 +329,13 @@ private fun VistoriaListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    val furnCount = vistoria.rooms.sumOf { roomFurnitureCount(it) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "${vistoria.rooms.size} cômodos · ${vistoria.rooms.sumOf { it.photos.size }} fotos",
+                            text = buildString {
+                                append("${vistoria.rooms.size} cômodos · ${vistoria.rooms.sumOf { it.photos.size }} fotos")
+                                if (furnCount > 0) append(" · $furnCount móveis")
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

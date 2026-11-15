@@ -1,6 +1,7 @@
 package com.imobweb.app.util
 
 import com.imobweb.app.model.Checklist
+import com.imobweb.app.model.FurnitureDetail
 import com.imobweb.app.model.Medidores
 import com.imobweb.app.model.PhotoData
 import com.imobweb.app.model.TipoVistoria
@@ -10,12 +11,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Identidade visual do laudo (Configurações). */
+/** Identidade visual e template estrutural do laudo. */
 data class LaudoOptions(
     val empresaNome: String = "",
     val watermarkText: String? = null,
     /** data URL da imagem (logo) usada como marca d'água */
-    val watermarkImage: String? = null
+    val watermarkImage: String? = null,
+    val template: PdfTemplateConfig = PdfTemplateCatalog.defaultTemplate
 )
 
 /**
@@ -30,284 +32,416 @@ object LaudoHtmlBuilder {
     )
 
     fun build(vistoria: Vistoria, options: LaudoOptions = LaudoOptions()): String {
+        val t = PdfTemplateCatalog.sanitize(options.template)
         val agora = Date()
         val dataGeracao = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR")).format(agora)
         val totalFotos = vistoria.rooms.sumOf { it.photos.size }
+        val totalMoveis = vistoria.rooms.sumOf { r -> maxOf(r.furnitureDetails.size, r.furniture.size) }
         val totalNaoConformidades = vistoria.rooms.sumOf { it.damages.size + it.problems.size }
+        val pageBreakCls = if (t.compactFlow) "" else " page-break"
+        val customTitle = t.customHeaderTitle.takeIf { it.isNotBlank() }
 
         return buildString {
             append("<!DOCTYPE html><html lang=\"pt-BR\"><head>")
             append("<meta charset=\"utf-8\">")
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")
-            append("<title>Laudo de Vistoria - ${esc(vistoria.condominio.ifBlank { vistoria.endereco })}</title>")
-            append(style())
+            append("<title>${esc(customTitle ?: "Laudo de Vistoria")} - ${esc(vistoria.condominio.ifBlank { vistoria.endereco })}</title>")
+            append(style(t))
             append(watermarkStyle(options))
             append("</head><body>")
 
-            // ---------- CAPA ----------
-            append("<section class=\"cover\">")
-            append("<div class=\"brand\"><span class=\"brand-mark\">iW</span><span class=\"brand-name\">imob<b>Web</b></span><span class=\"brand-tag\">VISTORIA</span></div>")
-            append("<div class=\"cover-kicker\">TERMO DE VISTORIA DE ${esc(TipoVistoria.label(vistoria.tipoVistoria).uppercase())}</div>")
-            append("<h1 class=\"cover-title\">Laudo de<br>Vistoria</h1>")
-            append("<div class=\"cover-rule\"></div>")
-            append("<div class=\"cover-property\">${esc(vistoria.condominio.ifBlank { vistoria.tipoImovel.ifBlank { "Imóvel" } })}</div>")
-            append("<div class=\"cover-address\">${esc(fullAddress(vistoria))}</div>")
-            append("<div class=\"cover-date\">${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
-
-            append("<div class=\"cover-chips\">")
-            append(chip("Vistoria", TipoVistoria.label(vistoria.tipoVistoria)))
-            append(chip("Tipo", vistoria.tipoImovel.ifBlank { "—" }))
-            append(chip("Finalidade", vistoria.finalidade.ifBlank { "—" }))
-            append(chip("Área", vistoria.metragem.ifBlank { "—" }))
-            append(chip("Mobiliado", vistoria.mobiliado.ifBlank { "—" }))
-            append("</div>")
-
-            append("<div class=\"cover-stats\">")
-            append(stat(vistoria.rooms.size.toString(), "Cômodos"))
-            append(stat(totalFotos.toString(), "Fotos"))
-            append(stat(totalNaoConformidades.toString(), "Não conformidades"))
-            append("</div>")
-
-            append("<div class=\"cover-footer\">")
-            append("<div><span class=\"label\">Vistoriadora</span><b>${esc(vistoria.vistoriadora.ifBlank { "—" })}</b></div>")
-            append("<div><span class=\"label\">Solicitante</span><b>${esc(vistoria.solicitante.ifBlank { "—" })}</b></div>")
-            append("<div class=\"cover-generated\">Gerado em ${esc(dataGeracao)}</div>")
-            append("</div>")
-            append("</section>")
-
-            // ---------- PÁGINA 2: TERMO DE VISTORIA & CRITÉRIOS DE AVALIAÇÃO ----------
+            val coverTitleHtml = customTitle?.let { esc(it).replace("\n", "<br>") } ?: "Laudo de<br>Vistoria"
             val locadorTitle = vistoria.locadorTipo.ifBlank { "Locador" }.uppercase()
             val locatarioTitle = vistoria.locatarioTipo.ifBlank { "Locatário" }.uppercase()
             val condoHeader = if (vistoria.condominio.isNotBlank()) " no CONDOMÍNIO ${vistoria.condominio.uppercase()}" else ""
 
-            append("<section class=\"section page-break preamble-section\">")
-            append("<h2 class=\"preamble-title\">Termo de vistoria de ${esc(TipoVistoria.label(vistoria.tipoVistoria).lowercase())}</h2>")
-            append("<p class=\"preamble-text\">")
-            append("O presente anexo faz parte integrante do “Contrato de Locação” do imóvel${esc(condoHeader)} situado na ${esc(fullAddress(vistoria))}, datado de ${esc(vistoria.dataLaudo.ifBlank { hoje() })}, tendo como partes:<br><br>")
-            append("<b>De um lado, na qualidade de ${esc(locadorTitle)}:</b> ${esc(vistoria.locadora.ifBlank { "—" })}${if (vistoria.locadoraCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locadoraCpf) else ""}.<br>")
-            append("<b>De outro lado, na condição de ${esc(locatarioTitle)}:</b> ${esc(vistoria.locatario.ifBlank { "—" })}${if (vistoria.locatarioCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locatarioCpf) else ""}.")
-            append("</p>")
+            // ---------- CAPA OU CABEÇALHO COMPACTO ----------
+            if (t.showCover && t.coverStyle != "none") {
+                val coverModifier = when (t.coverStyle) {
+                    "judicial" -> " cover-judicial"
+                    "minimal" -> " cover-minimal"
+                    "luxury" -> " cover-luxury"
+                    else -> ""
+                }
+                val brandTagText = when (t.coverStyle) {
+                    "judicial" -> "DOCUMENTO OFICIAL DE VISTORIA"
+                    "luxury" -> "VISTORIA ALTO PADRÃO & MOBILIADO"
+                    else -> "VISTORIA"
+                }
+                append("<section class=\"cover$coverModifier\">")
+                append("<div class=\"brand\"><span class=\"brand-mark\">iW</span><span class=\"brand-name\">imob<b>Web</b></span><span class=\"brand-tag\">$brandTagText</span></div>")
+                append("<div class=\"cover-kicker\">TERMO DE VISTORIA DE ${esc(TipoVistoria.label(vistoria.tipoVistoria).uppercase())}</div>")
+                append("<h1 class=\"cover-title\">$coverTitleHtml</h1>")
+                append("<div class=\"cover-rule\"></div>")
+                append("<div class=\"cover-property\">${esc(vistoria.condominio.ifBlank { vistoria.tipoImovel.ifBlank { "Imóvel" } })}</div>")
+                append("<div class=\"cover-address\">${esc(fullAddress(vistoria))}</div>")
+                append("<div class=\"cover-date\">${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}</div>")
 
-            append("<p class=\"preamble-legal\">")
-            append("Este laudo de vistoria tem por objetivo retratar o estado de conservação e funcionamento do imóvel na data de sua realização, em atendimento ao disposto no art. 22, inciso V e art. 23, inciso III, ambos da Lei nº 8.245/91 (Lei do Inquilinato). A presente Vistoria foi realizada por observância estética da construção e acabamentos, não se atendo a aspectos estruturais de solidez, fundações e vícios ocultos.")
-            append("</p>")
+                append("<div class=\"cover-chips\">")
+                append(chip("Vistoria", TipoVistoria.label(vistoria.tipoVistoria)))
+                append(chip("Tipo", vistoria.tipoImovel.ifBlank { "—" }))
+                append(chip("Finalidade", vistoria.finalidade.ifBlank { "—" }))
+                append(chip("Área", vistoria.metragem.ifBlank { "—" }))
+                append(chip("Mobiliado", vistoria.mobiliado.ifBlank { "—" }))
+                append("</div>")
 
-            append("<div class=\"property-summary-box\">")
-            append("<div><b>Tipo de imóvel:</b> ${esc(vistoria.tipoImovel.ifBlank { "—" })}</div>")
-            append("<div><b>Finalidade:</b> ${esc(vistoria.finalidade.ifBlank { "—" })}</div>")
-            append("<div><b>Metragem:</b> ${esc(vistoria.metragem.ifBlank { "—" })}</div>")
-            append("<div><b>Mobiliado:</b> ${esc(vistoria.mobiliado.ifBlank { "NÃO" })}</div>")
-            append("<div><b>Fotos:</b> $totalFotos</div>")
-            append("<div><b>Solicitante:</b> ${esc(vistoria.solicitante.ifBlank { "—" })}</div>")
-            append("</div>")
+                append("<div class=\"cover-stats\">")
+                append(stat(vistoria.rooms.size.toString(), "Cômodos"))
+                if (t.coverStyle == "luxury" || totalMoveis > 0) {
+                    append(stat(totalMoveis.toString(), "Móveis / Itens"))
+                }
+                append(stat(totalFotos.toString(), "Fotos"))
+                append(stat(totalNaoConformidades.toString(), "Não conformidades"))
+                append("</div>")
 
-            append("<div class=\"criteria-box\">")
-            append("<h3>Critérios de avaliação do estado de conservação do imóvel (aspecto visual):</h3>")
-            append("<ul>")
-            append("<li><b>- Novo estado:</b> primeiro uso.</li>")
-            append("<li><b>- Ótimo estado:</b> semi novo, sem avarias.</li>")
-            append("<li><b>- Bom estado:</b> com uso, podendo conter: leves manchas, riscos, trincas, desgaste e furos.</li>")
-            append("<li><b>- Estado regular:</b> podendo conter: gotejamento, trincas, manchas e desgastes em grandes proporções.</li>")
-            append("<li><b>- Estado ruim:</b> danos graves, podendo conter: infiltração, rachaduras, danificações, pragas e vazamento.</li>")
-            append("</ul>")
-            append("</div>")
-            append("</section>")
+                append("<div class=\"cover-footer\">")
+                append("<div><span class=\"label\">Vistoriadora</span><b>${esc(vistoria.vistoriadora.ifBlank { "—" })}</b></div>")
+                append("<div><span class=\"label\">Solicitante</span><b>${esc(vistoria.solicitante.ifBlank { "—" })}</b></div>")
+                append("<div class=\"cover-generated\">Gerado em ${esc(dataGeracao)}</div>")
+                append("</div>")
+                append("</section>")
+            } else {
+                append("<div class=\"compact-banner\">")
+                append("<div><div class=\"compact-kicker\">${esc(customTitle ?: "LAUDO DE VISTORIA DE ${TipoVistoria.label(vistoria.tipoVistoria).uppercase()}")}</div>")
+                append("<b>${esc(vistoria.condominio.ifBlank { vistoria.tipoImovel.ifBlank { "Imóvel" } })}</b> — ${esc(fullAddress(vistoria))}</div>")
+                append("<div class=\"compact-meta\">${esc(vistoria.dataLaudo.ifBlank { hoje() })}<br>${vistoria.rooms.size} cômodo(s) • $totalFotos foto(s)</div>")
+                append("</div>")
+            }
+
+            // ---------- TERMO DE VISTORIA & CRITÉRIOS ----------
+            if (t.showLegalPreamble || t.showCriteriaBox) {
+                val preambleBreak = if (!t.showCover || t.coverStyle == "none" || t.compactFlow) "" else " page-break"
+                append("<section class=\"section$preambleBreak preamble-section\">")
+                if (t.showLegalPreamble) {
+                    append("<h2 class=\"preamble-title\">Termo de vistoria de ${esc(TipoVistoria.label(vistoria.tipoVistoria).lowercase())}</h2>")
+                    append("<p class=\"preamble-text\">")
+                    append("O presente anexo faz parte integrante do “Contrato de Locação” do imóvel${esc(condoHeader)} situado na ${esc(fullAddress(vistoria))}, datado de ${esc(vistoria.dataLaudo.ifBlank { hoje() })}, tendo como partes:<br><br>")
+                    append("<b>De um lado, na qualidade de ${esc(locadorTitle)}:</b> ${esc(vistoria.locadora.ifBlank { "—" })}${if (vistoria.locadoraCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locadoraCpf) else ""}.<br>")
+                    append("<b>De outro lado, na condição de ${esc(locatarioTitle)}:</b> ${esc(vistoria.locatario.ifBlank { "—" })}${if (vistoria.locatarioCpf.isNotBlank()) ", CPF/CNPJ nº " + esc(vistoria.locatarioCpf) else ""}.")
+                    append("</p>")
+
+                    append("<p class=\"preamble-legal\">")
+                    append("Este laudo de vistoria tem por objetivo retratar o estado de conservação e funcionamento do imóvel na data de sua realização, em atendimento ao disposto no art. 22, inciso V e art. 23, inciso III, ambos da Lei nº 8.245/91 (Lei do Inquilinato). A presente Vistoria foi realizada por observância estética da construção e acabamentos, não se atendo a aspectos estruturais de solidez, fundações e vícios ocultos.")
+                    append("</p>")
+
+                    append("<div class=\"property-summary-box\">")
+                    append("<div><b>Tipo de imóvel:</b> ${esc(vistoria.tipoImovel.ifBlank { "—" })}</div>")
+                    append("<div><b>Finalidade:</b> ${esc(vistoria.finalidade.ifBlank { "—" })}</div>")
+                    append("<div><b>Metragem:</b> ${esc(vistoria.metragem.ifBlank { "—" })}</div>")
+                    append("<div><b>Mobiliado:</b> ${esc(vistoria.mobiliado.ifBlank { "NÃO" })}</div>")
+                    append("<div><b>Fotos:</b> $totalFotos</div>")
+                    append("<div><b>Solicitante:</b> ${esc(vistoria.solicitante.ifBlank { "—" })}</div>")
+                    append("</div>")
+                }
+
+                if (t.showCriteriaBox) {
+                    append("<div class=\"criteria-box\">")
+                    append("<h3>Critérios de avaliação do estado de conservação do imóvel (aspecto visual):</h3>")
+                    append("<ul>")
+                    append("<li><b>- Novo estado:</b> primeiro uso.</li>")
+                    append("<li><b>- Ótimo estado:</b> semi novo, sem avarias.</li>")
+                    append("<li><b>- Bom estado:</b> com uso, podendo conter: leves manchas, riscos, trincas, desgaste e furos.</li>")
+                    append("<li><b>- Estado regular:</b> podendo conter: gotejamento, trincas, manchas e desgastes em grandes proporções.</li>")
+                    append("<li><b>- Estado ruim:</b> danos graves, podendo conter: infiltração, rachaduras, danificações, pragas e vazamento.</li>")
+                    append("</ul>")
+                    append("</div>")
+                }
+                append("</section>")
+            }
 
             var n = 0
             fun next(title: String) = "${++n}. $title"
 
             // ---------- DADOS DO IMÓVEL ----------
-            append(section(next("Dados do imóvel")) {
-                table(
-                    row("Condomínio / Edifício", vistoria.condominio) +
-                    row("Endereço", vistoria.endereco) +
-                    row("Número", vistoria.numero) +
-                    row("Complemento", vistoria.conjApto) +
-                    row("Andar", vistoria.andar) +
-                    row("Bairro", vistoria.bairro) +
-                    row("Cidade / UF", listOf(vistoria.cidade, vistoria.estado).filter { it.isNotBlank() }.joinToString("/")) +
-                    row("CEP", vistoria.cep) +
-                    row("Tipo de imóvel", vistoria.tipoImovel) +
-                    row("Finalidade", vistoria.finalidade) +
-                    row("Metragem", vistoria.metragem) +
-                    row("Mobiliado", vistoria.mobiliado)
-                )
-            })
+            if (t.showPropertyTable) {
+                append(section(next("Dados do imóvel")) {
+                    table(
+                        row("Condomínio / Edifício", vistoria.condominio) +
+                        row("Endereço", vistoria.endereco) +
+                        row("Número", vistoria.numero) +
+                        row("Complemento", vistoria.conjApto) +
+                        row("Andar", vistoria.andar) +
+                        row("Bairro", vistoria.bairro) +
+                        row("Cidade / UF", listOf(vistoria.cidade, vistoria.estado).filter { it.isNotBlank() }.joinToString("/")) +
+                        row("CEP", vistoria.cep) +
+                        row("Tipo de imóvel", vistoria.tipoImovel) +
+                        row("Finalidade", vistoria.finalidade) +
+                        row("Metragem", vistoria.metragem) +
+                        row("Mobiliado", vistoria.mobiliado)
+                    )
+                })
+            }
 
             // ---------- PARTES ----------
-            append(section(next("Partes envolvidas")) {
-                table(
-                    row(vistoria.locadorTipo.ifBlank { "Locador" }, vistoria.locadora) +
-                    row("CPF/CNPJ do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraCpf) +
-                    row("Telefone do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraTelefone) +
-                    row(vistoria.locatarioTipo.ifBlank { "Locatário" }, vistoria.locatario) +
-                    row("CPF/CNPJ do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioCpf) +
-                    row("Telefone do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioTelefone) +
-                    row("Vistoriadora", vistoria.vistoriadora) +
-                    row("Solicitante", vistoria.solicitante) +
-                    row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
-                    row("Data da vistoria", vistoria.dataLaudo.ifBlank { hoje() })
-                )
-            })
+            if (t.showPartiesTable) {
+                append(section(next("Partes envolvidas")) {
+                    table(
+                        row(vistoria.locadorTipo.ifBlank { "Locador" }, vistoria.locadora) +
+                        row("CPF/CNPJ do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraCpf) +
+                        row("Telefone do(a) " + vistoria.locadorTipo.ifBlank { "Locador" }.lowercase(), vistoria.locadoraTelefone) +
+                        row(vistoria.locatarioTipo.ifBlank { "Locatário" }, vistoria.locatario) +
+                        row("CPF/CNPJ do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioCpf) +
+                        row("Telefone do(a) " + vistoria.locatarioTipo.ifBlank { "Locatário" }.lowercase(), vistoria.locatarioTelefone) +
+                        row("Vistoriadora", vistoria.vistoriadora) +
+                        row("Solicitante", vistoria.solicitante) +
+                        row("Tipo de vistoria", TipoVistoria.label(vistoria.tipoVistoria)) +
+                        row("Data da vistoria", vistoria.dataLaudo.ifBlank { hoje() })
+                    )
+                })
+            }
+
             // ---------- MEDIDORES E CHAVES ----------
-            val medidoresHtml = medidoresTable(vistoria)
-            val chaves = vistoria.chaves.filter { it.descricao.isNotBlank() }
-            if (medidoresHtml.isNotEmpty() || chaves.isNotEmpty()) {
-                append(section(next("Medidores, chaves e acessos")) {
-                    buildString {
-                        append(medidoresHtml)
-                        if (chaves.isNotEmpty()) {
-                            append("<h4 class=\"sub-h\">Chaves, controles e acessos entregues</h4>")
-                            append("<table class=\"data-table grid\"><thead><tr><th>Item</th><th style=\"width:70px\">Qtd.</th></tr></thead><tbody>")
-                            chaves.forEach { append("<tr><td>${esc(it.descricao)}</td><td>${it.quantidade.coerceIn(1, 99)}</td></tr>") }
-                            append("<tr><td><b>Total</b></td><td><b>${chaves.sumOf { it.quantidade.coerceIn(1, 99) }}</b></td></tr>")
-                            append("</tbody></table>")
+            if (t.showMetersKeys) {
+                val medidoresHtml = medidoresTable(vistoria)
+                val chaves = vistoria.chaves.filter { it.descricao.isNotBlank() }
+                if (medidoresHtml.isNotEmpty() || chaves.isNotEmpty()) {
+                    append(section(next("Medidores, chaves e acessos")) {
+                        buildString {
+                            append(medidoresHtml)
+                            if (chaves.isNotEmpty()) {
+                                append("<h4 class=\"sub-h\">Chaves, controles e acessos entregues</h4>")
+                                append("<table class=\"data-table grid\"><thead><tr><th>Item</th><th style=\"width:70px\">Qtd.</th></tr></thead><tbody>")
+                                chaves.forEach { append("<tr><td>${esc(it.descricao)}</td><td>${it.quantidade.coerceIn(1, 99)}</td></tr>") }
+                                append("<tr><td><b>Total</b></td><td><b>${chaves.sumOf { it.quantidade.coerceIn(1, 99) }}</b></td></tr>")
+                                append("</tbody></table>")
+                            }
                         }
-                    }
+                    })
+                }
+            }
+
+            // ---------- QUADRO GERAL DE CONSERVAÇÃO ----------
+            if (t.showMasterChecklistOverview && vistoria.rooms.isNotEmpty()) {
+                append(section(next("Quadro geral de conservação por cômodo")) {
+                    masterOverviewTable(vistoria)
                 })
             }
 
             // ---------- CÔMODOS ----------
-            append("<section class=\"section page-break\">")
+            append("<section class=\"section$pageBreakCls\">")
             append("<h2>${esc(next("Cômodos e constatações"))}</h2>")
             if (vistoria.rooms.isEmpty()) {
                 append("<p class=\"empty\">Nenhum cômodo registrado nesta vistoria.</p>")
             } else {
                 vistoria.rooms.forEachIndexed { index, room ->
-                    append(roomSection(index + 1, room))
+                    append(roomSection(index + 1, room, t))
                 }
             }
             append("</section>")
 
             // ---------- NÃO CONFORMIDADES CONSOLIDADAS ----------
-            val problemas = vistoria.rooms.flatMap { room ->
-                (room.damages.map { "Avaria" to it } + room.problems.map { "Problema" to it })
-                    .map { (tipo, texto) -> Triple(room.name, tipo, texto) }
-            }
-            if (problemas.isNotEmpty()) {
-                append(section(next("Resumo de não conformidades")) {
-                    buildString {
-                        append("<table class=\"data-table\"><thead><tr><th>Cômodo</th><th>Tipo</th><th>Constatação</th></tr></thead><tbody>")
-                        problemas.forEach { (comodo, tipo, texto) ->
-                            append("<tr><td>${esc(comodo)}</td><td>${esc(tipo)}</td><td>${esc(texto)}</td></tr>")
+            if (t.showConsolidatedDamages) {
+                val problemas = vistoria.rooms.flatMap { room ->
+                    (room.damages.map { "Avaria" to it } + room.problems.map { "Problema" to it })
+                        .map { (tipo, texto) -> Triple(room.name, tipo, texto) }
+                }
+                if (problemas.isNotEmpty()) {
+                    append(section(next("Resumo de não conformidades")) {
+                        buildString {
+                            append("<table class=\"data-table\"><thead><tr><th>Cômodo</th><th>Tipo</th><th>Constatação</th></tr></thead><tbody>")
+                            problemas.forEach { (comodo, tipo, texto) ->
+                                append("<tr><td>${esc(comodo)}</td><td>${esc(tipo)}</td><td>${esc(texto)}</td></tr>")
+                            }
+                            append("</tbody></table>")
                         }
-                        append("</tbody></table>")
-                    }
-                })
+                    })
+                }
             }
 
             // ---------- ESTIMATIVA DE REPAROS ----------
-            val reparos = vistoria.reparos.filter { it.descricao.isNotBlank() }
-            if (reparos.isNotEmpty()) {
-                append(section(next("Estimativa de custo de reparos")) {
-                    buildString {
-                        append("<table class=\"data-table grid\"><thead><tr><th>Cômodo</th><th>Reparo</th><th style=\"width:150px\">Faixa (R$)</th></tr></thead><tbody>")
-                        reparos.forEach { r ->
-                            append("<tr><td>${esc(r.comodo)}</td><td>${esc(r.descricao)}")
-                            if (r.nota.isNotBlank()) append("<br><span class=\"muted\">${esc(r.nota)}</span>")
-                            append("</td><td>${esc(brl(r.min))} – ${esc(brl(r.max))}</td></tr>")
+            if (t.showRepairsEstimate) {
+                val reparos = vistoria.reparos.filter { it.descricao.isNotBlank() }
+                if (reparos.isNotEmpty()) {
+                    append(section(next("Estimativa de custo de reparos")) {
+                        buildString {
+                            append("<table class=\"data-table grid\"><thead><tr><th>Cômodo</th><th>Reparo</th><th style=\"width:150px\">Faixa (R$)</th></tr></thead><tbody>")
+                            reparos.forEach { r ->
+                                append("<tr><td>${esc(r.comodo)}</td><td>${esc(r.descricao)}")
+                                if (r.nota.isNotBlank()) append("<br><span class=\"muted\">${esc(r.nota)}</span>")
+                                append("</td><td>${esc(brl(r.min))} – ${esc(brl(r.max))}</td></tr>")
+                            }
+                            append("<tr><td></td><td><b>Total estimado</b></td><td><b>${esc(brl(reparos.sumOf { it.min }))} – ${esc(brl(reparos.sumOf { it.max }))}</b></td></tr>")
+                            append("</tbody></table>")
+                            append("<p class=\"muted\">Valores referenciais de mão de obra e material; não constituem orçamento.</p>")
                         }
-                        append("<tr><td></td><td><b>Total estimado</b></td><td><b>${esc(brl(reparos.sumOf { it.min }))} – ${esc(brl(reparos.sumOf { it.max }))}</b></td></tr>")
-                        append("</tbody></table>")
-                        append("<p class=\"muted\">Valores referenciais de mão de obra e material; não constituem orçamento.</p>")
-                    }
-                })
+                    })
+                }
             }
 
             // ---------- CONSIDERAÇÕES ----------
-            append(section(next("Considerações finais")) {
-                if (vistoria.consideracoes.isBlank()) {
-                    "<p class=\"empty\">Sem considerações adicionais.</p>"
-                } else {
-                    "<p class=\"considerations\">${esc(vistoria.consideracoes).replace("\n", "<br>")}</p>"
-                } + if (vistoria.emailContestacao.isNotBlank()) {
-                    "<p class=\"contest\">Eventuais divergências podem ser contestadas por escrito em até 5 (cinco) dias do recebimento deste laudo, pelo e-mail <b>${esc(vistoria.emailContestacao)}</b>.</p>"
-                } else ""
-            })
+            if (t.showConsiderations) {
+                append(section(next("Considerações finais")) {
+                    if (vistoria.consideracoes.isBlank()) {
+                        "<p class=\"empty\">Sem considerações adicionais.</p>"
+                    } else {
+                        "<p class=\"considerations\">${esc(vistoria.consideracoes).replace("\n", "<br>")}</p>"
+                    } + if (vistoria.emailContestacao.isNotBlank()) {
+                        "<p class=\"contest\">Eventuais divergências podem ser contestadas por escrito em até 5 (cinco) dias do recebimento deste laudo, pelo e-mail <b>${esc(vistoria.emailContestacao)}</b>.</p>"
+                    } else ""
+                })
+            }
 
             // ---------- ASSINATURAS ----------
-            append("<section class=\"section signatures page-break\">")
-            append("<h2>${esc(next("Assinaturas"))}</h2>")
-            append("<p class=\"sig-agreement\">E, assim, por estarem justos e contratados, <b>${esc(locadorTitle)}</b> e <b>${esc(locatarioTitle)}</b>, declaram terem vistoriado o imóvel, firmando o presente instrumento, acompanhado de fotografias, fazendo-o juntamente, para todos os fins e efeitos de direito.</p>")
-            append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "São Paulo" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}.</div>")
-            append("<div class=\"sig-grid\">")
-            append(signature(vistoria.locadora, locadorTitle, vistoria.signatures.locadora))
-            append(signature(vistoria.locatario, locatarioTitle, vistoria.signatures.locatario))
-            if (vistoria.vistoriadora.isNotBlank() || vistoria.signatures.vistoriadora != null) {
-                append(signature(vistoria.vistoriadora, "VISTORIADORA", vistoria.signatures.vistoriadora))
+            if (t.showSignatures) {
+                append("<section class=\"section signatures$pageBreakCls\">")
+                append("<h2>${esc(next("Assinaturas"))}</h2>")
+                append("<p class=\"sig-agreement\">E, assim, por estarem justos e contratados, <b>${esc(locadorTitle)}</b> e <b>${esc(locatarioTitle)}</b>, declaram terem vistoriado o imóvel, firmando o presente instrumento, acompanhado de fotografias, fazendo-o juntamente, para todos os fins e efeitos de direito.</p>")
+                append("<div class=\"sig-place\">${esc(vistoria.cidade.ifBlank { "São Paulo" })}, ${esc(formatDateLong(vistoria.dataLaudo.ifBlank { hoje() }))}.</div>")
+                append("<div class=\"sig-grid\">")
+                append(signature(vistoria.locadora, locadorTitle, vistoria.signatures.locadora))
+                append(signature(vistoria.locatario, locatarioTitle, vistoria.signatures.locatario))
+                if (vistoria.vistoriadora.isNotBlank() || vistoria.signatures.vistoriadora != null) {
+                    append(signature(vistoria.vistoriadora, "VISTORIADORA", vistoria.signatures.vistoriadora))
+                }
+                append("</div>")
+                if (t.showWitnesses) {
+                    append("<div class=\"sig-grid witnesses\">")
+                    append(signature("", "TESTEMUNHA 1 (Nome / CPF)"))
+                    append(signature("", "TESTEMUNHA 2 (Nome / CPF)"))
+                    append("<div></div>")
+                    append("</div>")
+                }
+                append("</section>")
             }
-            append("</div>")
-            append("</section>")
 
             val empresa = options.empresaNome.takeIf { it.isNotBlank() }?.let { "${esc(it)} • " } ?: ""
-            append("<footer class=\"doc-footer\">${empresa}Laudo gerado pelo aplicativo imobWeb Vistoria em ${esc(dataGeracao)} • Documento de caráter descritivo, sem valor de perícia judicial.</footer>")
+            val footerLead = if (t.customFooterText.isNotBlank()) "${esc(t.customFooterText)} • " else empresa
+            append("<footer class=\"doc-footer\">${footerLead}Laudo gerado pelo aplicativo imobWeb Vistoria em ${esc(dataGeracao)} (${esc(t.name)}) • Documento de caráter descritivo, sem valor de perícia judicial.</footer>")
             append("</body></html>")
         }
     }
 
-    private fun roomSection(index: Int, room: RoomData): String = buildString {
+    private fun masterOverviewTable(vistoria: Vistoria): String = buildString {
+        append("<table class=\"furn-table\"><thead><tr>")
+        append("<th>Cômodo</th><th>Móveis/Itens</th><th>Fotos</th><th>Avarias</th><th>Itens Avaliados</th><th>Alertas (Regular/Ruim)</th>")
+        append("</tr></thead><tbody>")
+        vistoria.rooms.forEachIndexed { i, room ->
+            val moveisCount = maxOf(room.furnitureDetails.size, room.furniture.size)
+            val alerts = room.checklist.filterValues { it == "regular" || it == "ruim" }
+                .entries.joinToString(", ") { (k, v) -> "$k (${Checklist.label(v)})" }
+                .ifBlank { "Nenhum" }
+            append("<tr>")
+            append("<td><b>${esc(room.name.ifBlank { "Cômodo ${i + 1}" })}</b></td>")
+            append("<td>$moveisCount</td>")
+            append("<td>${room.photos.size}</td>")
+            append("<td>${room.damages.size + room.problems.size}</td>")
+            append("<td>${room.checklist.size}/${Checklist.ITEMS.size}</td>")
+            append("<td>${esc(alerts)}</td>")
+            append("</tr>")
+        }
+        append("</tbody></table>")
+    }
+
+    private fun roomSection(index: Int, room: RoomData, t: PdfTemplateConfig): String = buildString {
         append("<article class=\"room\">")
         append("<div class=\"room-head\"><span class=\"room-number\">${index.toString().padStart(2, '0')}</span>")
         append("<div><h3>${esc(room.name.ifBlank { "Cômodo $index" })}</h3>")
         append("<span class=\"room-meta\">${room.photos.size} foto(s)</span></div></div>")
 
-        val itens = mutableListOf<String>()
-        if (room.furniture.isNotEmpty()) itens.add("Móveis: " + room.furniture.joinToString(", "))
-        if (room.items.isNotEmpty()) itens.addAll(room.items)
-        if (itens.isNotEmpty()) {
-            append("<div class=\"block\"><h4>Inventário</h4><ul class=\"bullets\">")
-            itens.forEach { append("<li>${esc(it)}</li>") }
-            append("</ul></div>")
+        if (t.showFurnitureTable && room.furnitureDetails.isNotEmpty()) {
+            append("<div class=\"block\"><h4>Mobília, Eletros e Equipamentos Detalhados (${room.furnitureDetails.size})</h4>")
+            append("<table class=\"furn-table\"><thead><tr><th>Item</th><th>Qtd</th><th>Marca / Modelo / Descrição</th><th>Estado</th><th>Func.</th><th>Obs. / Avarias</th></tr></thead><tbody>")
+            room.furnitureDetails.forEach { d ->
+                val obsParts = buildList {
+                    if (d.notes.isNotBlank()) add(esc(d.notes))
+                    if (d.damages.isNotEmpty()) add("<b>Avarias:</b> ${d.damages.joinToString(", ") { esc(it) }}")
+                }
+                append("<tr>")
+                val catHtml = if (d.category.isNotBlank()) "<br><span class=\"furn-cat\">${esc(d.category)}</span>" else ""
+                append("<td><b>${esc(d.name)}</b>$catHtml</td>")
+                append("<td>${d.quantity}x</td>")
+                append("<td>${esc(d.brandModel).ifBlank { "—" }}</td>")
+                append("<td><b class=\"cl-${esc(d.condition)}\">${esc(FurnitureDetail.conditionLabel(d.condition))}</b></td>")
+                append("<td>${esc(FurnitureDetail.workingLabel(d.working))}</td>")
+                append("<td>${obsParts.joinToString("<br>").ifBlank { "—" }}</td>")
+                append("</tr>")
+            }
+            append("</tbody></table></div>")
         }
 
-        if (room.damages.isNotEmpty() || room.problems.isNotEmpty()) {
+        if (t.showSimpleInventory) {
+            val extraFurniture = if (t.showFurnitureTable) {
+                room.furniture.filter { fn -> room.furnitureDetails.none { it.name.equals(fn, ignoreCase = true) } }
+            } else room.furniture
+            val itens = mutableListOf<String>()
+            if (extraFurniture.isNotEmpty()) itens.add("Móveis/Itens: " + extraFurniture.joinToString(", "))
+            if (room.items.isNotEmpty()) itens.addAll(room.items)
+            if (itens.isNotEmpty()) {
+                append("<div class=\"block\"><h4>Inventário Complementar</h4><ul class=\"bullets\">")
+                itens.forEach { append("<li>${esc(it)}</li>") }
+                append("</ul></div>")
+            }
+        }
+
+        if (t.showRoomDamages && (room.damages.isNotEmpty() || room.problems.isNotEmpty())) {
             append("<div class=\"block\"><h4>Não conformidades</h4><ul class=\"bullets danger\">")
             room.damages.forEach { append("<li><span class=\"tag\">Avaria</span> ${esc(it)}</li>") }
             room.problems.forEach { append("<li><span class=\"tag\">Problema</span> ${esc(it)}</li>") }
             append("</ul></div>")
         }
 
-        val avaliados = Checklist.ITEMS.mapNotNull { item -> room.checklist[item]?.let { item to it } }
-        if (avaliados.isNotEmpty()) {
-            append("<div class=\"block\"><h4>Estado de conservação</h4><div class=\"cl-grid\">")
-            avaliados.forEach { (item, state) ->
-                append("<div class=\"cl-item\"><span>${esc(item)}</span><b class=\"cl-${esc(state)}\">${esc(Checklist.label(state))}</b></div>")
+        if (t.showRoomChecklist) {
+            val avaliados = Checklist.ITEMS.mapNotNull { item -> room.checklist[item]?.let { item to it } }
+            if (avaliados.isNotEmpty()) {
+                append("<div class=\"block\"><h4>Estado de conservação</h4><div class=\"cl-grid\">")
+                avaliados.forEach { (item, state) ->
+                    append("<div class=\"cl-item\"><span>${esc(item)}</span><b class=\"cl-${esc(state)}\">${esc(Checklist.label(state))}</b></div>")
+                }
+                append("</div></div>")
             }
-            append("</div></div>")
         }
 
-        if (room.observations.isNotBlank()) {
+        if (t.showRoomObservations && room.observations.isNotBlank()) {
             append("<div class=\"block room-obs\"><h4>Observações</h4><p>${esc(room.observations).replace("\n", "<br>")}</p></div>")
         }
 
-        if (room.photos.isNotEmpty()) {
-            append("<div class=\"photo-grid\">")
-            room.photos.forEachIndexed { photoIndex, photo ->
-                append(photoFigure(photo, photoIndex))
+        if (t.showPhotos) {
+            if (room.photos.isNotEmpty()) {
+                append("<div class=\"photo-grid\">")
+                room.photos.forEachIndexed { photoIndex, photo ->
+                    append(photoFigure(photo, photoIndex, t))
+                }
+                append("</div>")
+            } else {
+                append("<p class=\"empty small\">Sem fotos registradas neste cômodo.</p>")
             }
-            append("</div>")
-        } else {
-            append("<p class=\"empty small\">Sem fotos registradas neste cômodo.</p>")
         }
         append("</article>")
     }
 
-    private fun photoFigure(photo: PhotoData, index: Int): String {
+    private fun photoFigure(photo: PhotoData, index: Int, t: PdfTemplateConfig): String {
         val src = safeImageSrc(photo) ?: return ""
         return buildString {
             append("<figure class=\"photo\">")
             append("<div class=\"photo-frame\">")
             append("<img src=\"$src\" alt=\"${esc(photo.name.ifBlank { "Foto ${index + 1}" })}\">")
-            photo.annotations.forEachIndexed { annIndex, ann ->
-                val x = ann.x.coerceIn(0.0, 100.0)
-                val y = ann.y.coerceIn(0.0, 100.0)
-                append("<span class=\"pin\" style=\"left:$x%;top:$y%\">${annIndex + 1}</span>")
-                if (ann.label.isNotBlank()) {
-                    append("<span class=\"pin-label\" style=\"left:$x%;top:$y%\">${esc(ann.label)}</span>")
+            if (t.showPhotoAnnotations) {
+                photo.annotations.forEachIndexed { annIndex, ann ->
+                    val x = ann.x.coerceIn(0.0, 100.0)
+                    val y = ann.y.coerceIn(0.0, 100.0)
+                    append("<span class=\"pin\" style=\"left:$x%;top:$y%\">${annIndex + 1}</span>")
+                    if (ann.label.isNotBlank()) {
+                        append("<span class=\"pin-label\" style=\"left:$x%;top:$y%\">${esc(ann.label)}</span>")
+                    }
                 }
             }
             append("</div>")
-            append("<figcaption>Fig. ${index + 1} — ${esc(photo.name.ifBlank { "Registro fotográfico" })}</figcaption>")
+            val capText = buildString {
+                append("Fig. ${index + 1}")
+                if (t.showPhotoFurnitureTag && photo.furnitureTag.isNotBlank()) {
+                    append(" — [${esc(photo.furnitureTag)}]")
+                }
+                when {
+                    photo.caption.isNotBlank() -> append(" ${esc(photo.caption)}")
+                    photo.name.isNotBlank() && !photo.name.equals(photo.furnitureTag, ignoreCase = true) ->
+                        append(" — ${esc(photo.name)}")
+                    !t.showPhotoFurnitureTag || photo.furnitureTag.isBlank() -> append(" — Registro fotográfico")
+                }
+                if (t.showPhotoTimestamp && photo.timestamp.isNotBlank()) {
+                    append("<br><span class=\"photo-ts\">🕒 ${esc(photo.timestamp)}</span>")
+                }
+            }
+            append("<figcaption>$capText</figcaption>")
             append("</figure>")
         }
     }
@@ -445,13 +579,25 @@ object LaudoHtmlBuilder {
         .replace("\"", "&quot;")
         .replace("'", "&#39;")
 
-    private fun style(): String = """
+    private fun style(t: PdfTemplateConfig): String {
+        val fontCss = when (t.fontFamily) {
+            "serif" -> "Georgia, \"Times New Roman\", Times, serif"
+            "mono" -> "\"Courier New\", Consolas, monospace"
+            else -> "-apple-system, \"Segoe UI\", Roboto, Arial, sans-serif"
+        }
+        val accent = t.accentHex
+        val secondary = t.secondaryHex
+        val cols = t.photosPerRow.coerceIn(1, 4)
+        val roomMargin = if (t.compactFlow) "12px" else "22px"
+        val roomPad = if (t.compactFlow) "13px" else "18px"
+        val secMargin = if (t.compactFlow) "20px" else "34px"
+        return """
         <style>
             @page { size: A4; margin: 12mm; }
             * { box-sizing: border-box; }
             html, body { margin: 0; padding: 0; background: #ffffff; color: #172033; }
             body {
-                font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+                font-family: $fontCss;
                 font-size: 12px; line-height: 1.55; width: 794px; padding: 42px 48px;
             }
             h1, h2, h3, h4, p, ul { margin: 0; }
@@ -459,16 +605,20 @@ object LaudoHtmlBuilder {
             .brand-mark {
                 display: inline-flex; align-items: center; justify-content: center;
                 width: 34px; height: 34px; border-radius: 10px;
-                background: #2563eb; color: #fff; font-weight: 800; font-size: 14px;
+                background: $accent; color: #fff; font-weight: 800; font-size: 14px;
             }
             .brand-name { font-size: 20px; letter-spacing: -.4px; }
-            .brand-name b { color: #2563eb; }
+            .brand-name b { color: $accent; }
             .brand-tag { margin-left: 6px; font-size: 9px; letter-spacing: 2px; color: #64748b; font-weight: 700; }
             .cover { min-height: 1010px; display: flex; flex-direction: column; padding-bottom: 8px; }
-            .cover-kicker { margin-top: 84px; font-size: 10px; letter-spacing: 4px; color: #2563eb; font-weight: 800; }
-            .cover-title { margin-top: 14px; font-size: 60px; line-height: .98; letter-spacing: -2.5px; color: #0f172a; }
-            .cover-rule { width: 68px; height: 5px; background: #2563eb; border-radius: 3px; margin: 26px 0; }
-            .cover-property { font-size: 23px; font-weight: 700; color: #0f172a; }
+            .cover-judicial { border: 3px double $accent; padding: 34px; border-radius: 4px; }
+            .cover-luxury { border-left: 8px solid $accent; padding-left: 24px; }
+            .cover-minimal .stat { background: #f8fafc; color: #0f172a; border: 1.5px solid $accent; }
+            .cover-minimal .stat span { color: #475569; }
+            .cover-kicker { margin-top: 84px; font-size: 10px; letter-spacing: 4px; color: $accent; font-weight: 800; }
+            .cover-title { margin-top: 14px; font-size: 60px; line-height: .98; letter-spacing: -2.5px; color: $secondary; }
+            .cover-rule { width: 68px; height: 5px; background: $accent; border-radius: 3px; margin: 26px 0; }
+            .cover-property { font-size: 23px; font-weight: 700; color: $secondary; }
             .cover-address { margin-top: 8px; font-size: 13px; color: #475569; max-width: 560px; }
             .cover-date { margin-top: 18px; font-size: 12px; color: #64748b; text-transform: capitalize; }
             .cover-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; }
@@ -477,34 +627,45 @@ object LaudoHtmlBuilder {
                 background: #f1f5f9; border: 1px solid #e2e8f0;
             }
             .chip span { display: block; font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; color: #64748b; }
-            .chip b { display: block; margin-top: 3px; font-size: 12px; color: #0f172a; }
+            .chip b { display: block; margin-top: 3px; font-size: 12px; color: $secondary; }
             .cover-stats { display: flex; gap: 12px; margin-top: 26px; }
-            .stat { flex: 1; padding: 14px 16px; border-radius: 12px; background: #0f172a; color: #fff; }
+            .stat { flex: 1; padding: 14px 16px; border-radius: 12px; background: $secondary; color: #fff; }
             .stat b { display: block; font-size: 26px; line-height: 1; }
-            .stat span { display: block; margin-top: 5px; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #93c5fd; }
+            .stat span { display: block; margin-top: 5px; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #cbd5e1; }
             .cover-footer { margin-top: auto; border-top: 1px solid #e2e8f0; padding-top: 16px; display: flex; gap: 44px; align-items: flex-end; }
             .cover-footer .label { display: block; font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; color: #94a3b8; }
-            .cover-footer b { font-size: 12px; color: #0f172a; }
+            .cover-footer b { font-size: 12px; color: $secondary; }
             .cover-generated { margin-left: auto; font-size: 9px; color: #94a3b8; }
-            .section { margin-top: 34px; }
+            .compact-banner {
+                display: flex; justify-content: space-between; align-items: center; gap: 16px;
+                border-bottom: 3px solid $accent; padding-bottom: 12px; margin-bottom: 16px;
+            }
+            .compact-kicker { font-size: 9px; letter-spacing: 2px; color: $accent; font-weight: 800; }
+            .compact-meta { text-align: right; font-size: 10px; color: #475569; white-space: nowrap; }
+            .section { margin-top: $secMargin; }
             .section h2 {
-                font-size: 17px; color: #0f172a; padding-bottom: 8px;
+                font-size: 17px; color: $secondary; padding-bottom: 8px;
                 border-bottom: 2px solid #e2e8f0; margin-bottom: 14px;
             }
-            .section h2 span { color: #2563eb; margin-right: 6px; }
+            .section h2 span { color: $accent; margin-right: 6px; }
             .data-table { width: 100%; border-collapse: collapse; }
             .data-table th, .data-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
             .data-table th { width: 34%; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
             .data-table td { color: #172033; font-size: 12px; }
             .data-table thead th { background: #f8fafc; color: #475569; }
+            .furn-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 10px; }
+            .furn-table th, .furn-table td { text-align: left; padding: 5px 7px; border: 1px solid #e2e8f0; vertical-align: top; }
+            .furn-table thead th { background: #f1f5f9; color: #334155; font-size: 9px; text-transform: uppercase; letter-spacing: .4px; font-weight: 700; }
+            .furn-cat { font-size: 8.5px; color: #64748b; }
+            .photo-ts { font-size: 7.5px; color: #64748b; }
             .page-break { page-break-before: always; }
-            .room { margin-top: 22px; padding: 18px; border: 1px solid #e2e8f0; border-radius: 12px; page-break-inside: avoid; }
+            .room { margin-top: $roomMargin; padding: $roomPad; border: 1px solid #e2e8f0; border-radius: 12px; page-break-inside: avoid; }
             .room-head { display: flex; align-items: center; gap: 12px; }
             .room-number {
-                width: 36px; height: 36px; border-radius: 9px; background: #eff6ff; color: #2563eb;
+                width: 36px; height: 36px; border-radius: 9px; background: #f1f5f9; color: $accent;
                 display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
             }
-            .room-head h3 { font-size: 15px; color: #0f172a; }
+            .room-head h3 { font-size: 15px; color: $secondary; }
             .room-meta { font-size: 10px; color: #64748b; }
             .block { margin-top: 12px; }
             .block h4 { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #475569; margin-bottom: 5px; }
@@ -516,7 +677,8 @@ object LaudoHtmlBuilder {
                 background: #fee2e2; color: #991b1b; font-size: 8px; font-weight: 700;
                 letter-spacing: .5px; text-transform: uppercase;
             }
-            .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+            .photo-grid { display: grid; grid-template-columns: repeat($cols, 1fr); gap: 8px; margin-top: 10px; }
+            .witnesses { margin-top: 28px; }
             .photo { margin: 0; }
             .photo-frame { position: relative; width: 100%; border-radius: 6px; overflow: hidden; background: #f1f5f9; border: 1px solid #cbd5e1; }
             .photo-frame img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; }
@@ -568,7 +730,7 @@ object LaudoHtmlBuilder {
             .cl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 16px; }
             .cl-item { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px dashed #e2e8f0; padding: 2px 0; }
             .cl-item b { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; }
-            .cl-ok { color: #047857; } .cl-regular { color: #b45309; } .cl-ruim { color: #b91c1c; } .cl-na { color: #64748b; }
+            .cl-novo { color: #0284c7; } .cl-otimo { color: #059669; } .cl-ok { color: #047857; } .cl-regular { color: #b45309; } .cl-ruim { color: #b91c1c; } .cl-na { color: #64748b; }
             .room-obs p { font-size: 11px; color: #334155; background: #f1f5f9; border-radius: 8px; padding: 8px 10px; }
             .sig b { display: block; font-size: 10px; color: #0f172a; }
             .sig span { display: block; margin-top: 2px; font-size: 9px; color: #64748b; }
@@ -580,4 +742,5 @@ object LaudoHtmlBuilder {
             }
         </style>
     """.trimIndent()
+    }
 }

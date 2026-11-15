@@ -8,7 +8,10 @@ import com.imobweb.app.model.Vistoria
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.Base64
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -28,18 +31,32 @@ object PhotoStore {
 
     private fun newFile(context: Context): File = File(dir(context), "foto_${UUID.randomUUID()}.jpg")
 
+    private fun nowStamp(): String = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR")).format(Date())
+
     /** Importa uma foto da galeria (ou de qualquer content://). */
-    suspend fun importUri(context: Context, uri: Uri, label: String? = null): PhotoData? = withContext(Dispatchers.IO) {
+    suspend fun importUri(context: Context, uri: Uri, label: String? = null, furnitureTag: String = ""): PhotoData? = withContext(Dispatchers.IO) {
         val file = ImageCompressor.compressToFile(context, uri, newFile(context), watermarkText = label) ?: return@withContext null
-        PhotoData(name = file.name, filePath = file.absolutePath)
+        PhotoData(
+            name = furnitureTag.ifBlank { file.name },
+            filePath = file.absolutePath,
+            furnitureTag = furnitureTag,
+            timestamp = nowStamp()
+        )
     }
 
     /** Importa uma foto tirada pela câmera (arquivo temporário), apagando o original temporário. */
-    suspend fun importFile(context: Context, path: String, label: String? = null): PhotoData? = withContext(Dispatchers.IO) {
+    suspend fun importFile(context: Context, path: String, label: String? = null, furnitureTag: String = ""): PhotoData? = withContext(Dispatchers.IO) {
         val source = File(path)
         val result = ImageCompressor.compressToFile(context, Uri.fromFile(source), newFile(context), watermarkText = label)
         if (source.absolutePath.startsWith(context.cacheDir.absolutePath)) source.delete()
-        result?.let { PhotoData(name = it.name, filePath = it.absolutePath) }
+        result?.let {
+            PhotoData(
+                name = furnitureTag.ifBlank { it.name },
+                filePath = it.absolutePath,
+                furnitureTag = furnitureTag,
+                timestamp = nowStamp()
+            )
+        }
     }
 
     /** Grava uma foto recebida como data URL (servidor / dados antigos) e devolve a referência em disco. */

@@ -48,6 +48,7 @@ import coil.compose.AsyncImage
 import com.imobweb.app.data.repository.VistoriaRepository
 import com.imobweb.app.util.AiInspectionResult
 import com.imobweb.app.util.LaudoHtmlBuilder
+import com.imobweb.app.util.PdfTemplateCatalog
 import com.imobweb.app.util.ReportPdfExporter
 import com.imobweb.app.model.*
 import com.imobweb.app.ui.camera.CameraScreen
@@ -138,18 +139,50 @@ fun VistoriaWizardScreen(
     var considerationsBeforeAi by remember { mutableStateOf<String?>(null) }
     var considerationHighlights by remember { mutableStateOf<List<String>>(emptyList()) }
     var estimatingRepairs by remember { mutableStateOf(false) }
+    var customTemplateDraft by remember { mutableStateOf(PdfTemplateCatalog.loadCustomTemplate(context)) }
+    LaunchedEffect(vm.pdfTemplate.id) {
+        if (vm.pdfTemplate.id == "t9_custom") customTemplateDraft = vm.pdfTemplate
+    }
+    var showTemplatePickerDialog by remember { mutableStateOf(false) }
+    var showCustomBuilderDialog by remember { mutableStateOf(false) }
+    var finalizedPdf by remember { mutableStateOf(false) }
+    var startupAssistantSelected by remember { mutableStateOf(true) }
+    var startupBlankRooms by remember { mutableStateOf(false) }
+
+    suspend fun rebuildWizardPdf(targetVistoria: Vistoria? = null) {
+        val v = targetVistoria ?: vm.snapshot()
+        val vid = if (v.id > 0L) v.id else savedId
+        if (vid > 0L) PdfTemplateCatalog.saveForVistoria(context, vid, vm.pdfTemplate)
+        PdfTemplateCatalog.saveDefaultTemplate(context, vm.pdfTemplate)
+        val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context, vid).copy(template = vm.pdfTemplate)
+        pdfContent = withContext(Dispatchers.Default) { LaudoHtmlBuilder.build(v, opts) }
+        pdfFileName = ReportPdfExporter.fileNameFor(v)
+    }
+
+    LaunchedEffect(vm.pdfTemplate, showPdfViewer) {
+        if (showPdfViewer && pdfContent != null) {
+            runCatching { rebuildWizardPdf() }
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
-        // O cômodo é fixado no momento da escolha (o usuário pode trocar de aba durante a importação)
-        val roomId = rooms.getOrNull(currentRoomIdx)?.id
+        // O cômodo e a tag do móvel são fixados no momento da escolha
+        val room = rooms.getOrNull(currentRoomIdx)
+        val roomId = room?.id
+        val fTag = vm.activeFurnitureTag?.trim().orEmpty()
+        val wmLabel = listOfNotNull(
+            room?.name?.takeIf { it.isNotBlank() },
+            fTag.takeIf { it.isNotBlank() }
+        ).joinToString(" • ").takeIf { it.isNotBlank() }
+        vm.activeFurnitureTag = null
         scope.launch {
             isUploading = true
             var failed = 0
             for (uri in uris) {
-                val photo = PhotoStore.importUri(context, uri)
+                val photo = PhotoStore.importUri(context, uri, label = wmLabel, furnitureTag = fTag)
                 if (photo != null) addPhotoToRoom(roomId, photo) else failed++
             }
             isUploading = false
@@ -168,8 +201,8 @@ fun VistoriaWizardScreen(
         onBack()
     }
 
-    BackHandler(enabled = !showCamera && annotatingPhoto == null && !showPdfViewer) { exit() }
-    BackHandler(enabled = showCamera) { showCamera = false }
+    BackHandler(enabled = !showCamera && annotatingPhoto == null && !showPdfViewer && !showTemplatePickerDialog && !showCustomBuilderDialog) { exit() }
+    BackHandler(enabled = showCamera) { showCamera = false; vm.activeFurnitureTag = null }
     BackHandler(enabled = annotatingPhoto != null) { annotatingPhoto = null }
     BackHandler(enabled = showPdfViewer) { showPdfViewer = false; onSaved() }
 
@@ -199,12 +232,14 @@ fun VistoriaWizardScreen(
                     }
                 },
                 actions = {
-                    Text(
-                        text = "${currentStep + 1}/$totalSteps",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.width(8.dp))
+                    if (vm.modeChosen) {
+                        Text(
+                            text = "${currentStep + 1}/$totalSteps",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -225,57 +260,67 @@ fun VistoriaWizardScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (currentStep > 0) {
-                        OutlinedButton(
-                            onClick = { currentStep-- },
+                    if (!vm.modeChosen) {
+                        Button(
+                            onClick = {
+                                PdfTemplateCatalog.saveDefaultTemplate(context, vm.pdfTemplate)
+                                vm.chooseMode(assistant = startupAssistantSelected, blankRooms = startupBlankRooms)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Iniciar Vistoria")
+                        }
+                    } else {
+                        if (currentStep > 0) {
+                            OutlinedButton(
+                                onClick = { currentStep-- },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Voltar")
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                if (currentStep < totalSteps - 1) {
+                                    scope.launch { saveCurrent() }
+                                    currentStep++
+                                } else {
+                                    scope.launch {
+                                        isSaving = true
+                                        val id = runCatching { saveCurrent() }.getOrDefault(0L)
+                                        SyncWorker.syncNow(context)
+                                        val vistoria = if (id > 0) repository.getVistoriaById(id) else null
+                                        if (vistoria != null) {
+                                            runCatching {
+                                                rebuildWizardPdf(vistoria)
+                                                finalizedPdf = true
+                                                showPdfViewer = true
+                                            }.onFailure { e ->
+                                                Toast.makeText(context, "Erro ao gerar laudo: ${e.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(context, "Não foi possível salvar a vistoria", Toast.LENGTH_SHORT).show()
+                                        }
+                                        isSaving = false
+                                    }
+                                }
+                            },
+                            enabled = canProceed && !isSaving,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Voltar")
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            if (currentStep < totalSteps - 1) {
-                                scope.launch { saveCurrent() }
-                                currentStep++
+                            if (isSaving) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             } else {
-                                scope.launch {
-                                    isSaving = true
-                                    val id = runCatching { saveCurrent() }.getOrDefault(0L)
-                                    SyncWorker.syncNow(context)
-                                    // Gera o laudo localmente (offline) e abre a pré-visualização.
-                                    // Montar o HTML lê e codifica todas as fotos: fora da thread da UI.
-                                    val vistoria = if (id > 0) repository.getVistoriaById(id) else null
-                                    if (vistoria != null) {
-                                        runCatching {
-                                            val opts = com.imobweb.app.ui.settings.loadLaudoOptions(context)
-                                            val html = withContext(Dispatchers.Default) { LaudoHtmlBuilder.build(vistoria, opts) }
-                                            pdfContent = html
-                                            pdfFileName = ReportPdfExporter.fileNameFor(vistoria)
-                                            showPdfViewer = true
-                                        }.onFailure { e ->
-                                            Toast.makeText(context, "Erro ao gerar laudo: ${e.message}", Toast.LENGTH_LONG).show()
-                                        }
-                                    } else {
-                                        Toast.makeText(context, "Não foi possível salvar a vistoria", Toast.LENGTH_SHORT).show()
-                                    }
-                                    isSaving = false
+                                Text(if (currentStep < totalSteps - 1) "Próximo" else "Finalizar")
+                                if (currentStep < totalSteps - 1) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                                 }
-                            }
-                        },
-                        enabled = canProceed && !isSaving,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        } else {
-                            Text(if (currentStep < totalSteps - 1) "Próximo" else "Finalizar")
-                            if (currentStep < totalSteps - 1) {
-                                Spacer(Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -290,29 +335,146 @@ fun VistoriaWizardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Step indicator
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                for (i in 0 until totalSteps) {
-                    Box(
+            if (!vm.modeChosen) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text(
+                        "Configuração Inicial da Vistoria",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Antes de começar, escolha o modo de operação e o modelo de PDF que deseja utilizar neste laudo.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text("1. Modo de Vistoria", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Card(
+                        onClick = { startupAssistantSelected = true },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (startupAssistantSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            if (startupAssistantSelected) 2.dp else 1.dp,
+                            if (startupAssistantSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🤖", fontSize = 24.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Com Assistente (Guiado)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(
+                                    "Questionário inteligente de cômodos, roteiro sugerido na câmera, alertas de enquadramento/luz e análise por IA.",
+                                    fontSize = 11.sp, lineHeight = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (startupAssistantSelected) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+
+                    Card(
+                        onClick = { startupAssistantSelected = false },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (!startupAssistantSelected) Color(0xFF059669).copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            if (!startupAssistantSelected) 2.dp else 1.dp,
+                            if (!startupAssistantSelected) Color(0xFF059669) else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚡", fontSize = 24.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Sem Assistente (Modo Livre / Mobiliado)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(
+                                    "Adicione cômodos, móveis, eletros e utensílios 1 a 1 sem questionário, com disparo contínuo em rajada e fotos vinculadas a cada móvel.",
+                                    fontSize = 11.sp, lineHeight = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (!startupAssistantSelected) Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF059669))
+                        }
+                    }
+
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(
-                                when {
-                                    i < currentStep -> MaterialTheme.colorScheme.primary
-                                    i == currentStep -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            )
+                            .fillMaxWidth()
+                            .clickable { startupBlankRooms = !startupBlankRooms }
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(checked = startupBlankRooms, onCheckedChange = { startupBlankRooms = it })
+                        Text("Começar lista de cômodos em branco (adicionar 1 a 1 do zero)", fontSize = 12.sp)
+                    }
+
+                    HorizontalDivider()
+
+                    // Seção 2: 8 Templates pré-definidos + Opção 9 Criar Template
+                    PdfTemplatePickerSection(
+                        selectedTemplate = vm.pdfTemplate,
+                        customTemplate = customTemplateDraft,
+                        onSelectPreset = { vm.pdfTemplate = it },
+                        onOpenCustomBuilder = { showCustomBuilderDialog = true }
                     )
                 }
-            }
+            } else {
+                // Resumo em tempo real + alternância rápida de modo & template
+                val totalMoveis = rooms.sumOf { roomFurnitureCount(it) }
+                val totalFotos = rooms.sumOf { it.photos.size }
+                val totalAvarias = rooms.sumOf { it.damages.size + it.problems.size }
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item {
+                        AssistChip(
+                            onClick = { vm.useAssistant = !vm.useAssistant },
+                            label = {
+                                Text(
+                                    if (vm.useAssistant) "🤖 Assistente" else "⚡ Modo Livre",
+                                    fontSize = 11.sp, fontWeight = FontWeight.Bold
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        AssistChip(
+                            onClick = { showTemplatePickerDialog = true },
+                            label = { Text("📄 PDF #${vm.pdfTemplate.number}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) }
+                        )
+                    }
+                    item {
+                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)) {
+                            Text("📊 ${rooms.size} cômodos • 🪑 $totalMoveis • 📷 $totalFotos • ⚠️ $totalAvarias",
+                                fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
+                        }
+                    }
+                }
+
+                // Navegação livre entre as 6 etapas
+                val stepLabels = listOf("1. Imóvel", "2. Partes", "3. Cômodos", "4. Inventário", "5. Fotos", "6. Revisão")
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    itemsIndexed(stepLabels) { idx, label ->
+                        val active = idx == currentStep
+                        val done = idx < currentStep
+                        FilterChip(
+                            selected = active,
+                            onClick = { currentStep = idx },
+                            label = { Text(label, fontSize = 11.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium) },
+                            leadingIcon = if (done) {
+                                { Icon(Icons.Default.Check, null, modifier = Modifier.size(13.dp)) }
+                            } else null
+                        )
+                    }
+                }
 
             // Step content
             when (currentStep) {
@@ -371,7 +533,11 @@ fun VistoriaWizardScreen(
                     currentRoomIdx = currentRoomIdx,
                     onCurrentRoomIdxChange = { currentRoomIdx = it },
                     tipoImovel = tipoImovel,
-                    context = context
+                    context = context,
+                    useAssistant = vm.useAssistant,
+                    onUseAssistantChange = { vm.useAssistant = it },
+                    onDuplicateRoom = vm::duplicateRoom,
+                    onMoveRoom = vm::moveRoom
                 )
 
                 3 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -385,9 +551,31 @@ fun VistoriaWizardScreen(
                         tipoImovel = tipoImovel,
                         finalidade = finalidade,
                         context = context,
-                        onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
-                        onPickFromGallery = { galleryLauncher.launch("image/*") },
-                        isUploading = isUploading
+                        onTakePhoto = {
+                            vm.activeFurnitureTag = null
+                            cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id
+                            showCamera = true
+                        },
+                        onPickFromGallery = {
+                            vm.activeFurnitureTag = null
+                            galleryLauncher.launch("image/*")
+                        },
+                        isUploading = isUploading,
+                        onAddOrUpdateDetail = vm::addOrUpdateFurnitureDetail,
+                        onRemoveDetail = vm::removeFurnitureDetail,
+                        onDuplicateDetail = vm::duplicateFurnitureDetail,
+                        onTakePhotoForFurniture = { tag ->
+                            vm.activeFurnitureTag = tag
+                            cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id
+                            showCamera = true
+                        },
+                        onPickFromGalleryForFurniture = { tag ->
+                            vm.activeFurnitureTag = tag
+                            galleryLauncher.launch("image/*")
+                        },
+                        onOpenPhotoAnnotator = { photoIdx ->
+                            annotatingPhoto = currentRoomIdx to photoIdx
+                        }
                     )
                     rooms.getOrNull(currentRoomIdx)?.let { room ->
                         ProposalsCard(
@@ -427,8 +615,15 @@ fun VistoriaWizardScreen(
                     tipoImovel = tipoImovel,
                     finalidade = finalidade,
                     context = context,
-                    onTakePhoto = { cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id; showCamera = true },
-                    onPickFromGallery = { galleryLauncher.launch("image/*") },
+                    onTakePhoto = {
+                        vm.activeFurnitureTag = null
+                        cameraRoomId = rooms.getOrNull(currentRoomIdx)?.id
+                        showCamera = true
+                    },
+                    onPickFromGallery = {
+                        vm.activeFurnitureTag = null
+                        galleryLauncher.launch("image/*")
+                    },
                     onAnnotatePhoto = { roomIdx, photoIdx ->
                         annotatingPhoto = roomIdx to photoIdx
                     },
@@ -448,7 +643,37 @@ fun VistoriaWizardScreen(
                         onConsideracoesChange = { consideracoes = it },
                         locadoraCpf = locadoraCpf, locatarioCpf = locatarioCpf,
                         dataVistoria = dataFotografia,
-                        onDataVistoriaChange = { dataFotografia = it; dataLaudo = it }
+                        onDataVistoriaChange = { dataFotografia = it; dataLaudo = it },
+                        onJumpToRoom = { idx ->
+                            currentRoomIdx = idx
+                            currentStep = 3
+                        },
+                        onFillMissingChecklists = { state ->
+                            val defaultMap = Checklist.ITEMS.take(9).associateWith { state }
+                            rooms.forEach { room ->
+                                if (room.checklist.isEmpty()) {
+                                    updateRoom(room.id) { it.copy(checklist = defaultMap) }
+                                }
+                            }
+                            Toast.makeText(
+                                context,
+                                "Checklists pendentes preenchidos como ${Checklist.label(state)}!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        selectedTemplateName = "#${vm.pdfTemplate.number} — ${vm.pdfTemplate.name}",
+                        onOpenTemplatePicker = { showTemplatePickerDialog = true },
+                        onPreviewPdf = {
+                            scope.launch {
+                                runCatching {
+                                    rebuildWizardPdf()
+                                    finalizedPdf = false
+                                    showPdfViewer = true
+                                }.onFailure { e ->
+                                    Toast.makeText(context, "Erro ao gerar prévia: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
                     )
                     AiConsiderationsCard(
                         busy = writingConsiderations,
@@ -499,7 +724,32 @@ fun VistoriaWizardScreen(
                     )
                 }
             }
+            }
         }
+    }
+
+    if (showTemplatePickerDialog) {
+        PdfTemplatePickerDialog(
+            selectedTemplate = vm.pdfTemplate,
+            customTemplate = customTemplateDraft,
+            onSelectPreset = { vm.pdfTemplate = it },
+            onOpenCustomBuilder = { showCustomBuilderDialog = true },
+            onDismiss = { showTemplatePickerDialog = false }
+        )
+    }
+
+    if (showCustomBuilderDialog) {
+        CustomTemplateBuilderDialog(
+            initialConfig = if (vm.pdfTemplate.id == "t9_custom") vm.pdfTemplate else customTemplateDraft,
+            onDismiss = { showCustomBuilderDialog = false },
+            onSave = { savedCfg ->
+                PdfTemplateCatalog.saveCustomTemplate(context, savedCfg)
+                customTemplateDraft = savedCfg
+                vm.pdfTemplate = savedCfg
+                showCustomBuilderDialog = false
+                Toast.makeText(context, "Template personalizado #9 aplicado!", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // Revisão das sugestões da IA
@@ -526,26 +776,41 @@ fun VistoriaWizardScreen(
     // Câmera: fica aberta para várias fotos seguidas do mesmo cômodo
     if (showCamera) {
         val cameraRoom = rooms.firstOrNull { it.id == cameraRoomId }
-        // Roteiro: problemas marcados no cômodo + dicas do tipo de cômodo (sem o que já foi fotografado)
         val shotList = remember(cameraRoomId) {
             val room = cameraRoom ?: return@remember emptyList<String>()
             val done = room.photos.map { it.name.lowercase() }.toSet()
             (room.problems.map { "Problema: $it" } + RoomPhotoTips.getTips(room.name))
                 .distinct().filter { it.lowercase() !in done }
         }
+        val furnitureList = remember(cameraRoomId, cameraRoom?.furniture, cameraRoom?.furnitureDetails) {
+            cameraRoom?.let { (it.furnitureDetails.map { d -> d.name } + it.furniture).distinct() } ?: emptyList()
+        }
         CameraScreen(
-            onPhotoCaptured = { filePath, label ->
+            onPhotoCaptured = { filePath, label, furnitureTag ->
                 val roomId = cameraRoomId
+                val roomName = rooms.firstOrNull { it.id == roomId }?.name.orEmpty()
+                val fTag = furnitureTag?.trim().orEmpty()
+                val wmLabel = listOfNotNull(
+                    roomName.takeIf { it.isNotBlank() },
+                    fTag.takeIf { it.isNotBlank() } ?: label?.takeIf { it.isNotBlank() }
+                ).joinToString(" • ").takeIf { it.isNotBlank() }
                 scope.launch {
-                    val photo = PhotoStore.importFile(context, filePath)
-                    if (photo != null) addPhotoToRoom(roomId, if (label != null) photo.copy(name = label) else photo)
-                    else Toast.makeText(context, "Não foi possível salvar a foto", Toast.LENGTH_SHORT).show()
+                    val photo = PhotoStore.importFile(context, filePath, label = wmLabel, furnitureTag = fTag)
+                    if (photo != null) {
+                        val finalPhoto = if (fTag.isBlank() && !label.isNullOrBlank()) photo.copy(name = label) else photo
+                        addPhotoToRoom(roomId, finalPhoto)
+                    } else {
+                        Toast.makeText(context, "Não foi possível salvar a foto", Toast.LENGTH_SHORT).show()
+                    }
                 }
             },
-            onClose = { showCamera = false },
+            onClose = { showCamera = false; vm.activeFurnitureTag = null },
             title = cameraRoom?.name?.ifBlank { null } ?: "Tirar Foto",
             photoCount = cameraRoom?.photos?.size ?: 0,
-            shotList = shotList
+            shotList = shotList,
+            initialFreeMode = !vm.useAssistant || vm.activeFurnitureTag != null,
+            furnitureList = furnitureList,
+            initialFurnitureTag = vm.activeFurnitureTag
         )
     }
 
@@ -576,7 +841,13 @@ fun VistoriaWizardScreen(
             htmlContent = pdfContent!!,
             title = "Laudo de Vistoria - $condominio",
             fileName = pdfFileName,
-            onClose = { showPdfViewer = false; onSaved() }
+            templateLabel = "#${vm.pdfTemplate.number} ${vm.pdfTemplate.name}",
+            onChangeTemplate = { showTemplatePickerDialog = true },
+            onClose = {
+                val shouldFinish = finalizedPdf
+                showPdfViewer = false
+                if (shouldFinish) onSaved()
+            }
         )
     }
 }

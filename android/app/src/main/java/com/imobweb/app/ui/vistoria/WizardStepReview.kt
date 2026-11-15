@@ -74,7 +74,12 @@ internal fun StepReview(
     rooms: List<RoomData>,
     consideracoes: String, onConsideracoesChange: (String) -> Unit,
     locadoraCpf: String = "", locatarioCpf: String = "",
-    dataVistoria: String = "", onDataVistoriaChange: (String) -> Unit = {}
+    dataVistoria: String = "", onDataVistoriaChange: (String) -> Unit = {},
+    onJumpToRoom: ((Int) -> Unit)? = null,
+    onFillMissingChecklists: ((String) -> Unit)? = null,
+    selectedTemplateName: String = "",
+    onOpenTemplatePicker: (() -> Unit)? = null,
+    onPreviewPdf: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
 
@@ -91,6 +96,7 @@ internal fun StepReview(
     }
 
     // Pendências que deixam o laudo frágil (conferência antes de gerar o PDF)
+    val semChecklist = rooms.filter { it.checklist.isEmpty() }
     val warnings = buildList {
         val semFoto = rooms.filter { it.photos.isEmpty() }.map { it.name }
         if (semFoto.isNotEmpty()) add("Cômodos sem foto: ${semFoto.joinToString(", ")}")
@@ -99,17 +105,18 @@ internal fun StepReview(
         if (locadoraCpf.isBlank()) add("CPF/CNPJ da locadora não informado")
         if (locatarioCpf.isBlank()) add("CPF/CNPJ do locatário não informado")
         if (vistoriadora.isBlank()) add("Nome da vistoriadora não informado")
-        val vazios = rooms.filter { it.items.isEmpty() && it.furniture.isEmpty() && it.damages.isEmpty() && it.problems.isEmpty() }
+        val vazios = rooms.filter {
+            it.items.isEmpty() && roomFurnitureCount(it) == 0 && it.damages.isEmpty() && it.problems.isEmpty()
+        }
         if (vazios.isNotEmpty()) add("Cômodos sem nenhuma descrição: ${vazios.joinToString(", ") { it.name }}")
         val pendentes = rooms.filter { it.proposals.isNotEmpty() }
         if (pendentes.isNotEmpty()) add("Sugestões da IA não revisadas (não entram no laudo): ${pendentes.joinToString(", ") { it.name }}")
-        val semChecklist = rooms.filter { it.checklist.isEmpty() }
         if (semChecklist.isNotEmpty()) add("Cômodos sem checklist de conservação: ${semChecklist.joinToString(", ") { it.name }}")
     }
 
     Column {
         Text("Revisão e Observações", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Revise os dados, adicione observações e finalize",
+        Text("Revise os dados, escolha o modelo do PDF e finalize",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
@@ -129,6 +136,25 @@ internal fun StepReview(
                     Spacer(Modifier.height(6.dp))
                     warnings.forEach { w ->
                         Text("• $w", style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (semChecklist.isNotEmpty() && onFillMissingChecklists != null) {
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { onFillMissingChecklists("ok") },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Text("✓ Completar checklists: Bom", fontSize = 11.sp)
+                            }
+                            FilledTonalButton(
+                                onClick = { onFillMissingChecklists("otimo") },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Text("✨ Ótimo", fontSize = 11.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -170,8 +196,15 @@ internal fun StepReview(
                 Text("Cômodos (${rooms.size})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
                 rooms.forEachIndexed { idx, room ->
+                    val mobCount = roomFurnitureCount(room)
                     Row(
-                        modifier = Modifier.padding(vertical = 2.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .then(
+                                if (onJumpToRoom != null) Modifier.clickable { onJumpToRoom(idx) } else Modifier
+                            )
+                            .padding(vertical = 4.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
@@ -192,16 +225,71 @@ internal fun StepReview(
                                 Text("${room.photos.size} fotos",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (room.furniture.isNotEmpty()) {
-                                    Text("· ${room.furniture.size} móveis",
+                                if (mobCount > 0) {
+                                    Text("· $mobCount móveis",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (room.problems.isNotEmpty()) {
-                                    Text("· ${room.problems.size} problemas",
+                                if (room.problems.isNotEmpty() || room.damages.isNotEmpty()) {
+                                    Text("· ${room.problems.size + room.damages.size} avarias/probs.",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.error)
                                 }
+                            }
+                        }
+                        if (onJumpToRoom != null) {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = "Editar cômodo",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (onOpenTemplatePicker != null || onPreviewPdf != null) {
+            Spacer(Modifier.height(10.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Modelo do Laudo PDF", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                selectedTemplateName.ifBlank { "#1 Padrão ImobWeb Executivo" },
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (onOpenTemplatePicker != null) {
+                            OutlinedButton(
+                                onClick = onOpenTemplatePicker,
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Default.Style, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Trocar Modelo (9)", fontSize = 12.sp)
+                            }
+                        }
+                        if (onPreviewPdf != null) {
+                            FilledTonalButton(
+                                onClick = onPreviewPdf,
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Pré-visualizar PDF", fontSize = 12.sp)
                             }
                         }
                     }
@@ -215,13 +303,22 @@ internal fun StepReview(
         Text("Observações", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
 
-        // Quick observation templates
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Quick observation templates (rolável horizontalmente)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             listOf(
-                "Imóvel em bom estado",
-                "Pintura recente",
-                "Hidráulica OK",
-                "Elétrica OK"
+                "Imóvel em bom estado de conservação",
+                "Pintura recente em paredes e tetos",
+                "Instalações hidráulicas e elétricas OK",
+                "Imóvel entregue limpo e desocupado",
+                "Mobiliário e eletrodomésticos conferidos",
+                "Chaves e controles entregues no ato",
+                "Vistoria realizada na presença das partes",
+                "Desgastes naturais de uso registrados"
             ).forEach { template ->
                 AssistChip(
                     onClick = {
@@ -243,6 +340,13 @@ internal fun StepReview(
             onValueChange = onConsideracoesChange,
             label = { Text("Observações finais") },
             placeholder = { Text("Descreva observações relevantes sobre a vistoria...") },
+            trailingIcon = {
+                DictationIcon { dictated ->
+                    onConsideracoesChange(
+                        if (consideracoes.isBlank()) dictated else "$consideracoes\n$dictated"
+                    )
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(150.dp),
             maxLines = 8
         )

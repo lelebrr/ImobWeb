@@ -24,6 +24,8 @@ fun PdfPreviewScreen(
     htmlContent: String,
     title: String = "Laudo de Vistoria",
     fileName: String = "Laudo_Vistoria.pdf",
+    templateLabel: String? = null,
+    onChangeTemplate: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
@@ -31,6 +33,21 @@ fun PdfPreviewScreen(
     var isBusy by remember { mutableStateOf(false) }
     var busyLabel by remember { mutableStateOf("Gerando PDF...") }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var lastLoadedHtml by remember { mutableStateOf("") }
+
+    fun triggerPrint() {
+        val printManager = context.getSystemService(android.content.Context.PRINT_SERVICE) as? android.print.PrintManager
+        val printAdapter = webView?.createPrintDocumentAdapter(fileName)
+        if (printManager != null && printAdapter != null) {
+            printManager.print(
+                fileName.removeSuffix(".pdf"),
+                printAdapter,
+                android.print.PrintAttributes.Builder()
+                    .setMediaSize(android.print.PrintAttributes.MediaSize.ISO_A4)
+                    .build()
+            )
+        }
+    }
 
     fun runExport(share: Boolean) {
         if (isBusy) return
@@ -75,6 +92,13 @@ fun PdfPreviewScreen(
                     }
                 },
                 actions = {
+                    if (onChangeTemplate != null) {
+                        TextButton(onClick = onChangeTemplate) {
+                            Icon(Icons.Default.Palette, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Modelo", fontSize = 12.sp)
+                        }
+                    }
                     IconButton(onClick = { runExport(share = false) }) {
                         Icon(Icons.Default.Download, contentDescription = "Salvar PDF")
                     }
@@ -82,24 +106,69 @@ fun PdfPreviewScreen(
                         Icon(Icons.Default.Share, contentDescription = "Compartilhar PDF")
                     }
                     IconButton(onClick = {
-                        val printManager = context.getSystemService(android.content.Context.PRINT_SERVICE) as? android.print.PrintManager
-                        val printAdapter = webView?.createPrintDocumentAdapter(fileName)
-                        if (printManager != null && printAdapter != null) {
-                            printManager.print(
-                                fileName.removeSuffix(".pdf"),
-                                printAdapter,
-                                android.print.PrintAttributes.Builder()
-                                    .setMediaSize(android.print.PrintAttributes.MediaSize.ISO_A4)
-                                    .build()
-                            )
-                        } else {
-                            runExport(share = false)
-                        }
+                        if (webView != null) triggerPrint() else runExport(share = false)
                     }) {
                         Icon(Icons.Default.Print, contentDescription = "Imprimir")
                     }
                 }
             )
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 3.dp,
+                shadowElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (onChangeTemplate != null) {
+                        OutlinedButton(
+                            onClick = onChangeTemplate,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Style, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Modelo PDF: ${templateLabel ?: "Trocar (1 a 9)"}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text("Trocar", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { runExport(share = false) },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isBusy
+                        ) {
+                            Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Baixar PDF", fontSize = 13.sp)
+                        }
+                        FilledTonalButton(
+                            onClick = { runExport(share = true) },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isBusy
+                        ) {
+                            Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Compartilhar", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
         }
     ) { padding ->
         Box(
@@ -124,6 +193,7 @@ fun PdfPreviewScreen(
                             useWideViewPort = true
                             defaultTextEncodingName = "UTF-8"
                         }
+                        lastLoadedHtml = htmlContent
                         loadDataWithBaseURL(
                             "file:///android_asset/",
                             previewHtml(htmlContent),
@@ -132,6 +202,18 @@ fun PdfPreviewScreen(
                             null
                         )
                         webView = this
+                    }
+                },
+                update = { view ->
+                    if (lastLoadedHtml != htmlContent) {
+                        lastLoadedHtml = htmlContent
+                        view.loadDataWithBaseURL(
+                            "file:///android_asset/",
+                            previewHtml(htmlContent),
+                            "text/html",
+                            "UTF-8",
+                            null
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxSize()
@@ -165,7 +247,7 @@ private fun previewHtml(html: String): String {
             """
             <style>
                 body { width: auto !important; padding: 8px !important; font-size: 11px; }
-                .photo-grid { grid-template-columns: 1fr !important; }
+                .photo-grid { gap: 6px !important; }
                 .cover { min-height: auto !important; }
                 .cover-kicker { margin-top: 24px !important; }
                 .cover-title { font-size: 40px !important; }

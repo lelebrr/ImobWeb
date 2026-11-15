@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.imobweb.app.model.ChaveItem
+import com.imobweb.app.model.FurnitureDetail
 import com.imobweb.app.model.Medidor
 import com.imobweb.app.model.Medidores
 import com.imobweb.app.model.PhotoAnnotation
@@ -30,7 +31,20 @@ object ModelSanitizer {
         photos = (r.photos ?: emptyList()).map { photo(it) },
         checklist = r.checklist ?: emptyMap(),
         observations = r.observations ?: "",
-        proposals = (r.proposals ?: emptyList()).map { proposal(it) }
+        proposals = (r.proposals ?: emptyList()).map { proposal(it) },
+        furnitureDetails = (r.furnitureDetails ?: emptyList()).map { furnitureDetail(it) }
+    )
+
+    fun furnitureDetail(d: FurnitureDetail): FurnitureDetail = d.copy(
+        id = d.id ?: java.util.UUID.randomUUID().toString(),
+        name = d.name ?: "",
+        category = d.category ?: "Mobília",
+        brandModel = d.brandModel ?: "",
+        quantity = if (d.quantity in 1..999) d.quantity else 1,
+        condition = d.condition ?: "ok",
+        working = d.working ?: "sim",
+        notes = d.notes ?: "",
+        damages = d.damages ?: emptyList()
     )
 
     fun photo(p: PhotoData): PhotoData = p.copy(
@@ -40,7 +54,10 @@ object ModelSanitizer {
         // id estável para fotos antigas (sem id): derivado do arquivo/conteúdo, não aleatório
         id = p.id ?: java.util.UUID.nameUUIDFromBytes(
             (p.filePath ?: ((p.dataUrl ?: "").take(256) + (p.name ?: ""))).toByteArray()
-        ).toString()
+        ).toString(),
+        furnitureTag = p.furnitureTag ?: "",
+        caption = p.caption ?: "",
+        timestamp = p.timestamp ?: ""
     )
 
     fun proposal(p: Proposal): Proposal = p.copy(

@@ -245,16 +245,25 @@ fun RoomConditionCard(
             if (!expanded) return@Column
 
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        // Preenche como "Bom" só o que ainda não foi avaliado
-                        onChange(room.copy(checklist = Checklist.ITEMS.associateWith { room.checklist[it] ?: "ok" }))
-                    },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                ) { Text("Restante: Bom", fontSize = 12.sp) }
+            androidx.compose.foundation.lazy.LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val quickStates = listOf("novo" to "Restante: Novo", "otimo" to "Restante: Ótimo", "ok" to "Restante: Bom")
+                items(quickStates.size) { i ->
+                    val (stateKey, btnLabel) = quickStates[i]
+                    OutlinedButton(
+                        onClick = {
+                            onChange(room.copy(checklist = Checklist.ITEMS.associateWith { room.checklist[it] ?: stateKey }))
+                        },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) { Text(btnLabel, fontSize = 12.sp, maxLines = 1) }
+                }
                 if (room.checklist.isNotEmpty()) {
-                    TextButton(onClick = { onChange(room.copy(checklist = emptyMap())) }) { Text("Limpar", fontSize = 12.sp) }
+                    item {
+                        TextButton(onClick = { onChange(room.copy(checklist = emptyMap())) }) { Text("Limpar", fontSize = 12.sp) }
+                    }
                 }
             }
             Spacer(Modifier.height(6.dp))

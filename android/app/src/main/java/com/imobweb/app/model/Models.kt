@@ -178,16 +178,56 @@ data class Signatures(
     fun count(): Int = listOf(locadora, locatario, vistoriadora).count { !it.isNullOrBlank() }
 }
 
-/** Estado de conservação por elemento do cômodo (mesmos itens e estados do sistema web). */
+/** Estado de conservação por elemento do cômodo e móveis (critérios oficiais do laudo). */
 object Checklist {
     val ITEMS = listOf(
         "Paredes", "Pintura", "Teto", "Piso", "Rodapé", "Portas", "Janelas", "Elétrica (tomadas/interruptores)",
-        "Iluminação", "Hidráulica (torneiras/registros)", "Louças e metais", "Armários / bancadas"
+        "Iluminação", "Hidráulica (torneiras/registros)", "Louças e metais", "Armários / bancadas",
+        "Mobília / Estofados", "Eletrodomésticos"
     )
     /** id → rótulo */
-    val STATES = listOf("ok" to "Bom", "regular" to "Regular", "ruim" to "Ruim", "na" to "N/A")
+    val STATES = listOf(
+        "novo" to "Novo",
+        "otimo" to "Ótimo",
+        "ok" to "Bom",
+        "regular" to "Regular",
+        "ruim" to "Ruim",
+        "na" to "N/A"
+    )
     fun label(state: String?): String = STATES.firstOrNull { it.first == state }?.second ?: "—"
-    fun rank(state: String?): Int = when (state) { "ok" -> 0; "regular" -> 1; "ruim" -> 2; else -> -1 }
+    fun rank(state: String?): Int = when (state) {
+        "novo" -> 0
+        "otimo" -> 1
+        "ok" -> 2
+        "regular" -> 3
+        "ruim" -> 4
+        else -> -1
+    }
+}
+
+/** Inspeção detalhada de cada móvel, eletrodoméstico ou equipamento do cômodo. */
+data class FurnitureDetail(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String = "",
+    /** Mobília, Eletrodoméstico, Eletrônico, Utensílios, Decoração, Acabamento */
+    val category: String = "Mobília",
+    /** Marca, modelo, cor ou material (ex.: "Samsung 43\" Preta", "MDF Branco") */
+    val brandModel: String = "",
+    val quantity: Int = 1,
+    /** novo, otimo, ok, regular, ruim */
+    val condition: String = "ok",
+    /** sim (Funcionando), nao (Com defeito), na (Não aplicável) */
+    val working: String = "sim",
+    val notes: String = "",
+    val damages: List<String> = emptyList()
+) {
+    companion object {
+        val CATEGORIES = listOf("Mobília", "Eletrodoméstico", "Eletrônico", "Utensílios", "Decoração", "Acabamento")
+        val CONDITIONS = listOf("novo" to "Novo", "otimo" to "Ótimo", "ok" to "Bom", "regular" to "Regular", "ruim" to "Ruim")
+        val WORKING_OPTIONS = listOf("sim" to "Funcionando", "nao" to "Com defeito", "na" to "N/A")
+        fun conditionLabel(c: String?): String = CONDITIONS.firstOrNull { it.first == c }?.second ?: "Bom"
+        fun workingLabel(w: String?): String = WORKING_OPTIONS.firstOrNull { it.first == w }?.second ?: "Funcionando"
+    }
 }
 
 data class RoomData(
@@ -200,12 +240,14 @@ data class RoomData(
     val photos: List<PhotoData> = emptyList(),
     val analyzing: Boolean = false,
     val analyzed: Boolean = false,
-    /** elemento (Checklist.ITEMS) → ok | regular | ruim | na */
+    /** elemento (Checklist.ITEMS) → novo | otimo | ok | regular | ruim | na */
     val checklist: Map<String, String> = emptyMap(),
     /** observações livres do cômodo */
     val observations: String = "",
     /** sugestões da IA aguardando revisão */
-    val proposals: List<Proposal> = emptyList()
+    val proposals: List<Proposal> = emptyList(),
+    /** detalhamento item a item de móveis, eletros e equipamentos */
+    val furnitureDetails: List<FurnitureDetail> = emptyList()
 )
 
 data class PhotoData(
@@ -215,7 +257,13 @@ data class PhotoData(
     val filePath: String? = null,
     val id: String = java.util.UUID.randomUUID().toString(),
     /** chave da foto no armazenamento do servidor (R2), quando já enviada */
-    val remoteKey: String? = null
+    val remoteKey: String? = null,
+    /** nome do móvel/item específico associado a esta foto (vazio se foto geral do cômodo) */
+    val furnitureTag: String = "",
+    /** legenda ou detalhe adicional da foto */
+    val caption: String = "",
+    /** data e hora em que a foto foi capturada/importada */
+    val timestamp: String = ""
 )
 
 data class PhotoAnnotation(
@@ -393,99 +441,211 @@ object Constants {
 
 object RoomTemplates {
     data class Template(val name: String, val rooms: List<String>)
+    data class ShortcutGroup(val title: String, val rooms: List<String>)
 
     val templates = listOf(
-        Template("Apartamento", listOf(
-            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
-            "BANHEIRO SOCIAL", "QUARTO 1", "QUARTO 2", "VARANDA", "GARAGEM"
+        Template("Em Branco (1 a 1)", emptyList()),
+        Template("Apartamento Padrão", listOf(
+            "ENTRADA", "SALA DE ESTAR", "SALA DE JANTAR", "COZINHA", "ÁREA DE SERVIÇO",
+            "BANHEIRO SOCIAL", "QUARTO 1", "SUÍTE", "BANHEIRO SUÍTE", "VARANDA", "GARAGEM"
         )),
-        Template("Casa", listOf(
-            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
-            "BANHEIRO SOCIAL", "QUARTO 1", "QUARTO 2", "SUÍTE",
-            "VARANDA", "QUINTAL", "GARAGEM", "ESCRITÓRIO"
+        Template("Imóvel Mobiliado Completo", listOf(
+            "HALL DE ENTRADA", "LIVING / SALA DE ESTAR", "SALA DE JANTAR", "VARANDA GOURMET",
+            "COZINHA PLANEJADA", "DESPENSA", "ÁREA DE SERVIÇO", "LAVABO",
+            "CORREDOR / CIRCULAÇÃO", "SUÍTE MASTER", "CLOSET", "BANHEIRO SUÍTE",
+            "QUARTO 1", "QUARTO 2", "BANHEIRO SOCIAL", "ESCRITÓRIO / HOME OFFICE",
+            "GARAGEM / VAGA"
         )),
-        Template("Sala Comercial", listOf(
-            "ENTRADA", "SALA PRINCIPAL", "SALA DE REUNIÃO",
-            "BANHEIRO", "COPA", "DEPÓSITO"
+        Template("Casa / Sobrado", listOf(
+            "FACHADA / PORTÃO", "ENTRADA", "SALA DE ESTAR", "SALA DE JANTAR", "COZINHA",
+            "COPA", "ÁREA DE SERVIÇO", "LAVABO", "BANHEIRO SOCIAL",
+            "QUARTO 1", "QUARTO 2", "SUÍTE", "BANHEIRO SUÍTE",
+            "VARANDA / ÁREA GOURMET", "QUINTAL", "GARAGEM", "ESCRITÓRIO"
         )),
-        Template("Cobertura", listOf(
-            "ENTRADA", "SALA", "COZINHA", "ÁREA DE SERVIÇO",
-            "BANHEIRO SOCIAL", "QUARTO 1", "SUÍTE 1", "SUÍTE 2",
-            "VARANDA", "TERRAÇO", "PISCINA", "ESCRITÓRIO", "GARAGEM"
+        Template("Studio / Kitnet / Flat", listOf(
+            "ENTRADA", "AMBIENTE INTEGRADO (SALA/QUARTO)", "COZINHA AMERICANA",
+            "ÁREA DE SERVIÇO", "BANHEIRO", "VARANDA"
         )),
-        Template("Studio/Flat", listOf(
-            "SALA/QUARTO INTEGRADO", "COZINHA AMERICANA",
-            "BANHEIRO"
+        Template("Sala / Conjunto Comercial", listOf(
+            "RECEPÇÃO / ENTRADA", "SALA PRINCIPAL / OPEN SPACE", "SALA DE REUNIÃO",
+            "SALA DIRETORIA", "COPA / COZINHA", "BANHEIRO MASCULINO", "BANHEIRO FEMININO",
+            "CPD / SERVIDOR", "DEPÓSITO / ARQUIVO"
         )),
-        Template("Personalizado", emptyList())
+        Template("Cobertura / Alto Padrão", listOf(
+            "HALL PRIVATIVO", "LIVING", "SALA DE JANTAR", "SALA DE TV / HOME THEATER",
+            "COZINHA", "ÁREA DE SERVIÇO", "DEPENDÊNCIA DE SERVIÇO", "LAVABO",
+            "SUÍTE 1", "CLOSET", "BANHEIRO SUÍTE 1", "SUÍTE 2", "BANHEIRO SUÍTE 2",
+            "TERRAÇO / COBERTURA", "ÁREA GOURMET", "PISCINA / DECK", "ESCRITÓRIO", "GARAGEM"
+        ))
+    )
+
+    val shortcutGroups = listOf(
+        ShortcutGroup("Social", listOf(
+            "ENTRADA", "HALL DE ENTRADA", "SALA DE ESTAR", "SALA DE JANTAR",
+            "SALA DE TV", "LIVING", "LAVABO", "ESCRITÓRIO"
+        )),
+        ShortcutGroup("Íntimo", listOf(
+            "QUARTO", "SUÍTE", "CLOSET", "BANHEIRO SOCIAL", "BANHEIRO SUÍTE", "CORREDOR"
+        )),
+        ShortcutGroup("Serviço", listOf(
+            "COZINHA", "COZINHA AMERICANA", "COPA", "ÁREA DE SERVIÇO",
+            "LAVANDERIA", "DESPENSA", "DEPÓSITO", "QUARTO DE SERVIÇO"
+        )),
+        ShortcutGroup("Externo & Lazer", listOf(
+            "VARANDA", "VARANDA GOURMET", "SACADA", "TERRAÇO", "QUINTAL",
+            "CHURRASQUEIRA", "PISCINA", "JARDIM", "GARAGEM", "FACHADA"
+        )),
+        ShortcutGroup("Comercial", listOf(
+            "RECEPÇÃO", "SALA PRINCIPAL", "SALA DE REUNIÃO", "SALA DIRETORIA",
+            "ATENDIMENTO", "CPD / SERVIDOR", "ESTOQUE", "MEZANINO"
+        ))
     )
 }
 
 object FurnitureItems {
-    val items = listOf(
-        "Sofá", "Mesa de centro", "Mesa de jantar", "Cadeiras",
-        "Armário", "Guarda-roupa", "Cama", "Criado-mudo",
-        "Estante", "Escrivaninha", "Cadeira de escritório",
-        "TV", "Painel para TV", "Cortinas", "Persianas",
-        "Tapete", "Lustre/Luminária", "Ventilador de teto",
-        "Ar condicionado", "Fogão", "Geladeira", "Micro-ondas",
-        "Lava-louças", "Máquina de lavar", "Aquecedor"
+    data class CatalogGroup(val category: String, val items: List<String>)
+
+    val groups = listOf(
+        CatalogGroup("Mobília", listOf(
+            "Sofá", "Sofá retrátil/reclinável", "Sofá-cama", "Poltrona", "Puff",
+            "Mesa de centro", "Mesa lateral", "Mesa de jantar", "Cadeiras de jantar",
+            "Banquetas", "Rack", "Painel para TV", "Aparador", "Buffet / Cristaleira",
+            "Estante", "Estante de livros", "Escrivaninha", "Mesa de escritório",
+            "Cadeira de escritório", "Gaveteiro", "Armário planejado", "Armário multiuso",
+            "Guarda-roupa", "Closet planejado", "Cômoda", "Sapateira",
+            "Cama de casal", "Cama de solteiro", "Cama Queen/King", "Box + Colchão",
+            "Cabeceira", "Criado-mudo", "Beliche", "Berço", "Gabinete de pia",
+            "Gabinete de banheiro", "Bancada / Ilha", "Mesa de varanda", "Sofá externo",
+            "Espreguiçadeira", "Ombrelone", "Tábua de passar", "Adega climatizada"
+        )),
+        CatalogGroup("Eletrodoméstico", listOf(
+            "Geladeira / Refrigerador", "Freezer", "Frigobar", "Fogão de piso",
+            "Cooktop", "Forno elétrico", "Forno a gás", "Micro-ondas",
+            "Coifa / Depurador", "Lava-louças", "Purificador / Filtro de água",
+            "Máquina de lavar roupa", "Secadora de roupa", "Lava e seca",
+            "Ar-condicionado Split", "Ar-condicionado Janela", "Aquecedor a gás",
+            "Chuveiro elétrico", "Ducha a gás", "Aspirador de pó", "Ferro de passar",
+            "Cafeteira", "Liquidificador", "Batedeira", "Air Fryer", "Torradeira",
+            "Sanduicheira", "Ventilador de teto", "Ventilador portátil", "Exaustor",
+            "Churrasqueira elétrica/gás", "Cervejeira"
+        )),
+        CatalogGroup("Eletrônico", listOf(
+            "Smart TV", "Controle remoto TV", "Controle Ar-condicionado",
+            "Soundbar / Home Theater", "Roteador Wi-Fi / Modem", "Interfone",
+            "Videoporteiro", "Fechadura digital", "Câmera de segurança",
+            "Campainha", "Monitor", "Computador / Desktop", "Impressora",
+            "Telefone fixo", "Projetor / Telão", "Controle do portão"
+        )),
+        CatalogGroup("Decoração & Têxtil", listOf(
+            "Cortina tecido", "Cortina blackout", "Persiana rolô", "Persiana horizontal",
+            "Tapete sala", "Tapete quarto", "Passadeira", "Espelho parede",
+            "Espelho com LED", "Quadro / Tela decorativa", "Lustre", "Pendente",
+            "Luminária de piso / Abajur", "Vaso decorativo", "Almofadas",
+            "Jogo de cama / Edredom", "Travesseiros", "Toalhas"
+        )),
+        CatalogGroup("Utensílios", listOf(
+            "Jogo de pratos", "Jogo de copos e taças", "Faqueiro / Talheres",
+            "Jogo de panelas", "Chaleira / Bule", "Potes herméticos",
+            "Escorredor de louça", "Lixeira cozinha", "Lixeira banheiro",
+            "Porta-toalha / Papeleira", "Saboneteira", "Cabides", "Varal de teto / chão"
+        )),
+        CatalogGroup("Acabamento", listOf(
+            "Box blindex", "Assento sanitário", "Ducha higiênica", "Torneira monocomando",
+            "Fechamento de vidro (sacada)", "Tela de proteção (rede)", "Toldo / Cobertura",
+            "Armário de garagem", "Prateleira / Nicho", "Nicho embutido (box)"
+        ))
     )
+
+    val items: List<String> by lazy { groups.flatMap { it.items }.distinct() }
+
+    fun detectCategory(itemName: String): String {
+        return groups.firstOrNull { g -> g.items.any { it.equals(itemName, ignoreCase = true) } }?.category
+            ?: when {
+                itemName.contains("TV", true) || itemName.contains("Som", true) || itemName.contains("Controle", true) || itemName.contains("Roteador", true) || itemName.contains("Interfone", true) -> "Eletrônico"
+                itemName.contains("Geladeira", true) || itemName.contains("Fogão", true) || itemName.contains("Micro", true) || itemName.contains("Lav", true) || itemName.contains("Ar", true) || itemName.contains("Forno", true) -> "Eletrodoméstico"
+                itemName.contains("Cortina", true) || itemName.contains("Persiana", true) || itemName.contains("Tapete", true) || itemName.contains("Espelho", true) || itemName.contains("Quadro", true) || itemName.contains("Lustre", true) -> "Decoração"
+                itemName.contains("Prato", true) || itemName.contains("Copo", true) || itemName.contains("Talher", true) || itemName.contains("Panela", true) -> "Utensílios"
+                itemName.contains("Box", true) || itemName.contains("Vidro", true) || itemName.contains("Tela", true) -> "Acabamento"
+                else -> "Mobília"
+            }
+    }
 }
 
 object RoomFurnitureCatalog {
     fun getRelevantFurniture(roomName: String): List<String> {
         val upper = roomName.uppercase()
         return when {
-            upper.contains("SALA") || upper.contains("ESTAR") || upper.contains("LIVING") || upper.contains("TV") -> listOf(
-                "Sofá", "Mesa de centro", "Mesa de jantar", "Cadeiras", "Painel para TV",
-                "TV", "Rack", "Aparador", "Cortinas", "Persianas", "Tapete",
-                "Lustre/Luminária", "Ar condicionado", "Ventilador de teto", "Poltrona"
+            upper.contains("INTEGRADO") || upper.contains("STUDIO") || upper.contains("KITNET") -> listOf(
+                "Cama de casal", "Box + Colchão", "Sofá", "Guarda-roupa", "Smart TV",
+                "Painel para TV", "Mesa de jantar", "Banquetas", "Ar-condicionado Split",
+                "Cortina blackout", "Persiana rolô", "Frigobar", "Cooktop", "Micro-ondas"
+            )
+            upper.contains("SALA") || upper.contains("ESTAR") || upper.contains("JANTAR") || upper.contains("LIVING") || upper.contains("TV") || upper.contains("RECEP") -> listOf(
+                "Sofá", "Sofá retrátil/reclinável", "Poltrona", "Puff", "Mesa de centro",
+                "Mesa lateral", "Mesa de jantar", "Cadeiras de jantar", "Painel para TV",
+                "Smart TV", "Controle remoto TV", "Rack", "Aparador", "Buffet / Cristaleira",
+                "Tapete sala", "Cortina tecido", "Persiana rolô", "Lustre", "Pendente",
+                "Ar-condicionado Split", "Controle Ar-condicionado", "Ventilador de teto",
+                "Roteador Wi-Fi / Modem", "Quadro / Tela decorativa"
             )
             upper.contains("COZINHA") || upper.contains("COPA") -> listOf(
-                "Armário planejado", "Fogão/Cooktop", "Geladeira", "Micro-ondas",
-                "Coifa/Depurador", "Forno elétrico", "Lava-louças", "Bancada",
-                "Gabinete de pia", "Mesa de apoio", "Banquetas", "Filtro/Purificador de água"
+                "Armário planejado", "Gabinete de pia", "Bancada / Ilha", "Geladeira / Refrigerador",
+                "Fogão de piso", "Cooktop", "Forno elétrico", "Micro-ondas", "Coifa / Depurador",
+                "Lava-louças", "Purificador / Filtro de água", "Cafeteira", "Air Fryer",
+                "Liquidificador", "Banquetas", "Mesa de jantar", "Lixeira cozinha",
+                "Jogo de pratos", "Jogo de copos e taças", "Faqueiro / Talheres", "Jogo de panelas"
+            )
+            upper.contains("CLOSET") -> listOf(
+                "Closet planejado", "Guarda-roupa", "Cômoda", "Sapateira",
+                "Espelho parede", "Puff", "Cabides", "Iluminação LED"
             )
             upper.contains("SUÍTE") || upper.contains("SUITE") -> listOf(
-                "Cama/Box", "Colchão", "Guarda-roupa/Closet", "Criado-mudo", "Cabeceira",
-                "Ar condicionado", "TV", "Cortinas", "Box blindex", "Espelho",
-                "Gabinete de banheiro", "Chuveiro/Ducha", "Ducha higiênica"
+                "Cama Queen/King", "Cama de casal", "Box + Colchão", "Cabeceira", "Criado-mudo",
+                "Guarda-roupa", "Closet planejado", "Cômoda", "Smart TV", "Painel para TV",
+                "Controle remoto TV", "Ar-condicionado Split", "Controle Ar-condicionado",
+                "Cortina blackout", "Persiana rolô", "Espelho parede", "Box blindex",
+                "Gabinete de banheiro", "Ducha higiênica", "Chuveiro elétrico"
             )
             upper.contains("QUARTO") || upper.contains("DORMITÓRIO") || upper.contains("DORMITORIO") -> listOf(
-                "Cama/Box", "Colchão", "Guarda-roupa", "Criado-mudo", "Cabeceira",
-                "Painel para TV", "TV", "Ar condicionado", "Cortinas", "Persianas",
-                "Espelho", "Ventilador de teto", "Escrivaninha"
+                "Cama de casal", "Cama de solteiro", "Box + Colchão", "Cabeceira", "Criado-mudo",
+                "Guarda-roupa", "Cômoda", "Escrivaninha", "Cadeira de escritório",
+                "Painel para TV", "Smart TV", "Ar-condicionado Split", "Ventilador de teto",
+                "Cortina blackout", "Persiana rolô", "Espelho parede", "Tapete quarto", "Abajur"
             )
             upper.contains("BANHEIRO") || upper.contains("LAVABO") || upper.contains("WC") || upper.contains("BANHO") -> listOf(
-                "Box blindex", "Espelho", "Gabinete de pia", "Chuveiro/Ducha",
-                "Ducha higiênica", "Porta-toalha", "Assento sanitário", "Papeleira",
-                "Prateleira", "Armário aéreo"
+                "Box blindex", "Espelho parede", "Espelho com LED", "Gabinete de pia",
+                "Armário de banheiro", "Nicho embutido (box)", "Chuveiro elétrico", "Ducha a gás",
+                "Ducha higiênica", "Assento sanitário", "Porta-toalha / Papeleira",
+                "Saboneteira", "Lixeira banheiro", "Exaustor"
             )
             upper.contains("SERVIÇO") || upper.contains("SERVICO") || upper.contains("LAVANDERIA") -> listOf(
-                "Máquina de lavar", "Secadora", "Tanque", "Varal de teto",
-                "Armário de serviço", "Aquecedor a gás", "Tábua de passar"
+                "Máquina de lavar roupa", "Secadora de roupa", "Lava e seca",
+                "Armário de serviço", "Prateleira / Nicho", "Aquecedor a gás",
+                "Varal de teto / chão", "Tábua de passar", "Ferro de passar", "Aspirador de pó"
             )
-            upper.contains("VARANDA") || upper.contains("SACADA") || upper.contains("GOURMET") || upper.contains("TERRAÇO") || upper.contains("TERRACO") -> listOf(
-                "Mesa de varanda", "Cadeiras/Banquetas", "Churrasqueira", "Pia",
-                "Bancada de granito", "Fechamento de vidro", "Armário externo", "Sofá externo"
+            upper.contains("VARANDA") || upper.contains("SACADA") || upper.contains("GOURMET") || upper.contains("TERRAÇO") || upper.contains("TERRACO") || upper.contains("QUINTAL") || upper.contains("PISCINA") -> listOf(
+                "Mesa de varanda", "Cadeiras / Banquetas", "Sofá externo", "Espreguiçadeira",
+                "Ombrelone", "Churrasqueira elétrica/gás", "Cervejeira", "Frigobar",
+                "Bancada / Ilha", "Gabinete de pia", "Fechamento de vidro (sacada)",
+                "Tela de proteção (rede)", "Armário externo"
             )
-            upper.contains("ESCRITÓRIO") || upper.contains("ESCRITORIO") || upper.contains("OFFICE") || upper.contains("ESTUDO") -> listOf(
-                "Mesa/Escrivaninha", "Cadeira de escritório", "Estante de livros",
-                "Gaveteiro", "Computador/Monitor", "Ar condicionado", "Cortinas"
+            upper.contains("ESCRITÓRIO") || upper.contains("ESCRITORIO") || upper.contains("OFFICE") || upper.contains("ESTUDO") || upper.contains("REUNIÃO") || upper.contains("DIRETORIA") -> listOf(
+                "Mesa de escritório", "Escrivaninha", "Cadeira de escritório", "Estante de livros",
+                "Gaveteiro", "Armário planejado", "Monitor", "Computador / Desktop",
+                "Impressora", "Roteador Wi-Fi / Modem", "Ar-condicionado Split",
+                "Persiana horizontal", "Telefone fixo"
             )
             upper.contains("ENTRADA") || upper.contains("HALL") || upper.contains("CORREDOR") || upper.contains("ACESSO") -> listOf(
-                "Aparador", "Espelho", "Interfone", "Campainha", "Fechadura digital",
-                "Sapateira", "Lustre/Luminária", "Cabideiro"
+                "Aparador", "Espelho parede", "Interfone", "Videoporteiro", "Campainha",
+                "Fechadura digital", "Sapateira", "Lustre", "Pendente", "Quadro / Tela decorativa"
             )
             upper.contains("GARAGEM") || upper.contains("VAGA") || upper.contains("ESTACIONAMENTO") -> listOf(
-                "Controle do portão", "Armário de garagem", "Vaga demarcada",
-                "Tomada para carro elétrico", "Lixeira"
+                "Controle do portão", "Armário de garagem", "Bicicletário", "Tomada carro elétrico"
             )
-            upper.contains("DEPÓSITO") || upper.contains("DEPOSITO") || upper.contains("DESPENSA") -> listOf(
-                "Prateleiras", "Armário multiuso", "Estante de aço"
+            upper.contains("DEPÓSITO") || upper.contains("DEPOSITO") || upper.contains("DESPENSA") || upper.contains("ARQUIVO") -> listOf(
+                "Prateleira / Nicho", "Armário multiuso", "Estante de aço", "Freezer"
             )
-            else -> FurnitureItems.items
+            else -> FurnitureItems.items.take(24)
         }
     }
 }
@@ -494,6 +654,14 @@ object ProblemsCatalog {
     data class ProblemCategory(val name: String, val problems: List<String>)
 
     val categories = listOf(
+        ProblemCategory("Móveis, Eletros e Estofados", listOf(
+            "Estofado rasgado / furado", "Mancha no estofado / colchão", "Madeira inchada / umidade",
+            "Móvel riscado ou lascado", "Gaveta emperrando / trilho solto", "Porta de armário desalinhada",
+            "Dobradiça enferrujada / quebrada", "Puxador faltando / solto", "Vidro de móvel trincado",
+            "Eletrodoméstico não liga", "Geladeira não gela adequadamente", "Boca do fogão sem acendimento",
+            "Ar-condicionado sem controle", "Ar-condicionado não gela / pingando", "TV sem controle remoto",
+            "Borracha de vedação ressecada", "Pé / base do móvel quebrado", "Colchão afundado"
+        )),
         ProblemCategory("Paredes e Tetos", listOf(
             "Rachadura na parede", "Trinca no teto", "Pintura descascando",
             "Mancha de umidade", "Infiltração", "Mofo", "Bolor",
@@ -508,7 +676,7 @@ object ProblemsCatalog {
             "Porta com desajuste", "Porta arranhada", "Porta amassada",
             "Maçaneta solta", "Fechadura com defeito", "Janela emperrando",
             "Janela com vidro trincado", "Vedação comprometida",
-            "Persiana quebrada", "Cortina danificada"
+            "Persiana quebrada", "Cortina danificada", "Tela de proteção danificada"
         )),
         ProblemCategory("Instalações Elétricas", listOf(
             "Tomada com defeito", "Interruptor com defeito",
@@ -525,7 +693,7 @@ object ProblemsCatalog {
         ProblemCategory("Geral / Diversos", listOf(
             "Mofo", "Barulho", "Mau cheiro", "Problema no interfone",
             "Campainha quebrada", "Vaga de garagem inadequada",
-            "Armário danificado", "Banco danificado", "Serragem/trincas"
+            "Limpeza pendente", "Odor de cigarro / mofo"
         ))
     )
 

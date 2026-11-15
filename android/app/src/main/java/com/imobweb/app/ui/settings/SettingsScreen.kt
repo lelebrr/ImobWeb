@@ -55,14 +55,16 @@ private fun faintWatermark(path: String): String? = runCatching {
     "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(bytes)
 }.getOrNull()
 
-suspend fun loadLaudoOptions(context: android.content.Context): com.imobweb.app.util.LaudoOptions {
+suspend fun loadLaudoOptions(context: android.content.Context, vistoriaId: Long = 0L): com.imobweb.app.util.LaudoOptions {
     val p = context.settingsStore.data.first()
     val enabled = p[WM_ENABLED_KEY] == "1"
     val image = if (enabled) p[WM_IMAGE_KEY]?.let { path -> faintWatermark(path) } else null
+    val tpl = com.imobweb.app.util.PdfTemplateCatalog.loadForVistoria(context, vistoriaId)
     return com.imobweb.app.util.LaudoOptions(
         empresaNome = p[EMPRESA_KEY].orEmpty(),
         watermarkText = if (enabled) p[WM_TEXT_KEY]?.takeIf { it.isNotBlank() } else null,
-        watermarkImage = image
+        watermarkImage = image,
+        template = tpl
     )
 }
 

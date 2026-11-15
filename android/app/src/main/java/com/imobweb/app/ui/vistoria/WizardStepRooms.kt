@@ -280,12 +280,20 @@ internal fun StepRooms(
     currentRoomIdx: Int,
     onCurrentRoomIdxChange: (Int) -> Unit,
     tipoImovel: String,
-    context: Context
+    context: Context,
+    useAssistant: Boolean = true,
+    onUseAssistantChange: (Boolean) -> Unit = {},
+    onDuplicateRoom: (Int) -> Unit = {},
+    onMoveRoom: (Int, Int) -> Unit = { _, _ -> }
 ) {
     val questions = remember(tipoImovel) { getQuestionsForPropertyType(tipoImovel) }
     var qStep by remember { mutableIntStateOf(0) }
-    var isConfiguring by remember { mutableStateOf(rooms.isEmpty()) }
+    var isConfiguring by remember { mutableStateOf(useAssistant && rooms.isEmpty()) }
+    LaunchedEffect(useAssistant) {
+        if (!useAssistant) isConfiguring = false
+    }
     var extraRoomName by remember { mutableStateOf("") }
+    var pendingTemplate by remember { mutableStateOf<RoomTemplates.Template?>(null) }
 
     val customExtras = remember { mutableStateListOf<String>() }
     var currentExtraInput by remember { mutableStateOf("") }
@@ -891,64 +899,160 @@ internal fun StepRooms(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
+
+            // Templates rápidos de imóveis (Em Branco, Mobiliado Completo, Sobrado, etc.)
+            Text("Pacotes Rápidos de Cômodos", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(RoomTemplates.templates.size) { i ->
+                    val tpl = RoomTemplates.templates[i]
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            if (rooms.isEmpty()) {
+                                val next = tpl.rooms.map { RoomData(name = it) }
+                                onRoomsChange(next)
+                                onCurrentRoomIdxChange(0)
+                                Toast.makeText(context, "Template \"${tpl.name}\" aplicado", Toast.LENGTH_SHORT).show()
+                            } else {
+                                pendingTemplate = tpl
+                            }
+                        },
+                        label = { Text("${tpl.name} (${tpl.rooms.size})", fontSize = 11.sp, maxLines = 1) }
+                    )
+                }
+            }
+
+            pendingTemplate?.let { tpl ->
+                AlertDialog(
+                    onDismissRequest = { pendingTemplate = null },
+                    title = { Text("Aplicar \"${tpl.name}\"?") },
+                    text = {
+                        Text(
+                            if (tpl.rooms.isEmpty()) "Isso limpará a lista atual para você adicionar cômodos 1 a 1 do zero."
+                            else "Deseja substituir seus cômodos atuais ou adicionar apenas os que ainda não estão na lista?"
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            onRoomsChange(tpl.rooms.map { RoomData(name = it) })
+                            onCurrentRoomIdxChange(0)
+                            pendingTemplate = null
+                        }) { Text("Substituir lista") }
+                    },
+                    dismissButton = {
+                        Row {
+                            if (tpl.rooms.isNotEmpty()) {
+                                TextButton(onClick = {
+                                    val existing = rooms.map { it.name.uppercase() }.toSet()
+                                    val missing = tpl.rooms.filter { it.uppercase() !in existing }.map { RoomData(name = it) }
+                                    onRoomsChange(rooms + missing)
+                                    pendingTemplate = null
+                                }) { Text("Mesclar (+${tpl.rooms.count { n -> rooms.none { it.name.equals(n, ignoreCase = true) } }})") }
+                            }
+                            TextButton(onClick = { pendingTemplate = null }) { Text("Cancelar") }
+                        }
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
 
             // Room items
             rooms.forEachIndexed { idx, room ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 3.dp),
-                    border = if (idx == currentRoomIdx) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
+                        .padding(vertical = 4.dp),
+                    border = if (idx == currentRoomIdx) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(32.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    "${idx + 1}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.primary
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        "${idx + 1}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            OutlinedTextField(
+                                value = room.name,
+                                onValueChange = { newName ->
+                                    onRoomsChange(rooms.toMutableList().apply {
+                                        this[idx] = room.copy(name = newName)
+                                    })
+                                },
+                                placeholder = { Text("Ex: SALA DE ESTAR, QUARTO") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            IconButton(
+                                onClick = {
+                                    val mutable = rooms.toMutableList()
+                                    mutable.removeAt(idx)
+                                    onRoomsChange(mutable)
+                                    if (currentRoomIdx >= mutable.size && mutable.isNotEmpty()) {
+                                        onCurrentRoomIdxChange(mutable.size - 1)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Remover",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
-                        Spacer(Modifier.width(10.dp))
-                        OutlinedTextField(
-                            value = room.name,
-                            onValueChange = { newName ->
-                                onRoomsChange(rooms.toMutableList().apply {
-                                    this[idx] = room.copy(name = newName)
-                                })
-                            },
-                            placeholder = { Text("Ex: SALA DE ESTAR, QUARTO") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        IconButton(
-                            onClick = {
-                                val mutable = rooms.toMutableList()
-                                mutable.removeAt(idx)
-                                onRoomsChange(mutable)
-                                if (currentRoomIdx >= mutable.size && mutable.isNotEmpty()) {
-                                    onCurrentRoomIdxChange(mutable.size - 1)
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "📷 ${room.photos.size} foto(s)  •  🪑 ${roomFurnitureCount(room)} móvel(is)",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { onMoveRoom(idx, idx - 1) },
+                                    enabled = idx > 0,
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Subir cômodo", modifier = Modifier.size(18.dp))
+                                }
+                                IconButton(
+                                    onClick = { onMoveRoom(idx, idx + 1) },
+                                    enabled = idx < rooms.lastIndex,
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Descer cômodo", modifier = Modifier.size(18.dp))
+                                }
+                                TextButton(
+                                    onClick = { onDuplicateRoom(idx) },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Duplicar", fontSize = 11.sp)
                                 }
                             }
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Remover",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp)
-                            )
                         }
                     }
                 }
@@ -987,24 +1091,30 @@ internal fun StepRooms(
 
             Spacer(Modifier.height(8.dp))
 
-            // Quick Add Shortcut Chips
-            Text("Atalhos rápidos:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                listOf("QUARTO", "BANHEIRO", "GARAGEM", "VARANDA", "DEPÓSITO", "ÁREA GOURMET").forEach { shortcut ->
-                    SuggestionChip(
-                        onClick = {
-                            val count = rooms.count { it.name.startsWith(shortcut, ignoreCase = true) }
-                            val newName = if (count > 0) "$shortcut ${count + 1}" else shortcut
-                            onRoomsChange(rooms + RoomData(name = newName))
-                        },
-                        label = { Text("+ $shortcut", fontSize = 11.sp) }
-                    )
+            // Atalhos rápidos categorizados por ambiente
+            Text("Atalhos Rápidos por Tipo:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(6.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                RoomTemplates.shortcutGroups.forEach { group ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(group.title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(group.rooms.size) { i ->
+                                val shortcut = group.rooms[i]
+                                SuggestionChip(
+                                    onClick = {
+                                        val count = rooms.count { it.name.startsWith(shortcut, ignoreCase = true) }
+                                        val newName = if (count > 0) "$shortcut ${count + 1}" else shortcut
+                                        onRoomsChange(rooms + RoomData(name = newName))
+                                    },
+                                    label = { Text("+ $shortcut", fontSize = 11.sp, maxLines = 1) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

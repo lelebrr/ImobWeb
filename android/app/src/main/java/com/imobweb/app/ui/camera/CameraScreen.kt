@@ -21,6 +21,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,17 +68,29 @@ import kotlin.math.sqrt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraScreen(
-    /** Caminho do JPEG original e o item do roteiro fotografado (se houver). A câmera continua aberta. */
-    onPhotoCaptured: (String, String?) -> Unit,
+    /** Caminho do JPEG original, item do roteiro (se houver) e tag do móvel/item selecionada. */
+    onPhotoCaptured: (String, String?, String?) -> Unit,
     onClose: () -> Unit,
     title: String = "Tirar Foto",
     photoCount: Int = 0,
-    shotList: List<String> = emptyList()
+    shotList: List<String> = emptyList(),
+    initialFreeMode: Boolean = false,
+    furnitureList: List<String> = emptyList(),
+    initialFurnitureTag: String? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("camera_prefs", Context.MODE_PRIVATE) }
+
+    var freeMode by remember(initialFreeMode) { mutableStateOf(initialFreeMode) }
+    var selectedTag by remember(initialFurnitureTag) { mutableStateOf(initialFurnitureTag?.takeIf { it.isNotBlank() }) }
+    var sessionShots by remember { mutableIntStateOf(0) }
+    var customTags by remember(furnitureList, initialFurnitureTag) {
+        mutableStateOf((furnitureList + listOfNotNull(initialFurnitureTag?.takeIf { it.isNotBlank() })).distinct())
+    }
+    var showAddTagDialog by remember { mutableStateOf(false) }
+    var newTagInput by remember { mutableStateOf("") }
 
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
@@ -199,16 +213,26 @@ fun CameraScreen(
 
     fun advance() { if (shotList.isNotEmpty()) shotIdx = (shotIdx + 1).coerceAtMost(shotList.size) }
 
-    /** Revisa a foto: se tiver problema, pergunta; senão entrega e avança no roteiro. */
+    /** Entrega a foto capturada (imediato em Modo Livre/Rajada; com revisão de qualidade no Assistente). */
+    fun deliverPhoto(file: File, label: String?) {
+        sessionShots++
+        onPhotoCaptured(file.absolutePath, label, selectedTag)
+        if (!freeMode) advance()
+    }
+
+    /** Revisa a foto no modo assistido; no modo livre/rajada salva direto para disparos contínuos. */
     fun handleCaptured(file: File) {
-        val label = currentShot
+        val label = if (freeMode) null else currentShot
+        if (freeMode) {
+            deliverPhoto(file, label)
+            return
+        }
         scope.launch {
             val q = withContext(Dispatchers.Default) { PhotoQuality.analyze(file) }
             if (q != null && !q.ok) {
                 review = Triple(file, q, label)
             } else {
-                onPhotoCaptured(file.absolutePath, label)
-                advance()
+                deliverPhoto(file, label)
             }
         }
     }
@@ -281,9 +305,12 @@ fun CameraScreen(
                 title = {
                     Column {
                         Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (photoCount > 0) {
-                            Text("$photoCount foto(s) neste cômodo", fontSize = 12.sp, color = LocalContentColor.current.copy(alpha = 0.7f))
+                        val sub = buildString {
+                            append("$photoCount foto(s)")
+                            if (selectedTag != null) append(" • 🏷️ $selectedTag")
                         }
+                        Text(sub, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = LocalContentColor.current.copy(alpha = 0.75f))
                     }
                 },
                 navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, contentDescription = "Voltar") } },
@@ -300,12 +327,11 @@ fun CameraScreen(
                             tint = if (torch) Color.Yellow else LocalContentColor.current)
                     }
                     IconButton(onClick = { launchSystemCamera() }) {
-                        Icon(Icons.Default.PhotoCamera, contentDescription = "Usar Câmera Nativa")
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Câmera do sistema")
                     }
                     IconButton(onClick = {
                         cameraFacing = if (cameraFacing == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
                     }) { Icon(Icons.Default.FlipCameraAndroid, contentDescription = "Virar câmera") }
-                    IconButton(onClick = { launchSystemCamera() }) { Icon(Icons.Default.PhotoCamera, contentDescription = "Câmera do sistema") }
                 }
             )
         }
@@ -373,9 +399,49 @@ fun CameraScreen(
             }
             LaunchedEffect(focusPoint) { if (focusPoint != null) { delay(900); focusPoint = null } }
 
-            // roteiro + aviso ao vivo
-            Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (shotList.isNotEmpty()) {
+            // barra superior: modo livre/assistente + roteiro + barra rápida de móveis + aviso ao vivo
+            Column(
+                Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        onClick = { freeMode = !freeMode },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (freeMode) Color(0xFF065F46).copy(alpha = 0.92f) else Color(0xFF312E81).copy(alpha = 0.92f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (freeMode) Color(0xFF34D399) else Color(0xFF818CF8)
+                        )
+                    ) {
+                        Text(
+                            text = if (freeMode) "⚡ Livre / Rajada" else "🤖 Assistente",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.Black.copy(alpha = 0.65f)
+                    ) {
+                        Text(
+                            text = "📷 $photoCount" + if (sessionShots > 0) " (+$sessionShots agora)" else "",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
+                if (!freeMode && shotList.isNotEmpty()) {
                     Row(
                         Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 6.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -392,8 +458,72 @@ fun CameraScreen(
                             Icon(Icons.Default.ChevronRight, contentDescription = "Pular", tint = Color.White)
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
                 }
+
+                // Seletor rápido de móvel/item para vincular dezenas de fotos diretamente ao móvel
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item {
+                        val isAll = selectedTag == null
+                        Surface(
+                            onClick = { selectedTag = null },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isAll) Color(0xFF2563EB) else Color.Black.copy(alpha = 0.62f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, if (isAll) Color(0xFF93C5FD) else Color.White.copy(alpha = 0.25f)
+                            )
+                        ) {
+                            Text(
+                                "📍 Geral",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = if (isAll) FontWeight.Bold else FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                    items(customTags) { tag ->
+                        val active = selectedTag == tag
+                        Surface(
+                            onClick = { selectedTag = if (active) null else tag },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (active) Color(0xFF059669) else Color.Black.copy(alpha = 0.62f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, if (active) Color(0xFF6EE7B7) else Color.White.copy(alpha = 0.25f)
+                            )
+                        ) {
+                            Text(
+                                "🏷️ $tag",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                    item {
+                        Surface(
+                            onClick = { newTagInput = ""; showAddTagDialog = true },
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.Black.copy(alpha = 0.62f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                        ) {
+                            Text(
+                                "+ Tag rápida",
+                                color = Color(0xFFFBBF24),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                }
+
                 if (liveTip != null) {
                     Row(
                         Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFFF59E0B).copy(alpha = 0.9f))
@@ -405,6 +535,22 @@ fun CameraScreen(
                         Spacer(Modifier.width(6.dp))
                         Text(liveTip + if (dark && !torch) " (toque)" else "", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
+                }
+            }
+
+            if (selectedTag != null) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF065F46).copy(alpha = 0.92f),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 126.dp)
+                ) {
+                    Text(
+                        "Marcando como: 🏷️ $selectedTag",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                    )
                 }
             }
 
@@ -428,9 +574,12 @@ fun CameraScreen(
             if (autoShoot) {
                 Text("Disparo automático: fique parado com boa luz", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
+            } else if (freeMode) {
+                Text("Modo Livre/Rajada: toque para fotografar sem interrupções", color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
             }
 
-            // revisão da foto com problema
+            // revisão da foto com problema (apenas no modo assistente)
             review?.let { (file, q, label) ->
                 val (issue, advice) = q.issue() ?: ("Foto" to "")
                 AlertDialog(
@@ -444,9 +593,37 @@ fun CameraScreen(
                     dismissButton = {
                         TextButton(onClick = {
                             review = null
-                            onPhotoCaptured(file.absolutePath, label)
-                            advance()
+                            deliverPhoto(file, label)
                         }) { Text("Usar assim mesmo") }
+                    }
+                )
+            }
+
+            if (showAddTagDialog) {
+                AlertDialog(
+                    onDismissRequest = { showAddTagDialog = false },
+                    title = { Text("Nova tag rápida de móvel/item") },
+                    text = {
+                        OutlinedTextField(
+                            value = newTagInput,
+                            onValueChange = { newTagInput = it },
+                            placeholder = { Text("Ex: Armário cozinha, Gaveta 1, Sofá...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val clean = newTagInput.trim()
+                            if (clean.isNotEmpty()) {
+                                if (clean !in customTags) customTags = customTags + clean
+                                selectedTag = clean
+                            }
+                            showAddTagDialog = false
+                        }) { Text("Selecionar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAddTagDialog = false }) { Text("Cancelar") }
                     }
                 )
             }

@@ -48,6 +48,41 @@ class VistoriaEditorViewModel(
 
     val draftKey: String = handle["draftKey"] ?: UUID.randomUUID().toString().also { handle["draftKey"] = it }
 
+    private val _useAssistant = androidx.compose.runtime.mutableStateOf(handle.get<Boolean>("useAssistant") ?: true)
+    var useAssistant: Boolean
+        get() = _useAssistant.value
+        set(v) { _useAssistant.value = v; handle["useAssistant"] = v }
+
+    private val _modeChosen = androidx.compose.runtime.mutableStateOf(
+        handle.get<Boolean>("modeChosen") ?: ((initialId ?: 0L) > 0L)
+    )
+    var modeChosen: Boolean
+        get() = _modeChosen.value
+        set(v) { _modeChosen.value = v; handle["modeChosen"] = v }
+
+    private val _activeFurnitureTag = androidx.compose.runtime.mutableStateOf<String?>(null)
+    var activeFurnitureTag: String?
+        get() = _activeFurnitureTag.value
+        set(v) { _activeFurnitureTag.value = v }
+
+    fun chooseMode(assistant: Boolean, blankRooms: Boolean = false) {
+        useAssistant = assistant
+        modeChosen = true
+        if (blankRooms) {
+            rooms = emptyList()
+            currentRoomIdx = 0
+        }
+    }
+
+    private var appContext: Context? = null
+
+    private val _pdfTemplate = androidx.compose.runtime.mutableStateOf(
+        com.imobweb.app.util.PdfTemplateCatalog.defaultTemplate
+    )
+    var pdfTemplate: com.imobweb.app.util.PdfTemplateConfig
+        get() = _pdfTemplate.value
+        set(v) { _pdfTemplate.value = com.imobweb.app.util.PdfTemplateCatalog.sanitize(v) }
+
     var loaded by mutableStateOf(false)
         private set
     var isSaving by mutableStateOf(false)
@@ -102,15 +137,114 @@ class VistoriaEditorViewModel(
         updateRoom(target) { it.copy(photos = it.photos + photo) }
     }
 
+    fun addOrUpdateFurnitureDetail(roomId: String, detail: com.imobweb.app.model.FurnitureDetail) {
+        updateRoom(roomId) { room ->
+            val old = room.furnitureDetails.find { it.id == detail.id }
+            val updatedDetails = if (old != null) {
+                room.furnitureDetails.map { if (it.id == detail.id) detail else it }
+            } else {
+                room.furnitureDetails + detail
+            }
+            val cleanName = detail.name.trim()
+            val baseFurniture = if (old != null && old.name != cleanName && updatedDetails.none { it.name.equals(old.name, ignoreCase = true) }) {
+                room.furniture.filterNot { it.equals(old.name, ignoreCase = true) }
+            } else room.furniture
+            val updatedFurniture = if (cleanName.isNotBlank() && baseFurniture.none { it.equals(cleanName, ignoreCase = true) }) {
+                baseFurniture + cleanName
+            } else baseFurniture
+            room.copy(furnitureDetails = updatedDetails, furniture = updatedFurniture)
+        }
+    }
+
+    fun removeFurnitureDetail(roomId: String, detailId: String) {
+        updateRoom(roomId) { room ->
+            val target = room.furnitureDetails.find { it.id == detailId }
+            val updatedDetails = room.furnitureDetails.filterNot { it.id == detailId }
+            val updatedFurniture = if (target != null && updatedDetails.none { it.name.equals(target.name, ignoreCase = true) }) {
+                room.furniture.filterNot { it.equals(target.name, ignoreCase = true) }
+            } else room.furniture
+            room.copy(furnitureDetails = updatedDetails, furniture = updatedFurniture)
+        }
+    }
+
+    fun duplicateFurnitureDetail(roomId: String, detailId: String) {
+        updateRoom(roomId) { room ->
+            val src = room.furnitureDetails.find { it.id == detailId } ?: return@updateRoom room
+            val baseName = src.name.replace(Regex("""\s*\(\d+\)$"""), "").trim()
+            var n = 2
+            var copyName = "$baseName ($n)"
+            while (room.furnitureDetails.any { it.name.equals(copyName, ignoreCase = true) } ||
+                room.furniture.any { it.equals(copyName, ignoreCase = true) }) {
+                n++
+                copyName = "$baseName ($n)"
+            }
+            val copy = src.copy(id = UUID.randomUUID().toString(), name = copyName)
+            val idx = room.furnitureDetails.indexOfFirst { it.id == detailId }
+            val newDetails = room.furnitureDetails.toMutableList().apply { add(idx + 1, copy) }
+            val newFurniture = if (room.furniture.none { it.equals(copyName, ignoreCase = true) }) {
+                room.furniture + copyName
+            } else room.furniture
+            room.copy(furnitureDetails = newDetails, furniture = newFurniture)
+        }
+    }
+
+    fun duplicateRoom(index: Int) {
+        val src = rooms.getOrNull(index) ?: return
+        val baseName = src.name.replace(Regex("""\s*\(\d+\)$"""), "").trim().ifBlank { "CÔMODO" }
+        var n = 2
+        var newName = "$baseName ($n)"
+        while (rooms.any { it.name.equals(newName, ignoreCase = true) }) {
+            n++
+            newName = "$baseName ($n)"
+        }
+        val copy = src.copy(
+            id = UUID.randomUUID().toString(),
+            name = newName,
+            photos = emptyList(),
+            furnitureDetails = src.furnitureDetails.map { it.copy(id = UUID.randomUUID().toString()) }
+        )
+        val mutable = rooms.toMutableList()
+        mutable.add(index + 1, copy)
+        rooms = mutable
+        currentRoomIdx = index + 1
+    }
+
+    fun moveRoom(fromIndex: Int, toIndex: Int) {
+        if (fromIndex !in rooms.indices || toIndex !in rooms.indices || fromIndex == toIndex) return
+        val mutable = rooms.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+        rooms = mutable
+        currentRoomIdx = when (currentRoomIdx) {
+            fromIndex -> toIndex
+            in (minOf(fromIndex, toIndex)..maxOf(fromIndex, toIndex)) ->
+                if (fromIndex < toIndex) currentRoomIdx - 1 else currentRoomIdx + 1
+            else -> currentRoomIdx
+        }
+    }
+
+    fun setRoomChecklistAll(roomId: String, state: String, onlyEmpty: Boolean = true) {
+        updateRoom(roomId) { room ->
+            val updated = com.imobweb.app.model.Checklist.ITEMS.associateWith { item ->
+                if (onlyEmpty) room.checklist[item] ?: state else state
+            }
+            room.copy(checklist = updated)
+        }
+    }
+
     /** Carrega o rascunho existente ou os valores padrão de Configurações (uma vez). */
     fun load(context: Context) {
+        appContext = context.applicationContext
         if (loaded) return
         viewModelScope.launch {
             val existing = if (savedId > 0) repository.getVistoriaById(savedId) else null
             if (existing != null) {
                 apply(existing)
+                modeChosen = true
+                pdfTemplate = com.imobweb.app.util.PdfTemplateCatalog.loadForVistoria(context, savedId)
             } else {
                 savedId = 0L
+                pdfTemplate = com.imobweb.app.util.PdfTemplateCatalog.loadDefaultTemplate(context)
                 val d = loadVistoriaDefaults(context)
                 if (d.vistoriadora.isNotBlank()) vistoriadora = d.vistoriadora
                 if (d.solicitante.isNotBlank()) solicitante = d.solicitante
@@ -191,6 +325,7 @@ class VistoriaEditorViewModel(
         if (!loaded || !hasContent()) return savedId
         val id = repository.saveFromEditor(snapshot(), draftKey)
         savedId = id
+        appContext?.let { com.imobweb.app.util.PdfTemplateCatalog.saveForVistoria(it, id, pdfTemplate) }
         repository.getVistoriaById(id)?.let { syncStatus = it.status }
         return id
     }
@@ -203,6 +338,7 @@ class VistoriaEditorViewModel(
             runCatching {
                 val id = repository.saveFromEditor(draft, draftKey)
                 if (savedId == 0L) savedId = id
+                appContext?.let { com.imobweb.app.util.PdfTemplateCatalog.saveForVistoria(it, id, pdfTemplate) }
             }
             then()
         }

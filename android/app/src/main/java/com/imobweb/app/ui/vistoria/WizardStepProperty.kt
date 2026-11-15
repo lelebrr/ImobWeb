@@ -249,10 +249,21 @@ internal fun StepPropertyInfo(
         }
     }
 
+    val isCondominio = tipoImovel.uppercase() in listOf("APARTAMENTO", "COBERTURA", "LOFT", "STUDIO/FLAT", "FLAT")
+    val isCasa = tipoImovel.uppercase() in listOf("CASA", "SOBRADO")
+    val isComercial = tipoImovel.uppercase() in listOf("SALA", "COMERCIAL", "GALPÃO", "PRÉDIO")
+    val missingStep1 = buildList {
+        if (tipoImovel.isBlank()) add("Tipo do Imóvel")
+        if (isCondominio && condominio.isBlank()) add("Condomínio")
+        if (!isCondominio && endereco.isBlank()) add("Endereço")
+    }
+
     Column {
         Text("Dados do Imóvel", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text("Preencha as informações básicas do imóvel", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(10.dp))
+        StepReadinessBanner(missingStep1)
         Spacer(Modifier.height(14.dp))
 
         // 1. Tipo do Imóvel no topo (adapta os campos dinamicamente)
@@ -309,36 +320,19 @@ internal fun StepPropertyInfo(
 
         Spacer(Modifier.height(12.dp))
 
-        val isCondominio = tipoImovel.uppercase() in listOf("APARTAMENTO", "COBERTURA", "LOFT", "STUDIO/FLAT", "FLAT")
-        val isCasa = tipoImovel.uppercase() in listOf("CASA", "SOBRADO")
-        val isComercial = tipoImovel.uppercase() in listOf("SALA", "COMERCIAL", "GALPÃO", "PRÉDIO")
-
-        if (isCondominio) {
+        val condominioMeta: Pair<String, String>? = when {
+            isCondominio -> "Nome do Condomínio / Edifício *" to "EX: EDIFÍCIO COLUMBUS TOWER"
+            isCasa -> "Condomínio Fechado / Residencial (Opcional)" to "EX: RESIDENCIAL JARDINS (se houver)"
+            isComercial -> "Edifício / Centro Empresarial (Opcional)" to "EX: CORPORATE TOWER (se houver)"
+            else -> null
+        }
+        if (condominioMeta != null) {
             OutlinedTextField(
                 value = condominio,
                 onValueChange = onCondominioChange,
-                label = { Text("Nome do Condomínio / Edifício *") },
-                placeholder = { Text("EX: EDIFÍCIO COLUMBUS TOWER") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(Modifier.height(8.dp))
-        } else if (isCasa) {
-            OutlinedTextField(
-                value = condominio,
-                onValueChange = onCondominioChange,
-                label = { Text("Condomínio Fechado / Residencial (Opcional)") },
-                placeholder = { Text("EX: RESIDENCIAL JARDINS (se houver)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(Modifier.height(8.dp))
-        } else if (isComercial) {
-            OutlinedTextField(
-                value = condominio,
-                onValueChange = onCondominioChange,
-                label = { Text("Edifício / Centro Empresarial (Opcional)") },
-                placeholder = { Text("EX: CORPORATE TOWER (se houver)") },
+                label = { Text(condominioMeta.first) },
+                placeholder = { Text(condominioMeta.second) },
+                trailingIcon = { DictationIcon { onCondominioChange(it) } },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -351,6 +345,7 @@ internal fun StepPropertyInfo(
                 onValueChange = onEnderecoChange,
                 label = { Text(if (!isCondominio) "Endereço / Rua *" else "Endereço") },
                 placeholder = { Text("Rua/Avenida") },
+                trailingIcon = { DictationIcon { onEnderecoChange(it) } },
                 modifier = Modifier.weight(2f),
                 singleLine = true
             )
@@ -481,6 +476,21 @@ internal fun StepPropertyInfo(
         OutlinedTextField(value = metragem, onValueChange = onMetragemChange,
             label = { Text("Metragem") }, placeholder = { Text("EX: 87m²") },
             modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf("35m²", "50m²", "70m²", "90m²", "120m²", "150m²", "200m²", "300m²").forEach { size ->
+                FilterChip(
+                    selected = metragem.equals(size, ignoreCase = true),
+                    onClick = { onMetragemChange(size) },
+                    label = { Text(size, fontSize = 11.sp) }
+                )
+            }
+        }
     }
 }
 
@@ -499,12 +509,18 @@ internal fun StepParties(
 ) {
     val locadorOptions = listOf("Locador", "Locadora", "Locadores", "Pessoa Jurídica")
     val locatarioOptions = listOf("Locatário", "Locatária", "Locatários", "Pessoa Jurídica")
+    val missingStep2 = buildList {
+        if (locadora.isBlank()) add("Nome do(a) $locadorTipo")
+        if (locatario.isBlank()) add("Nome do(a) $locatarioTipo")
+    }
 
     Column {
         Text("Partes Envolvidas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text("Dados do locador, locatário e vistoriadora", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(10.dp))
+        StepReadinessBanner(missingStep2)
+        Spacer(Modifier.height(14.dp))
 
         // Seletor de Tipo / Tratamento do Locador
         Text("Identificação do Locador (Proprietário)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
@@ -532,6 +548,7 @@ internal fun StepParties(
             onValueChange = onLocadoraChange,
             label = { Text("Nome do(a) $locadorTipo *") },
             placeholder = { Text("Nome completo ou Razão Social") },
+            trailingIcon = { DictationIcon { onLocadoraChange(it) } },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -578,6 +595,7 @@ internal fun StepParties(
             onValueChange = onLocatarioChange,
             label = { Text("Nome do(a) $locatarioTipo *") },
             placeholder = { Text("Nome completo ou Razão Social") },
+            trailingIcon = { DictationIcon { onLocatarioChange(it) } },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -600,10 +618,12 @@ internal fun StepParties(
 
         OutlinedTextField(value = vistoriadora, onValueChange = onVistoriadoraChange,
             label = { Text("Vistoriadora") }, placeholder = { Text("Nome da vistoriadora") },
+            trailingIcon = { DictationIcon { onVistoriadoraChange(it) } },
             modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(value = solicitante, onValueChange = onSolicitanteChange,
             label = { Text("Solicitante") }, placeholder = { Text("EX: ARTIMOB NEGÓCIOS IMOBILIÁRIOS") },
+            trailingIcon = { DictationIcon { onSolicitanteChange(it) } },
             modifier = Modifier.fillMaxWidth(), singleLine = true)
 
         Spacer(Modifier.height(16.dp))
@@ -620,6 +640,41 @@ internal fun StepParties(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+    }
+}
+
+@Composable
+private fun StepReadinessBanner(missingFields: List<String>) {
+    val isReady = missingFields.isEmpty()
+    val tint = if (isReady) Color(0xFF16A34A) else Color(0xFFD97706)
+    Surface(
+        color = tint.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, tint.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isReady) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (isReady) {
+                    "Campos obrigatórios preenchidos — pronto para avançar"
+                } else {
+                    "Obrigatório nesta etapa: ${missingFields.joinToString(", ")}"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = tint,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

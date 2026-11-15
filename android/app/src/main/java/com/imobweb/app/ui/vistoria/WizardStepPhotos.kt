@@ -249,19 +249,65 @@ internal fun StepPhotos(
                     }
                 } else {
                     val photoList = currentRoom.photos
+                    var selectedTagFilter by remember(currentRoom.id) { mutableStateOf<String?>(null) }
+                    var editingPhotoIdx by remember { mutableStateOf<Int?>(null) }
+
+                    val hasUntagged = photoList.any { it.furnitureTag.isBlank() }
+                    val distinctTags = photoList.mapNotNull { it.furnitureTag.takeIf { t -> t.isNotBlank() } }.distinct()
+
+                    if (distinctTags.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = selectedTagFilter == null,
+                                    onClick = { selectedTagFilter = null },
+                                    label = { Text("Todas (${photoList.size})", fontSize = 11.sp) }
+                                )
+                            }
+                            if (hasUntagged) {
+                                item {
+                                    val untaggedCount = photoList.count { it.furnitureTag.isBlank() }
+                                    FilterChip(
+                                        selected = selectedTagFilter == "",
+                                        onClick = { selectedTagFilter = "" },
+                                        label = { Text("📍 Geral ($untaggedCount)", fontSize = 11.sp) }
+                                    )
+                                }
+                            }
+                            items(distinctTags.size) { tIdx ->
+                                val tag = distinctTags[tIdx]
+                                val count = photoList.count { it.furnitureTag == tag }
+                                FilterChip(
+                                    selected = selectedTagFilter == tag,
+                                    onClick = { selectedTagFilter = if (selectedTagFilter == tag) null else tag },
+                                    label = { Text("🏷️ $tag ($count)", fontSize = 11.sp, maxLines = 1) }
+                                )
+                            }
+                        }
+                    }
+
+                    val indexedPhotos = photoList.mapIndexed { idx, p -> idx to p }.filter { (_, p) ->
+                        when (selectedTagFilter) {
+                            null -> true
+                            "" -> p.furnitureTag.isBlank()
+                            else -> p.furnitureTag == selectedTagFilter
+                        }
+                    }
+
                     Column {
-                        var globalIdx = 0
-                        photoList.chunked(3).forEach { row ->
+                        indexedPhotos.chunked(3).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                row.forEachIndexed { rowIdx, photo ->
-                                    val photoIdx = globalIdx++
+                                row.forEach { (photoIdx, photo) ->
                                     Card(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .aspectRatio(1f)
+                                            .aspectRatio(0.78f)
                                             .clickable {
                                                 onAnnotatePhoto(currentRoomIdx, photoIdx)
                                             },
@@ -281,28 +327,13 @@ internal fun StepPhotos(
                                                         .align(Alignment.TopStart)
                                                         .padding(4.dp),
                                                     shape = MaterialTheme.shapes.small,
-                                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
                                                 ) {
                                                     Text(
                                                         "${photo.annotations.size} pts",
                                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onError
-                                                    )
-                                                }
-                                            }
-                                            Row(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomStart)
-                                                    .padding(4.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                            ) {
-                                                repeat(minOf(photo.annotations.size, 3)) { i ->
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(6.dp)
-                                                            .clip(CircleShape)
-                                                            .background(Color(0xFFEF4444))
                                                     )
                                                 }
                                             }
@@ -315,11 +346,37 @@ internal fun StepPhotos(
                                                     mutable[currentRoomIdx] = r.copy(photos = newPhotos)
                                                     onRoomsChange(mutable)
                                                 },
-                                                modifier = Modifier.align(Alignment.TopEnd)
+                                                modifier = Modifier.align(Alignment.TopEnd).size(28.dp)
                                             ) {
                                                 Icon(Icons.Default.Close, contentDescription = "Remover",
-                                                    tint = Color.White.copy(alpha = 0.8f),
-                                                    modifier = Modifier.size(18.dp))
+                                                    tint = Color.White.copy(alpha = 0.9f),
+                                                    modifier = Modifier.size(16.dp))
+                                            }
+                                            val tagOrCaption = photo.furnitureTag.ifBlank { photo.caption }
+                                            Row(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .fillMaxWidth()
+                                                    .background(Color.Black.copy(alpha = 0.62f))
+                                                    .clickable { editingPhotoIdx = photoIdx }
+                                                    .padding(horizontal = 5.dp, vertical = 3.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = tagOrCaption.ifBlank { "Etiquetar..." },
+                                                    fontSize = 9.sp,
+                                                    color = if (tagOrCaption.isNotBlank()) Color(0xFF6EE7B7) else Color.White.copy(alpha = 0.75f),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Icon(
+                                                    Icons.Default.Edit,
+                                                    contentDescription = "Editar tag/legenda",
+                                                    tint = Color.White.copy(alpha = 0.85f),
+                                                    modifier = Modifier.size(11.dp)
+                                                )
                                             }
                                         }
                                     }
@@ -329,6 +386,83 @@ internal fun StepPhotos(
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
+                        }
+                    }
+
+                    editingPhotoIdx?.let { eIdx ->
+                        val targetPhoto = currentRoom.photos.getOrNull(eIdx)
+                        if (targetPhoto != null) {
+                            var editTag by remember(eIdx) { mutableStateOf(targetPhoto.furnitureTag) }
+                            var editCaption by remember(eIdx) { mutableStateOf(targetPhoto.caption) }
+                            val roomItems = remember(currentRoom.id, currentRoom.furniture, currentRoom.furnitureDetails) {
+                                (currentRoom.furnitureDetails.map { it.name } + currentRoom.furniture).distinct()
+                            }
+                            AlertDialog(
+                                onDismissRequest = { editingPhotoIdx = null },
+                                title = { Text("Etiqueta e Legenda da Foto") },
+                                text = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        if (targetPhoto.timestamp.isNotBlank()) {
+                                            Text("🕒 Capturada em ${targetPhoto.timestamp}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        if (roomItems.isNotEmpty()) {
+                                            Text("Vincular a um móvel do cômodo:", style = MaterialTheme.typography.labelSmall)
+                                            LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                                item {
+                                                    FilterChip(
+                                                        selected = editTag.isBlank(),
+                                                        onClick = { editTag = "" },
+                                                        label = { Text("Geral do Cômodo", fontSize = 11.sp) }
+                                                    )
+                                                }
+                                                items(roomItems.size) { rIdx ->
+                                                    val rName = roomItems[rIdx]
+                                                    FilterChip(
+                                                        selected = editTag.equals(rName, ignoreCase = true),
+                                                        onClick = { editTag = rName },
+                                                        label = { Text(rName, fontSize = 11.sp) }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        OutlinedTextField(
+                                            value = editTag,
+                                            onValueChange = { editTag = it },
+                                            label = { Text("Móvel / Tag específica") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        OutlinedTextField(
+                                            value = editCaption,
+                                            onValueChange = { editCaption = it },
+                                            label = { Text("Legenda adicional") },
+                                            placeholder = { Text("Ex: Gaveta direita, detalhe do puxador...") },
+                                            maxLines = 3,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        val mutable = rooms.toMutableList()
+                                        val r = mutable[currentRoomIdx]
+                                        val newPhotos = r.photos.toMutableList()
+                                        val cleanTag = editTag.trim()
+                                        val cleanCap = editCaption.trim()
+                                        newPhotos[eIdx] = targetPhoto.copy(
+                                            furnitureTag = cleanTag,
+                                            caption = cleanCap,
+                                            name = cleanTag.ifBlank { targetPhoto.name }
+                                        )
+                                        mutable[currentRoomIdx] = r.copy(photos = newPhotos)
+                                        onRoomsChange(mutable)
+                                        editingPhotoIdx = null
+                                    }) { Text("Salvar") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { editingPhotoIdx = null }) { Text("Cancelar") }
+                                }
+                            )
                         }
                     }
                 }
